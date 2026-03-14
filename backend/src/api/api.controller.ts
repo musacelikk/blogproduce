@@ -1,0 +1,197 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Headers,
+} from '@nestjs/common';
+import { ApiService } from './api.service';
+import { GenerateApiDto } from './dto/generate-api.dto';
+import { PublishApiDto } from './dto/publish-api.dto';
+import { UpdatePostApiDto } from './dto/update-post-api.dto';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { HmacAuthGuard } from '../auth/guards/hmac-auth.guard';
+import { CurrentOrganization } from '../auth/decorators/organization.decorator';
+import { CurrentProject } from '../auth/decorators/project.decorator';
+import { Organization } from '../entities/organization.entity';
+import { Project } from '../entities/project.entity';
+import { PostStatus } from '../entities/post.entity';
+
+@Controller('api/v1')
+// Support both Bearer token and HMAC authentication
+@UseGuards(ApiKeyGuard)
+export class ApiController {
+  constructor(private readonly apiService: ApiService) {}
+
+  @Post('posts:generate')
+  @HttpCode(HttpStatus.OK)
+  async generate(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Body() dto: GenerateApiDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    const result = await this.apiService.generate(organization, project, dto, idempotencyKey);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Get('jobs/:jobId')
+  async getJob(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('jobId') jobId: string,
+  ) {
+    const result = await this.apiService.getJob(organization, project, jobId);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Post('publish')
+  @HttpCode(HttpStatus.OK)
+  async publish(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Body() dto: PublishApiDto,
+  ) {
+    const result = await this.apiService.publish(organization, project, dto);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Get('posts')
+  async listPosts(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Query('status') status?: PostStatus,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const result = await this.apiService.listPostsWithCursor(organization, project, status, limitNum, cursor);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Get('posts/:id')
+  async getPost(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('id') id: string,
+    @Query('format') format?: string,
+  ) {
+    const post = await this.apiService.getPost(organization, project, id, format);
+    return {
+      success: true,
+      data: post,
+    };
+  }
+
+  @Patch('posts/:id')
+  async updatePost(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('id') id: string,
+    @Body() dto: UpdatePostApiDto,
+  ) {
+    const result = await this.apiService.updatePost(organization, project, id, dto);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Post('posts/:id:publish')
+  @HttpCode(HttpStatus.OK)
+  async publishPost(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('id') id: string,
+    @Body() dto: PublishApiDto,
+  ) {
+    // Use the postId from URL if not in body
+    const publishDto = { ...dto, postId: id };
+    const result = await this.apiService.publish(organization, project, publishDto);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  // Public endpoints - can use HMAC for extra security (optional, also supports Bearer token)
+  @Get('published')
+  async getPublishedPosts(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const posts = await this.apiService.getPublishedPosts(organization, project, limitNum);
+    return {
+      success: true,
+      data: posts,
+    };
+  }
+
+  @Get('published/:slug')
+  async getPublishedPost(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('slug') slug: string,
+    @Query('format') format?: string,
+  ) {
+    const post = await this.apiService.getPublishedPost(organization, project, slug, format);
+    return {
+      success: true,
+      data: post,
+    };
+  }
+}
+
+// Public endpoints (no authentication required, but can use signed token)
+@Controller('api/v1/public/projects')
+export class PublicApiController {
+  constructor(private readonly apiService: ApiService) {}
+
+  @Get(':projectSlug/posts')
+  async getPublicPosts(
+    @Param('projectSlug') projectSlug: string,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const result = await this.apiService.getPublicPostsByProjectSlug(projectSlug, limitNum, cursor);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Get(':projectSlug/posts/:slug')
+  async getPublicPost(
+    @Param('projectSlug') projectSlug: string,
+    @Param('slug') slug: string,
+    @Query('format') format?: string,
+  ) {
+    const post = await this.apiService.getPublicPostByProjectSlug(projectSlug, slug, format);
+    return {
+      success: true,
+      data: post,
+    };
+  }
+}
+
