@@ -71,19 +71,19 @@ export default function BillingPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="mb-6">
-            <div className="h-8 w-64 bg-[#e5e5e5] animate-pulse rounded mb-2" />
-            <div className="h-4 w-96 bg-[#e5e5e5] animate-pulse rounded" />
+            <div className="h-8 w-64 bg-[var(--border)] animate-pulse rounded mb-2" />
+            <div className="h-4 w-96 bg-[var(--border)] animate-pulse rounded" />
           </div>
-          <div className="h-10 w-32 bg-[#e5e5e5] animate-pulse rounded-lg" />
+          <div className="h-10 w-32 bg-[var(--border)] animate-pulse rounded-lg" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-[#e5e5e5]">
-          <div className="h-6 w-32 bg-[#e5e5e5] animate-pulse rounded mb-4" />
+        <div className="rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+          <div className="h-6 w-32 bg-[var(--border)] animate-pulse rounded mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
               <div key={i}>
-                <div className="h-3 w-24 bg-[#e5e5e5] animate-pulse rounded mb-2" />
-                <div className="h-5 w-32 bg-[#e5e5e5] animate-pulse rounded" />
+                <div className="h-3 w-24 bg-[var(--border)] animate-pulse rounded mb-2" />
+                <div className="h-5 w-32 bg-[var(--border)] animate-pulse rounded" />
               </div>
             ))}
           </div>
@@ -120,17 +120,29 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-end">
-          <Link href="/dashboard/plans">
-          <Button
-            variant="outline"
-            className="border-[#203eec] text-[#203eec] hover:bg-[#203eec]/10"
-          >
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <CreditCard className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Fatura Geçmişi</h1>
+            <p className="text-sm text-muted-foreground">Abonelik ve ödeme geçmişinizi görüntüleyin</p>
+          </div>
+        </div>
+        <Link href="/dashboard/plans">
+          <Button variant="outline" className="border-[#203eec] text-[#203eec] hover:bg-[#203eec]/10 rounded-full">
             Planları Görüntüle
           </Button>
         </Link>
-      </div>
+      </motion.div>
 
       {/* Current Plan Summary */}
       {currentPlanInfo && (
@@ -138,14 +150,12 @@ export default function BillingPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-xl p-6 border border-[#e5e5e5]"
+          className="rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-3 mb-4">
             <CreditCard className="w-5 h-5 text-[#203eec]" />
             <h2
-              className="text-lg font-semibold text-[#202020]"
-              style={{
-              }}
+              className="text-lg font-semibold text-foreground"
             >
               Aktif Abonelik
             </h2>
@@ -153,16 +163,12 @@ export default function BillingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p
-                className="text-xs text-[#666666] mb-1"
-                style={{
-                }}
+                className="text-xs text-muted-foreground mb-1"
               >
                 Plan
               </p>
               <p
-                className="text-base font-medium text-[#202020]"
-                style={{
-                }}
+                className="text-base font-medium text-foreground"
               >
                 {currentPlanInfo.currentPlan?.name || 'Ücretsiz Plan'}
               </p>
@@ -171,32 +177,24 @@ export default function BillingPage() {
               <>
                 <div>
                   <p
-                    className="text-xs text-[#666666] mb-1"
-                    style={{
-                    }}
+                    className="text-xs text-muted-foreground mb-1"
                   >
                     Faturalama Dönemi
                   </p>
                   <p
-                    className="text-base font-medium text-[#202020]"
-                    style={{
-                    }}
+                    className="text-base font-medium text-foreground"
                   >
                     {currentPlanInfo.subscription.billingPeriod === 'yearly' ? 'Yıllık' : 'Aylık'}
                   </p>
                 </div>
                 <div>
                   <p
-                    className="text-xs text-[#666666] mb-1"
-                    style={{
-                    }}
+                    className="text-xs text-muted-foreground mb-1"
                   >
                     {currentPlanInfo.subscription.expiresAt ? 'Bitiş Tarihi' : 'Durum'}
                   </p>
                   <p
-                    className="text-base font-medium text-[#202020]"
-                    style={{
-                    }}
+                    className="text-base font-medium text-foreground"
                   >
                     {currentPlanInfo.subscription.expiresAt
                       ? formatDate(currentPlanInfo.subscription.expiresAt)
@@ -208,16 +206,12 @@ export default function BillingPage() {
             {!currentPlanInfo.subscription && (
               <div>
                 <p
-                  className="text-xs text-[#666666] mb-1"
-                  style={{
-                  }}
+                  className="text-xs text-muted-foreground mb-1"
                 >
                   Durum
                 </p>
                 <p
-                  className="text-base font-medium text-[#202020]"
-                  style={{
-                  }}
+                  className="text-base font-medium text-foreground"
                 >
                   Aktif - Zamansız
                 </p>
@@ -232,15 +226,13 @@ export default function BillingPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white rounded-xl border border-[#e5e5e5] overflow-hidden"
+        className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
-        <div className="p-6 border-b border-[#e5e5e5]">
+        <div className="p-6 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             <Receipt className="w-5 h-5 text-[#203eec]" />
             <h2
-              className="text-lg font-semibold text-[#202020]"
-              style={{
-              }}
+              className="text-lg font-semibold text-foreground"
             >
               Fatura Geçmişi
             </h2>
@@ -248,24 +240,20 @@ export default function BillingPage() {
         </div>
         {billingHistory.length === 0 ? (
           <div className="p-12 text-center">
-            <Receipt className="w-16 h-16 mx-auto mb-4 text-[#999999] opacity-50" />
+            <Receipt className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p
-              className="text-lg text-[#666666] mb-2"
-              style={{
-              }}
+              className="text-lg text-muted-foreground mb-2"
             >
               Henüz fatura geçmişi bulunmuyor
             </p>
             <p
-              className="text-sm text-[#999999]"
-              style={{
-              }}
+              className="text-sm text-muted-foreground"
             >
               Plan satın aldığınızda faturalarınız burada görünecek
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#e5e5e5]">
+          <div className="divide-y divide-[var(--border)]">
             {billingHistory.map((item, index) => {
               const StatusIcon = statusIcons[item.status as keyof typeof statusIcons] || CheckCircle2;
               const statusColor = statusColors[item.status as keyof typeof statusColors] || statusColors.active;
@@ -277,15 +265,13 @@ export default function BillingPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="p-6 hover:bg-[#f9fafb] transition-colors"
+                  className="p-6 hover:bg-[var(--secondary)] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3
-                          className="text-base font-medium text-[#202020]"
-                          style={{
-                          }}
+                          className="text-base font-medium text-foreground"
                         >
                           {item.plan.name}
                         </h3>
@@ -294,7 +280,7 @@ export default function BillingPage() {
                           {item.status === 'active' ? 'Aktif' : item.status === 'cancelled' ? 'İptal Edildi' : item.status === 'expired' ? 'Süresi Doldu' : 'Beklemede'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#666666]">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           <span>Başlangıç: {formatDate(item.startedAt)}</span>
@@ -313,7 +299,7 @@ export default function BillingPage() {
                         </div>
                       </div>
                       {item.cancelledAt && (
-                        <p className="text-xs text-[#666666] mt-2">
+                        <p className="text-xs text-muted-foreground mt-2">
                           İptal tarihi: {formatDate(item.cancelledAt)}
                         </p>
                       )}

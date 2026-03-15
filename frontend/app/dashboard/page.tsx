@@ -144,6 +144,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      {/* Welcome Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="rounded-2xl p-5 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
+      >
+        <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-[0.15] blur-2xl" style={{ background: '#fff' }} />
+        <div className="absolute right-10 bottom-0 w-20 h-20 rounded-full opacity-[0.10] blur-xl" style={{ background: '#fff' }} />
+        <div className="relative">
+          <p className="text-white/70 text-xs font-medium uppercase tracking-widest mb-1">Hoş Geldiniz</p>
+          <h1 className="text-xl font-bold text-white tracking-tight mb-1">Dashboard</h1>
+          <p className="text-white/75 text-sm">Blog içeriklerinizi üretin, yönetin ve yayınlayın.</p>
+        </div>
+      </motion.div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => {

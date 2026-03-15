@@ -194,8 +194,8 @@ export default function WorkspacesPage() {
     return (
       <div className="space-y-5">
         <div className="mb-6">
-          <div className="h-8 w-64 bg-[#e5e5e5] animate-pulse rounded mb-2" />
-          <div className="h-4 w-96 bg-[#e5e5e5] animate-pulse rounded" />
+          <div className="h-8 w-64 bg-[var(--border)] animate-pulse rounded mb-2" />
+          <div className="h-4 w-96 bg-[var(--border)] animate-pulse rounded" />
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -214,29 +214,37 @@ export default function WorkspacesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header with Action Button */}
+      {/* Page Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <div className="flex-1">
-          {/* Empty space for future filters or info */}
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <Folder className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Workspace&apos;ler</h1>
+            <p className="text-sm text-muted-foreground">İçeriklerinizi projelere göre düzenleyin</p>
+          </div>
         </div>
         <div className="flex-shrink-0 flex items-center gap-2">
           <Button
             onClick={() => setShowInfoCard(!showInfoCard)}
             variant="outline"
             size="sm"
-            className="rounded-full px-3 py-2.5 border-[#e5e5e5] hover:bg-[#f5f5f5] hover:border-[#203eec] transition-all duration-200"
+            className="rounded-full px-3 py-2.5 border-[var(--border)] hover:bg-[var(--secondary)] hover:border-[#203eec] transition-all duration-200"
             title="Workspace Nedir?"
           >
-            <HelpCircle className="w-4 h-4 text-[#666666]" />
+            <HelpCircle className="w-4 h-4 text-muted-foreground" />
           </Button>
           <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-[#203eec] hover:bg-[#1a32cc] text-white rounded-full px-6 py-2.5 text-sm font-medium shadow-lg shadow-[#203eec]/20 hover:shadow-xl hover:shadow-[#203eec]/30 transition-all duration-200"
+            className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
           >
             <Plus className="w-4 h-4 mr-2" />
             Yeni Workspace
@@ -296,7 +304,7 @@ export default function WorkspacesPage() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2
-              className="text-lg font-medium text-[#202020]"
+              className="text-lg font-medium text-foreground"
               style={{
               }}
             >
@@ -319,7 +327,7 @@ export default function WorkspacesPage() {
             <div>
               <label
                 htmlFor="name"
-                className="text-sm font-medium text-[#202020] mb-2 block"
+                className="text-sm font-medium text-foreground mb-2 block"
                 style={{
                 }}
               >
@@ -330,14 +338,14 @@ export default function WorkspacesPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Örn: Kişisel Blog, Şirket Blogu"
-                className="border-[#e5e5e5] focus:border-[#203eec]"
+                className="border-[var(--border)] focus:border-[#203eec]"
                 required
               />
             </div>
             <div>
               <label
                 htmlFor="description"
-                className="text-sm font-medium text-[#202020] mb-2 block"
+                className="text-sm font-medium text-foreground mb-2 block"
                 style={{
                 }}
               >
@@ -349,13 +357,13 @@ export default function WorkspacesPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Bu workspace hakkında kısa bir açıklama..."
                 rows={3}
-                className="border-[#e5e5e5] focus:border-[#203eec]"
+                className="border-[var(--border)] focus:border-[#203eec]"
               />
             </div>
             <div>
               <label
                 htmlFor="siteUrl"
-                className="text-sm font-medium text-[#202020] mb-2 block"
+                className="text-sm font-medium text-foreground mb-2 block"
                 style={{
                 }}
               >
@@ -367,15 +375,15 @@ export default function WorkspacesPage() {
                 value={formData.siteUrl}
                 onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
                 placeholder="https://example.com"
-                className="border-[#e5e5e5] focus:border-[#203eec]"
+                className="border-[var(--border)] focus:border-[#203eec]"
               />
-              <p className="text-xs text-[#666666] mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 SEO için kullanılacak site URL&apos;si (opsiyonel)
               </p>
             </div>
             <div>
               <label
-                className="text-sm font-medium text-[#202020] mb-2 block"
+                className="text-sm font-medium text-foreground mb-2 block"
                 style={{
                 }}
               >
@@ -423,7 +431,7 @@ export default function WorkspacesPage() {
                   setFormData({ name: '', description: '', color: '', siteUrl: '' });
                   setError(null);
                 }}
-                className="border-[#e5e5e5] hover:border-[#203eec]"
+                className="border-[var(--border)] hover:border-[#203eec]"
               >
                 İptal
               </Button>
@@ -438,7 +446,7 @@ export default function WorkspacesPage() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-          className="relative bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-xl p-6 border-2 border-[#e5e5e5] shadow-xl backdrop-blur-sm overflow-hidden"
+          className="relative bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-xl p-6 border-2 border-[var(--border)] shadow-xl backdrop-blur-sm overflow-hidden"
         >
           {/* Decorative background elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -458,13 +466,13 @@ export default function WorkspacesPage() {
                 </div>
                 <div>
                   <h2
-                    className="text-xl font-semibold text-[#202020]"
+                    className="text-xl font-semibold text-foreground"
                     style={{
                     }}
                   >
                     Workspace Düzenle
                   </h2>
-                  <p className="text-xs text-[#666666] mt-0.5">Ayarlarınızı güncelleyin</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Ayarlarınızı güncelleyin</p>
                 </div>
               </div>
               <Button
@@ -482,10 +490,10 @@ export default function WorkspacesPage() {
             </div>
 
             <form onSubmit={handleUpdate} className="space-y-5">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[#e5e5e5]/50">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
                 <label
                   htmlFor="edit-name"
-                  className="text-sm font-semibold text-[#202020] mb-2 flex items-center gap-2"
+                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
                   style={{
                   }}
                 >
@@ -497,15 +505,15 @@ export default function WorkspacesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Örn: Kişisel Blog, Şirket Blogu"
-                  className="border-[#e5e5e5] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
+                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
                   required
                 />
               </div>
 
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[#e5e5e5]/50">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
                 <label
                   htmlFor="edit-description"
-                  className="text-sm font-semibold text-[#202020] mb-2 flex items-center gap-2"
+                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
                   style={{
                   }}
                 >
@@ -518,14 +526,14 @@ export default function WorkspacesPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Bu workspace hakkında kısa bir açıklama..."
                   rows={3}
-                  className="border-[#e5e5e5] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white resize-none"
+                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white resize-none"
                 />
               </div>
 
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[#e5e5e5]/50">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
                 <label
                   htmlFor="edit-siteUrl"
-                  className="text-sm font-semibold text-[#202020] mb-2 flex items-center gap-2"
+                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
                   style={{
                   }}
                 >
@@ -538,16 +546,16 @@ export default function WorkspacesPage() {
                   value={formData.siteUrl}
                   onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
                   placeholder="https://example.com"
-                  className="border-[#e5e5e5] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
+                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
                 />
-                <p className="text-xs text-[#666666] mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   SEO için kullanılacak site URL&apos;si (opsiyonel)
                 </p>
               </div>
 
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[#e5e5e5]/50">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
                 <label
-                  className="text-sm font-semibold text-[#202020] mb-3 flex items-center gap-2"
+                  className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"
                   style={{
                   }}
                 >
@@ -585,10 +593,10 @@ export default function WorkspacesPage() {
                   <motion.p
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-[#666666] mt-2 flex items-center gap-1"
+                    className="text-xs text-muted-foreground mt-2 flex items-center gap-1"
                   >
                     <span>Seçili renk:</span>
-                    <span className="font-medium text-[#202020]">
+                    <span className="font-medium text-foreground">
                       {workspaceColors.find(c => c.value === formData.color)?.label}
                     </span>
                   </motion.p>
@@ -621,7 +629,7 @@ export default function WorkspacesPage() {
                     setFormData({ name: '', description: '', color: '', siteUrl: '' });
                     setError(null);
                   }}
-                  className="border-[#e5e5e5] hover:border-[#666666] hover:bg-[#f5f5f5] transition-colors"
+                  className="border-[var(--border)] hover:border-[#666666] hover:bg-[var(--secondary)] transition-colors"
                 >
                   İptal
                 </Button>
@@ -656,18 +664,18 @@ export default function WorkspacesPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl p-10 border border-[#e5e5e5] text-center"
+          className="bg-white rounded-xl p-10 border border-[var(--border)] text-center"
         >
-          <Folder className="w-16 h-16 mx-auto mb-4 text-[#999999] opacity-50" />
+          <Folder className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
           <h3
-            className="text-lg font-medium text-[#202020] mb-2"
+            className="text-lg font-medium text-foreground mb-2"
             style={{
             }}
           >
             Henüz workspace oluşturulmamış
           </h3>
           <p
-            className="text-sm text-[#666666] mb-4"
+            className="text-sm text-muted-foreground mb-4"
             style={{
             }}
           >
@@ -704,10 +712,10 @@ export default function WorkspacesPage() {
                     e.stopPropagation();
                     handleEdit(workspace);
                   }}
-                  className="h-7 w-7 p-0 hover:bg-[#f5f5f5] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-7 w-7 p-0 hover:bg-[var(--secondary)] opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Düzenle"
                 >
-                  <Edit className="w-3.5 h-3.5 text-[#666666]" />
+                  <Edit className="w-3.5 h-3.5 text-muted-foreground" />
                 </Button>
               </div>
               
@@ -725,7 +733,7 @@ export default function WorkspacesPage() {
                   </span>
                 </div>
                 <h3
-                  className="text-lg font-semibold text-[#202020] mb-1"
+                  className="text-lg font-semibold text-foreground mb-1"
                   style={{
                   }}
                 >
@@ -733,7 +741,7 @@ export default function WorkspacesPage() {
                 </h3>
                 {workspace.description && (
                   <p
-                    className="text-sm text-[#666666] line-clamp-2"
+                    className="text-sm text-muted-foreground line-clamp-2"
                     style={{
                     }}
                   >
@@ -743,7 +751,7 @@ export default function WorkspacesPage() {
               </div>
               
               <div className="space-y-1 mb-4">
-                <div className="flex items-center justify-center gap-1 text-xs text-[#666666]">
+                <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                   <Hash className="w-3 h-3" />
                   <span className="font-mono">{workspace.id}</span>
                   <Button
@@ -753,13 +761,13 @@ export default function WorkspacesPage() {
                       e.stopPropagation();
                       navigator.clipboard.writeText(workspace.id);
                     }}
-                    className="h-4 w-4 p-0 hover:bg-[#f5f5f5]"
+                    className="h-4 w-4 p-0 hover:bg-[var(--secondary)]"
                     title="ID'yi kopyala"
                   >
-                    <Copy className="w-3 h-3 text-[#999999]" />
+                    <Copy className="w-3 h-3 text-muted-foreground" />
                   </Button>
                 </div>
-                <div className="flex items-center justify-center text-xs text-[#999999]">
+                <div className="flex items-center justify-center text-xs text-muted-foreground">
                   <span>Oluşturulma: {formatDate(workspace.createdAt)}</span>
                 </div>
               </div>
@@ -770,7 +778,7 @@ export default function WorkspacesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => router.push(`/dashboard/generate?workspaceId=${workspace.id}`)}
-                    className="flex-1 border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
+                    className="flex-1 border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
                   >
                     <Plus className="w-3 h-3 mr-1" />
                     Blog Üret
@@ -779,7 +787,7 @@ export default function WorkspacesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => router.push(`/dashboard/blogs?workspaceId=${workspace.id}`)}
-                    className="flex-1 border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
+                    className="flex-1 border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
                   >
                     Blogları Gör
                   </Button>
@@ -811,7 +819,7 @@ export default function WorkspacesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowDeleteConfirm(null)}
-                        className="border-[#e5e5e5] text-xs"
+                        className="border-[var(--border)] text-xs"
                       >
                         İptal
                       </Button>

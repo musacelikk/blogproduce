@@ -73,20 +73,29 @@ export default function UsagePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-center md:justify-end gap-3"
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Kullanım</h1>
+            <p className="text-sm text-muted-foreground">Token ve API kullanım istatistiklerinizi görüntüleyin</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <select
             value={selectedMonth || currentMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 text-sm bg-white border border-[#e5e5e5] rounded-lg focus:border-[#203eec] focus:outline-none"
-            style={{
-            }}
+            className="px-3 py-2 text-sm rounded-xl border focus:border-[#203eec] focus:outline-none"
+            style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
           >
             <option value="">Bu Ay ({formatMonth(currentMonth)})</option>
             {availableMonths.map((month) => (
@@ -124,123 +133,40 @@ export default function UsagePage() {
       )}
 
       {/* Overall Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Toplam Token', value: formatTokens(totalTokens), icon: Zap, gradient: 'linear-gradient(135deg,#203eec,#00d4ff)' },
+          { label: 'Input Token', value: formatTokens(totalTokensIn), icon: TrendingUp, gradient: 'linear-gradient(135deg,#3b82f6,#60a5fa)' },
+          { label: 'Output Token', value: formatTokens(totalTokensOut), icon: Zap, gradient: 'linear-gradient(135deg,#10B981,#34d399)' },
+          { label: 'İstek Sayısı', value: totalRequests.toLocaleString('tr-TR'), icon: Filter, gradient: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 + i * 0.07 }}
+              className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
             >
-              Toplam Token
-            </span>
-            <Zap className="w-5 h-5 text-[#203eec]" />
-          </div>
-          {loading ? (
-            <div className="h-7 w-24 bg-[#e5e5e5] animate-pulse rounded" />
-          ) : (
-            <p
-              className="text-2xl font-semibold text-[#202020]"
-              style={{
-              }}
-            >
-              {formatTokens(totalTokens)}
-            </p>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
-            >
-              Input Token
-            </span>
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-          </div>
-          {loading ? (
-            <div className="h-7 w-24 bg-[#e5e5e5] animate-pulse rounded" />
-          ) : (
-            <p
-              className="text-2xl font-semibold text-[#202020]"
-              style={{
-              }}
-            >
-              {formatTokens(totalTokensIn)}
-            </p>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
-            >
-              Output Token
-            </span>
-            <Zap className="w-5 h-5 text-green-600" />
-          </div>
-          {loading ? (
-            <div className="h-7 w-24 bg-[#e5e5e5] animate-pulse rounded" />
-          ) : (
-            <p
-              className="text-2xl font-semibold text-[#202020]"
-              style={{
-              }}
-            >
-              {formatTokens(totalTokensOut)}
-            </p>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
-            >
-              İstek Sayısı
-            </span>
-            <Filter className="w-5 h-5 text-purple-600" />
-          </div>
-          {loading ? (
-            <div className="h-7 w-24 bg-[#e5e5e5] animate-pulse rounded" />
-          ) : (
-            <p
-              className="text-2xl font-semibold text-[#202020]"
-              style={{
-              }}
-            >
-              {totalRequests.toLocaleString('tr-TR')}
-            </p>
-          )}
-        </motion.div>
+              <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-[0.07] blur-xl"
+                   style={{ background: stat.gradient }} />
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                     style={{ background: stat.gradient }}>
+                  <Icon className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
+              {loading ? (
+                <div className="h-7 w-24 bg-[var(--border)] animate-pulse rounded" />
+              ) : (
+                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Workspace-based Usage */}
@@ -251,21 +177,17 @@ export default function UsagePage() {
         className="rounded-2xl overflow-hidden"
         style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
-        <div className="p-6 border-b border-[#e5e5e5]">
+        <div className="p-6 border-b border-[var(--border)]">
           <div className="flex items-center gap-3">
             <Folder className="w-5 h-5 text-[#203eec]" />
             <h2
-              className="text-lg font-semibold text-[#202020]"
-              style={{
-              }}
+              className="text-lg font-semibold text-foreground"
             >
               Workspace Bazlı Kullanım
             </h2>
           </div>
           <p
-            className="text-sm text-[#666666] mt-1"
-            style={{
-            }}
+            className="text-sm text-muted-foreground mt-1"
           >
             Her workspace için token kullanım detayları
           </p>
@@ -274,24 +196,20 @@ export default function UsagePage() {
           <TableSkeleton rows={5} />
         ) : workspaceUsage.length === 0 ? (
           <div className="p-12 text-center">
-            <Folder className="w-16 h-16 mx-auto mb-4 text-[#999999] opacity-50" />
+            <Folder className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p
-              className="text-lg text-[#666666] mb-2"
-              style={{
-              }}
+              className="text-lg text-muted-foreground mb-2"
             >
               Henüz token kullanımı yok
             </p>
             <p
-              className="text-sm text-[#999999]"
-              style={{
-              }}
+              className="text-sm text-muted-foreground"
             >
               Blog ürettiğinizde workspace bazlı kullanım verileri burada görünecek
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#e5e5e5]">
+          <div className="divide-y divide-[var(--border)]">
             {workspaceUsage.map((usage, index) => {
               const workspace = workspaces.find(w => w.id === usage.workspaceId);
               const workspaceColor = workspace?.color || '#203eec';
@@ -304,7 +222,7 @@ export default function UsagePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="p-6 hover:bg-[#fafafa] transition-colors"
+                  className="p-6 hover:bg-[var(--secondary)] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3 flex-1">
@@ -316,16 +234,12 @@ export default function UsagePage() {
                       )}
                       <div className="flex-1">
                         <h3
-                          className="text-base font-medium text-[#202020] mb-1"
-                          style={{
-                          }}
+                          className="text-base font-medium text-foreground mb-1"
                         >
                           {usage.workspaceName}
                         </h3>
                         <p
-                          className="text-xs text-[#666666]"
-                          style={{
-                          }}
+                          className="text-xs text-muted-foreground"
                         >
                           {usage.requestCount} istek
                         </p>
@@ -333,23 +247,19 @@ export default function UsagePage() {
                     </div>
                     <div className="text-right">
                       <p
-                        className="text-xl font-semibold text-[#202020]"
-                        style={{
-                        }}
+                        className="text-xl font-semibold text-foreground"
                       >
                         {formatTokens(Number(usage.totalTokens) || 0)}
                       </p>
                       <p
-                        className="text-xs text-[#666666] mt-0.5"
-                        style={{
-                        }}
+                        className="text-xs text-muted-foreground mt-0.5"
                       >
                         {totalPercentage.toFixed(1)}%
                       </p>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="w-full bg-[#f5f5f5] rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-[var(--secondary)] rounded-full h-2 overflow-hidden">
                       <div
                         className="h-full transition-all duration-500 rounded-full"
                         style={{
@@ -361,32 +271,24 @@ export default function UsagePage() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p
-                          className="text-xs text-[#666666] mb-1"
-                          style={{
-                          }}
+                          className="text-xs text-muted-foreground mb-1"
                         >
                           Input Token
                         </p>
                       <p
                         className="text-base font-medium text-blue-600"
-                        style={{
-                        }}
                       >
                         {formatTokens(Number(usage.tokensIn) || 0)}
                       </p>
                       </div>
                       <div>
                         <p
-                          className="text-xs text-[#666666] mb-1"
-                          style={{
-                          }}
+                          className="text-xs text-muted-foreground mb-1"
                         >
                           Output Token
                         </p>
                         <p
                           className="text-base font-medium text-green-600"
-                          style={{
-                          }}
                         >
                           {formatTokens(Number(usage.tokensOut) || 0)}
                         </p>
@@ -409,19 +311,17 @@ export default function UsagePage() {
           className="rounded-2xl overflow-hidden"
         style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
         >
-          <div className="p-6 border-b border-[#e5e5e5]">
+          <div className="p-6 border-b border-[var(--border)]">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-[#203eec]" />
               <h2
-                className="text-lg font-semibold text-[#202020]"
-                style={{
-                }}
+                className="text-lg font-semibold text-foreground"
               >
                 Aylık Kullanım Geçmişi
               </h2>
             </div>
           </div>
-          <div className="divide-y divide-[#e5e5e5]">
+          <div className="divide-y divide-[var(--border)]">
             {usageHistory.slice(0, 12).map((usage, index) => {
               const usageTotal = (Number(usage.tokensIn) || 0) + (Number(usage.tokensOut) || 0);
               return (
@@ -430,18 +330,16 @@ export default function UsagePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.03 }}
-                  className="p-6 hover:bg-[#fafafa] transition-colors"
+                  className="p-6 hover:bg-[var(--secondary)] transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div>
                       <p
-                        className="text-base font-medium text-[#202020] mb-1"
-                        style={{
-                        }}
+                        className="text-base font-medium text-foreground mb-1"
                       >
                         {formatMonth(usage.month)}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-[#666666]">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span>Input: {formatTokens(Number(usage.tokensIn) || 0)}</span>
                         <span>Output: {formatTokens(Number(usage.tokensOut) || 0)}</span>
                         <span>{Number(usage.requestCount) || 0} istek</span>
@@ -449,16 +347,12 @@ export default function UsagePage() {
                     </div>
                     <div className="text-right">
                       <p
-                        className="text-xl font-semibold text-[#202020]"
-                        style={{
-                        }}
+                        className="text-xl font-semibold text-foreground"
                       >
                         {formatTokens(usageTotal)}
                       </p>
                       <p
-                        className="text-xs text-[#666666] mt-0.5"
-                        style={{
-                        }}
+                        className="text-xs text-muted-foreground mt-0.5"
                       >
                         Toplam Token
                       </p>

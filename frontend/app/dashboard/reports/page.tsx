@@ -178,27 +178,36 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Page Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col md:flex-row md:items-center md:justify-end gap-3"
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <BarChart3 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Raporlar</h1>
+            <p className="text-sm text-muted-foreground">Blog ve token kullanım analizlerinizi görüntüleyin</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value as typeof selectedPeriod)}
-            className="px-3 py-1.5 text-sm bg-white border border-[#e5e5e5] rounded-lg focus:border-[#203eec] focus:outline-none"
-            style={{
-            }}
+            className="px-3 py-1.5 text-sm rounded-xl border focus:border-[#203eec] focus:outline-none"
+            style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
           >
             <option value="7days">Son 7 Gün</option>
             <option value="30days">Son 30 Gün</option>
             <option value="90days">Son 90 Gün</option>
             <option value="all">Tüm Zamanlar</option>
           </select>
-          <Button variant="outline" size="sm" className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]">
+          <Button variant="outline" size="sm" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             Export
           </Button>
@@ -229,11 +238,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+          className="bg-white rounded-xl p-5 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-3">
             <span
-              className="text-xs text-[#666666]"
+              className="text-xs text-muted-foreground"
               style={{
               }}
             >
@@ -246,7 +255,7 @@ export default function ReportsPage() {
           ) : (
             <>
               <p
-                className="text-xl font-semibold text-[#202020] mb-1"
+                className="text-xl font-semibold text-foreground mb-1"
                 style={{
                 }}
               >
@@ -268,11 +277,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+          className="bg-white rounded-xl p-5 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-3">
             <span
-              className="text-xs text-[#666666]"
+              className="text-xs text-muted-foreground"
               style={{
               }}
             >
@@ -285,14 +294,14 @@ export default function ReportsPage() {
           ) : (
             <>
               <p
-                className="text-xl font-semibold text-[#202020] mb-1"
+                className="text-xl font-semibold text-foreground mb-1"
                 style={{
                 }}
               >
                 {stats.totalViews.toLocaleString()}
               </p>
               <p
-                className="text-[10px] text-[#666666]"
+                className="text-[10px] text-muted-foreground"
                 style={{
                 }}
               >
@@ -305,11 +314,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+          className="bg-white rounded-xl p-5 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-3">
             <span
-              className="text-xs text-[#666666]"
+              className="text-xs text-muted-foreground"
               style={{
               }}
             >
@@ -322,14 +331,14 @@ export default function ReportsPage() {
           ) : (
             <>
               <p
-                className="text-xl font-semibold text-[#202020] mb-1"
+                className="text-xl font-semibold text-foreground mb-1"
                 style={{
                 }}
               >
                 {stats.avgViews}
               </p>
               <p
-                className="text-[10px] text-[#666666]"
+                className="text-[10px] text-muted-foreground"
                 style={{
                 }}
               >
@@ -342,11 +351,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+          className="bg-white rounded-xl p-5 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-3">
             <span
-              className="text-xs text-[#666666]"
+              className="text-xs text-muted-foreground"
               style={{
               }}
             >
@@ -359,7 +368,7 @@ export default function ReportsPage() {
           ) : (
             <>
               <p
-                className="text-xl font-semibold text-[#202020] mb-1"
+                className="text-xl font-semibold text-foreground mb-1"
                 style={{
                 }}
               >
@@ -384,11 +393,11 @@ export default function ReportsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
-        className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+        className="bg-white rounded-xl p-5 border border-[var(--border)]"
       >
         <div className="flex items-center justify-between mb-5">
           <h2
-            className="text-lg font-medium text-[#202020]"
+            className="text-lg font-medium text-foreground"
             style={{
             }}
           >
@@ -417,7 +426,7 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#F59E0B]" />
                   <span
-                    className="text-sm font-medium text-[#202020]"
+                    className="text-sm font-medium text-foreground"
                     style={{
                     }}
                   >
@@ -432,7 +441,7 @@ export default function ReportsPage() {
                   {totalTokensUsed.toLocaleString('tr-TR')} / {TOKEN_LIMIT.toLocaleString('tr-TR')}
                 </span>
               </div>
-              <div className="w-full bg-[#f5f5f5] rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-[var(--secondary)] rounded-full h-3 overflow-hidden">
                 <div
                   className={`h-full transition-all duration-500 ${
                     tokenUsagePercent > 80 ? 'bg-red-500' : tokenUsagePercent > 50 ? 'bg-yellow-500' : 'bg-green-500'
@@ -441,7 +450,7 @@ export default function ReportsPage() {
                 />
               </div>
               <p
-                className="text-xs text-[#666666] mt-1"
+                className="text-xs text-muted-foreground mt-1"
                 style={{
                 }}
               >
@@ -512,9 +521,9 @@ export default function ReportsPage() {
 
             {/* Usage History */}
             {usageHistory.length > 0 && (
-              <div className="mt-5 pt-5 border-t border-[#e5e5e5]">
+              <div className="mt-5 pt-5 border-t border-[var(--border)]">
                 <h3
-                  className="text-sm font-medium text-[#202020] mb-3"
+                  className="text-sm font-medium text-foreground mb-3"
                   style={{
                   }}
                 >
@@ -524,17 +533,17 @@ export default function ReportsPage() {
                   {usageHistory.slice(0, 5).map((usage) => {
                     const usageTotal = (usage.tokensIn || 0) + (usage.tokensOut || 0);
                     return (
-                      <div key={usage.id} className="flex items-center justify-between p-3 bg-[#fafafa] rounded-lg">
+                      <div key={usage.id} className="flex items-center justify-between p-3 bg-[var(--secondary)] rounded-lg">
                         <div>
                           <p
-                            className="text-sm font-medium text-[#202020]"
+                            className="text-sm font-medium text-foreground"
                             style={{
                             }}
                           >
                             {usage.month}
                           </p>
                           <p
-                            className="text-xs text-[#666666]"
+                            className="text-xs text-muted-foreground"
                             style={{
                             }}
                           >
@@ -542,7 +551,7 @@ export default function ReportsPage() {
                           </p>
                         </div>
                         <span
-                          className="text-sm font-semibold text-[#202020]"
+                          className="text-sm font-semibold text-foreground"
                           style={{
                           }}
                         >
@@ -564,11 +573,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+          className="bg-white rounded-xl p-5 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-5">
             <h2
-              className="text-lg font-medium text-[#202020]"
+              className="text-lg font-medium text-foreground"
               style={{
               }}
             >
@@ -594,7 +603,7 @@ export default function ReportsPage() {
                     />
                   </div>
                   <span
-                    className="text-[10px] text-[#666666] text-center"
+                    className="text-[10px] text-muted-foreground text-center"
                     style={{
                     }}
                   >
@@ -613,11 +622,11 @@ export default function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="bg-white rounded-xl border border-[#e5e5e5] overflow-hidden"
+          className="bg-white rounded-xl border border-[var(--border)] overflow-hidden"
         >
-          <div className="p-5 border-b border-[#e5e5e5]">
+          <div className="p-5 border-b border-[var(--border)]">
             <h2
-              className="text-lg font-medium text-[#202020]"
+              className="text-lg font-medium text-foreground"
               style={{
               }}
             >
@@ -629,9 +638,9 @@ export default function ReportsPage() {
               <Loader2 className="w-6 h-6 text-[#203eec] animate-spin" />
             </div>
           ) : (
-            <div className="divide-y divide-[#e5e5e5]">
+            <div className="divide-y divide-[var(--border)]">
               {topBlogs.map((blog, index) => (
-                <div key={blog.id} className="p-5 hover:bg-[#fafafa] transition-colors">
+                <div key={blog.id} className="p-5 hover:bg-[var(--secondary)] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
                       <div className="w-8 h-8 bg-[#203eec]/10 rounded-lg flex items-center justify-center">
@@ -645,7 +654,7 @@ export default function ReportsPage() {
                       </div>
                       <div className="flex-1">
                         <h3
-                          className="text-sm font-medium text-[#202020] mb-1"
+                          className="text-sm font-medium text-foreground mb-1"
                           style={{
                           }}
                         >
@@ -656,7 +665,7 @@ export default function ReportsPage() {
                             {blog.tags.slice(0, 3).map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 bg-[#f5f5f5] rounded text-[10px] text-[#666666]"
+                                className="px-2 py-0.5 bg-[var(--secondary)] rounded text-[10px] text-muted-foreground"
                               >
                                 {tag}
                               </span>
@@ -666,9 +675,9 @@ export default function ReportsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-[#666666]" />
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
                       <span
-                        className="text-xs text-[#666666]"
+                        className="text-xs text-muted-foreground"
                         style={{
                         }}
                       >
@@ -687,18 +696,18 @@ export default function ReportsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-12 border border-[#e5e5e5] text-center"
+          className="bg-white rounded-xl p-12 border border-[var(--border)] text-center"
         >
-          <FileText className="w-12 h-12 text-[#666666] mx-auto mb-4" />
+          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3
-            className="text-lg font-medium text-[#202020] mb-2"
+            className="text-lg font-medium text-foreground mb-2"
             style={{
             }}
           >
             Henüz blog içeriği yok
           </h3>
           <p
-            className="text-sm text-[#666666]"
+            className="text-sm text-muted-foreground"
             style={{
             }}
           >

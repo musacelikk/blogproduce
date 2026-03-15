@@ -792,7 +792,7 @@ export default function ApiDocsPage() {
   if (!mounted) {
     return (
       <div className="space-y-5 max-w-6xl mx-auto px-4 md:px-6 lg:px-8">
-        <div className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5]">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)]">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
             <div className="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -879,14 +879,14 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <div className="flex items-center gap-2 md:gap-3 mb-4">
           <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
             <Play className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
           </div>
           <h2
-            className="text-lg md:text-xl font-semibold text-[#202020]"
+            className="text-lg md:text-xl font-semibold text-foreground"
             style={{
               fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
             }}
@@ -895,26 +895,26 @@ export default function ApiDocsPage() {
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5]">
+          <div className="p-4 bg-[var(--secondary)] rounded-lg border border-[var(--border)]">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-6 h-6 rounded-full bg-[#203eec] text-white text-xs font-bold flex items-center justify-center">1</span>
-              <span className="text-sm font-medium text-[#202020]">API Key Alın</span>
+              <span className="text-sm font-medium text-foreground">API Key Alın</span>
             </div>
-            <p className="text-xs text-[#666666]">Aşağıdaki workspace&apos;inizden bir API key oluşturun</p>
+            <p className="text-xs text-muted-foreground">Aşağıdaki workspace&apos;inizden bir API key oluşturun</p>
           </div>
-          <div className="p-4 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5]">
+          <div className="p-4 bg-[var(--secondary)] rounded-lg border border-[var(--border)]">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-6 h-6 rounded-full bg-[#203eec] text-white text-xs font-bold flex items-center justify-center">2</span>
-              <span className="text-sm font-medium text-[#202020]">İstek Gönderin</span>
+              <span className="text-sm font-medium text-foreground">İstek Gönderin</span>
             </div>
-            <p className="text-xs text-[#666666]">Kod örneklerini kullanarak ilk API çağrınızı yapın</p>
+            <p className="text-xs text-muted-foreground">Kod örneklerini kullanarak ilk API çağrınızı yapın</p>
           </div>
-          <div className="p-4 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5]">
+          <div className="p-4 bg-[var(--secondary)] rounded-lg border border-[var(--border)]">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-6 h-6 rounded-full bg-[#203eec] text-white text-xs font-bold flex items-center justify-center">3</span>
-              <span className="text-sm font-medium text-[#202020]">Yanıtı İşleyin</span>
+              <span className="text-sm font-medium text-foreground">Yanıtı İşleyin</span>
             </div>
-            <p className="text-xs text-[#666666]">Oluşturulan blog içeriğini ve SEO verilerini işleyin</p>
+            <p className="text-xs text-muted-foreground">Oluşturulan blog içeriğini ve SEO verilerini işleyin</p>
           </div>
         </div>
       </motion.div>
@@ -924,7 +924,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-4 md:mb-6">
           <div className="flex items-center gap-2 md:gap-3">
@@ -933,14 +933,14 @@ export default function ApiDocsPage() {
             </div>
             <div>
           <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
             style={{
               fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
             }}
           >
                 API Key Management
           </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Programatik erişim için API key&apos;leri oluşturun ve yönetin
               </p>
         </div>
@@ -952,7 +952,7 @@ export default function ApiDocsPage() {
           <div className="flex items-center gap-2 mb-3">
             <Check className="w-5 h-5 text-green-600" />
             <h3
-              className="text-base font-semibold text-[#202020]"
+              className="text-base font-semibold text-foreground"
               style={{
                 fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
               }}
@@ -966,8 +966,8 @@ export default function ApiDocsPage() {
               1
             </div>
             <div>
-                <p className="text-sm font-semibold text-[#202020] mb-1">Workspace Seçin</p>
-                <p className="text-sm text-[#666666]">Aşağıdan workspace&apos;inizi seçin.</p>
+                <p className="text-sm font-semibold text-foreground mb-1">Workspace Seçin</p>
+                <p className="text-sm text-muted-foreground">Aşağıdan workspace&apos;inizi seçin.</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -975,8 +975,8 @@ export default function ApiDocsPage() {
               2
             </div>
             <div>
-                <p className="text-sm font-semibold text-[#202020] mb-1">API Key Alın ve Kullanın</p>
-                <p className="text-sm text-[#666666]">&quot;Generate API Key&quot; butonuna tıklayın, key&apos;i kopyalayın ve kod örneklerindeki <code className="bg-white px-1 rounded text-xs">YOUR_API_KEY</code> yerine yapıştırın. Hepsi bu kadar! 🎉</p>
+                <p className="text-sm font-semibold text-foreground mb-1">API Key Alın ve Kullanın</p>
+                <p className="text-sm text-muted-foreground">&quot;Generate API Key&quot; butonuna tıklayın, key&apos;i kopyalayın ve kod örneklerindeki <code className="bg-white px-1 rounded text-xs">YOUR_API_KEY</code> yerine yapıştırın. Hepsi bu kadar! 🎉</p>
             </div>
           </div>
         </div>
@@ -988,13 +988,13 @@ export default function ApiDocsPage() {
           {workspaces.length > 0 ? (
             <>
             <div className="mb-4">
-            <label className="text-sm font-medium text-[#202020] mb-2 block">
+            <label className="text-sm font-medium text-foreground mb-2 block">
               Workspace Seçin:
             </label>
             <select
               value={selectedWorkspace}
               onChange={(e) => setSelectedWorkspace(e.target.value)}
-              className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#203eec]"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#203eec]"
             >
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>{ws.name}</option>
@@ -1008,10 +1008,10 @@ export default function ApiDocsPage() {
                   <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-[#203eec]" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-[#202020]">
+                      <p className="text-sm font-medium text-foreground">
                         {workspaces.find(w => w.id === selectedWorkspace)?.name || 'Workspace'}
                       </p>
-                      <p className="text-xs text-[#666666]">
+                      <p className="text-xs text-muted-foreground">
                         API key oluşturduğunuzda tüm ayarlar otomatik yapılacak
                       </p>
                     </div>
@@ -1061,12 +1061,12 @@ export default function ApiDocsPage() {
         {/* Create Key Modal */}
         {showCreateKeyModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl p-4 md:p-6 max-w-md w-full shadow-2xl border border-[#e5e5e5] max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl p-4 md:p-6 max-w-md w-full shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto">
               {!createdKey || !createdKey.apiKey ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h3
-                      className="text-xl font-semibold text-[#202020]"
+                      className="text-xl font-semibold text-foreground"
                       style={{
                         fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
                       }}
@@ -1075,7 +1075,7 @@ export default function ApiDocsPage() {
                     </h3>
                     <button
                       onClick={handleCloseModal}
-                      className="text-[#666666] hover:text-[#202020] transition-colors"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1085,7 +1085,7 @@ export default function ApiDocsPage() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-[#202020] mb-2 block">
+                      <label className="text-sm font-medium text-foreground mb-2 block">
                         Key Name (Optional):
                       </label>
                       <Input
@@ -1100,7 +1100,7 @@ export default function ApiDocsPage() {
                       <Button
                         onClick={handleSaveKeyName}
                         variant="outline"
-                        className="flex-1 border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]"
+                        className="flex-1 border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]"
                       >
                         Kaydet
                       </Button>
@@ -1127,7 +1127,7 @@ export default function ApiDocsPage() {
                     <div>
                       <label className="text-xs font-medium text-green-800 mb-1 block">API Key:</label>
         <div className="flex items-center gap-2">
-                        <code className="flex-1 px-3 py-2 bg-[#f5f5f5] border border-green-200 rounded text-sm font-mono text-[#202020] break-all">
+                        <code className="flex-1 px-3 py-2 bg-[var(--secondary)] border border-green-200 rounded text-sm font-mono text-foreground break-all">
                           {createdKey.apiKey}
           </code>
           <Button
@@ -1144,7 +1144,7 @@ export default function ApiDocsPage() {
                     {createdKey.clientId && (
                       <div>
                         <label className="text-xs font-medium text-green-800 mb-1 block">Client ID:</label>
-                        <code className="block px-3 py-2 bg-[#f5f5f5] border border-green-200 rounded text-sm font-mono text-[#202020]">
+                        <code className="block px-3 py-2 bg-[var(--secondary)] border border-green-200 rounded text-sm font-mono text-foreground">
                           {createdKey.clientId}
                         </code>
                       </div>
@@ -1154,7 +1154,7 @@ export default function ApiDocsPage() {
                       <div>
                         <label className="text-xs font-medium text-green-800 mb-1 block">Client Secret:</label>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 px-3 py-2 bg-[#f5f5f5] border border-green-200 rounded text-sm font-mono text-[#202020] break-all">
+                          <code className="flex-1 px-3 py-2 bg-[var(--secondary)] border border-green-200 rounded text-sm font-mono text-foreground break-all">
                             {createdKey.clientSecret}
                           </code>
                           <Button
@@ -1192,25 +1192,25 @@ export default function ApiDocsPage() {
         {selectedWorkspace && (
           <div className="mt-6">
             {isLoadingKeys ? (
-              <div className="text-center py-4 text-[#666666]">Yükleniyor...</div>
+              <div className="text-center py-4 text-muted-foreground">Yükleniyor...</div>
             ) : apiKeys.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-[#202020] mb-2">Mevcut API Key&apos;ler:</h3>
+                <h3 className="text-sm font-medium text-foreground mb-2">Mevcut API Key&apos;ler:</h3>
                 {apiKeys.map((key) => (
                   <div
                     key={key.id}
-                    className="flex items-center justify-between p-3 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5]"
+                    className="flex items-center justify-between p-3 bg-[var(--secondary)] rounded-lg border border-[var(--border)]"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-[#202020]">{key.name || 'İsimsiz Key'}</span>
+                        <span className="text-sm font-medium text-foreground">{key.name || 'İsimsiz Key'}</span>
                         {key.active ? (
                           <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">Aktif</span>
                         ) : (
                           <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded">İptal Edilmiş</span>
                         )}
                       </div>
-                      <div className="text-xs text-[#666666] space-y-1">
+                      <div className="text-xs text-muted-foreground space-y-1">
                         <div>Client ID: <code className="bg-white px-1 rounded">{key.clientId}</code></div>
                         <div>Key: <code className="bg-white px-1 rounded">{key.keyPreview || 'bg_...****'}</code></div>
                         {key.lastUsedAt && (
@@ -1235,7 +1235,7 @@ export default function ApiDocsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4 text-[#666666] text-sm">
+              <div className="text-center py-4 text-muted-foreground text-sm">
                 Henüz API key&apos;iniz yok. Yukarıdan yeni bir key oluşturun.
               </div>
             )}
@@ -1249,12 +1249,12 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-white rounded-xl p-5 border border-[#e5e5e5]"
+        className="bg-white rounded-xl p-5 border border-[var(--border)]"
       >
         <div className="flex items-center gap-2 mb-4">
           <Globe className="w-5 h-5 text-[#203eec]" />
           <h2
-            className="text-lg font-medium text-[#202020]"
+            className="text-lg font-medium text-foreground"
             style={{
               fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
             }}
@@ -1263,20 +1263,20 @@ export default function ApiDocsPage() {
           </h2>
         </div>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-4 py-2 bg-[#f5f5f5] rounded-lg text-sm font-mono text-[#202020]">
+            <code className="flex-1 px-4 py-2 bg-[var(--secondary)] rounded-lg text-sm font-mono text-foreground">
               {API_BASE_URL}
         </code>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleCopy(API_BASE_URL, 'baseurl')}
-              className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]"
+              className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]"
             >
               {copied === 'baseurl' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </Button>
           </div>
           <p
-            className="text-xs text-[#666666] mt-2"
+            className="text-xs text-muted-foreground mt-2"
           style={{
             fontFamily: 'var(--font-sans), "Inter", sans-serif',
           }}
@@ -1297,21 +1297,21 @@ export default function ApiDocsPage() {
           <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
             <h3
-              className="text-base font-semibold text-[#202020] mb-2"
+              className="text-base font-semibold text-foreground mb-2"
               style={{
                 fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
               }}
             >
               İçerik Formatı (Content Format)
             </h3>
-            <p className="text-sm text-[#666666] mb-3">
-              Tüm blog içerikleri veritabanında <strong className="text-[#202020]">JSON formatında</strong> saklanır. API&apos;den çekerken <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format</code> query parametresi ile istediğiniz formata dönüştürülmüş içeriği alabilirsiniz.
+            <p className="text-sm text-muted-foreground mb-3">
+              Tüm blog içerikleri veritabanında <strong className="text-foreground">JSON formatında</strong> saklanır. API&apos;den çekerken <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format</code> query parametresi ile istediğiniz formata dönüştürülmüş içeriği alabilirsiniz.
             </p>
             <div className="space-y-2 mt-3">
               <div className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=json</code> <span className="text-[#666666]">(default) - JSON formatında döner</span>
+                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=json</code> <span className="text-muted-foreground">(default) - JSON formatında döner</span>
                   <pre className="text-xs mt-1 p-2 bg-white rounded border border-blue-100 overflow-x-auto">
                     <code>{'{\n  "content": "# Blog Başlığı\\n\\nİçerik...",\n  "metadata": {}\n}'}</code>
                   </pre>
@@ -1320,7 +1320,7 @@ export default function ApiDocsPage() {
               <div className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=markdown</code> veya <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=md</code> <span className="text-[#666666]">- Markdown formatında döner</span>
+                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=markdown</code> veya <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=md</code> <span className="text-muted-foreground">- Markdown formatında döner</span>
                   <pre className="text-xs mt-1 p-2 bg-white rounded border border-blue-100 overflow-x-auto">
                     <code># Blog Başlığı\n\nİçerik...</code>
                   </pre>
@@ -1329,7 +1329,7 @@ export default function ApiDocsPage() {
               <div className="flex items-start gap-2 text-sm">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=html</code> <span className="text-[#666666]">- HTML formatında döner</span>
+                  <code className="bg-white px-1.5 py-0.5 rounded text-xs font-mono">format=html</code> <span className="text-muted-foreground">- HTML formatında döner</span>
                   <pre className="text-xs mt-1 p-2 bg-white rounded border border-blue-100 overflow-x-auto">
                     <code>{'<h1>Blog Başlığı</h1>\n<p>İçerik...</p>'}</code>
                   </pre>
@@ -1337,13 +1337,13 @@ export default function ApiDocsPage() {
               </div>
             </div>
             <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
-              <p className="text-xs text-[#666666]">
-                <strong className="text-[#202020]">Örnek:</strong> <code className="bg-blue-50 px-1.5 py-0.5 rounded text-xs font-mono">GET /v1/api/blog/:id?format=html</code>
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Örnek:</strong> <code className="bg-blue-50 px-1.5 py-0.5 rounded text-xs font-mono">GET /v1/api/blog/:id?format=html</code>
               </p>
             </div>
             <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
               <p className="text-xs text-amber-900">
-                <strong className="text-[#202020]">Sitede blog görünümü:</strong> Yanıtta her zaman <code className="bg-white px-1 rounded">content_html</code> alanı gelir. Sitede makaleyi göstermek için <code className="bg-white px-1 rounded">content</code> yerine <strong>content_html</strong> kullanın ve HTML olarak render edin (örn. <code className="bg-white px-1 rounded">dangerouslySetInnerHTML</code>). Böylece JSON metni görünmez.
+                <strong className="text-foreground">Sitede blog görünümü:</strong> Yanıtta her zaman <code className="bg-white px-1 rounded">content_html</code> alanı gelir. Sitede makaleyi göstermek için <code className="bg-white px-1 rounded">content</code> yerine <strong>content_html</strong> kullanın ve HTML olarak render edin (örn. <code className="bg-white px-1 rounded">dangerouslySetInnerHTML</code>). Böylece JSON metni görünmez.
               </p>
             </div>
             <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
@@ -1366,7 +1366,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <button
           onClick={() => toggleSection('auth')}
@@ -1378,22 +1378,22 @@ export default function ApiDocsPage() {
             </div>
             <div className="text-left flex-1 min-w-0">
               <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
           style={{
             fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
           }}
         >
                 Authentication
         </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 API isteklerinizi nasıl doğrulayacağınızı öğrenin
               </p>
             </div>
           </div>
           {expandedSections.has('auth') ? (
-            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           )}
         </button>
         {expandedSections.has('auth') && (
@@ -1487,7 +1487,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <button
           onClick={() => toggleSection('management')}
@@ -1499,38 +1499,38 @@ export default function ApiDocsPage() {
             </div>
             <div className="text-left flex-1 min-w-0">
               <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
                 style={{
                   fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
                 }}
               >
                 Blog Listing & Management API
               </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Blog yazılarınızı listeleyin, görüntüleyin ve yönetin
               </p>
             </div>
           </div>
           {expandedSections.has('management') ? (
-            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           )}
         </button>
         {expandedSections.has('management') && (
           <div className="mt-4 space-y-6">
             {/* List Blog Posts */}
-            <div className="border-t border-[#e5e5e5] pt-4">
+            <div className="border-t border-[var(--border)] pt-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded">GET</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020] break-all">/v1/api/blog</code>
+                <code className="text-xs md:text-sm font-mono text-foreground break-all">/v1/api/blog</code>
                 <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">✅ Önerilir</span>
-                <span className="text-xs text-[#666666]">veya</span>
-                <code className="text-xs md:text-sm font-mono text-[#666666] line-through">/api/blog</code>
+                <span className="text-xs text-muted-foreground">veya</span>
+                <code className="text-xs md:text-sm font-mono text-muted-foreground line-through">/api/blog</code>
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">⚠️ Deprecated</span>
               </div>
-              <p className="text-xs md:text-sm text-[#666666] mb-3">
-                API key&apos;inize bağlı workspace&apos;teki blog yazılarını listeler. Workspace slug gerekmez, API key zaten workspace&apos;e bağlıdır. <strong className="text-[#202020]">Her zaman <code className="bg-[#f5f5f5] px-1 rounded">/v1/api/blog</code> endpoint&apos;ini kullanın</strong> - cursor-based pagination ile çalışır.
+              <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                API key&apos;inize bağlı workspace&apos;teki blog yazılarını listeler. Workspace slug gerekmez, API key zaten workspace&apos;e bağlıdır. <strong className="text-foreground">Her zaman <code className="bg-[var(--secondary)] px-1 rounded">/v1/api/blog</code> endpoint&apos;ini kullanın</strong> - cursor-based pagination ile çalışır.
               </p>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-2 md:p-3 mb-3">
@@ -1555,12 +1555,12 @@ export default function ApiDocsPage() {
                 </div>
 
               <div className="mb-3">
-                <h4 className="text-sm font-medium text-[#202020] mb-2">Query Parametreleri:</h4>
-                <div className="space-y-1 text-xs text-[#666666]">
-                  <div><code className="bg-[#f5f5f5] px-2 py-1 rounded">status</code> - Blog durumu (draft, generated, review, published)</div>
-                  <div><code className="bg-[#f5f5f5] px-2 py-1 rounded">limit</code> - Sayfa başına kayıt sayısı (default: 50, max: 100)</div>
+                <h4 className="text-sm font-medium text-foreground mb-2">Query Parametreleri:</h4>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div><code className="bg-[var(--secondary)] px-2 py-1 rounded">status</code> - Blog durumu (draft, generated, review, published)</div>
+                  <div><code className="bg-[var(--secondary)] px-2 py-1 rounded">limit</code> - Sayfa başına kayıt sayısı (default: 50, max: 100)</div>
                   <div><code className="bg-green-100 px-2 py-1 rounded text-green-800 font-medium">cursor</code> - <strong>Cursor-based pagination için (v1 endpoint, önerilir)</strong> - Önceki response&apos;daki <code className="bg-white px-1 rounded">meta.next_cursor</code> değerini kullanın</div>
-                  <div className="line-through text-[#999999]"><code className="bg-[#f5f5f5] px-2 py-1 rounded">offset</code> - Offset-based pagination için (legacy endpoint, deprecated - kullanmayın)</div>
+                  <div className="line-through text-muted-foreground"><code className="bg-[var(--secondary)] px-2 py-1 rounded">offset</code> - Offset-based pagination için (legacy endpoint, deprecated - kullanmayın)</div>
                 </div>
               </div>
 
@@ -1603,7 +1603,7 @@ export default function ApiDocsPage() {
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-2 md:p-3 mb-3">
                 <p className="text-xs font-medium text-red-900 mb-2">⚠️ Örnek Request (Legacy - Deprecated, Kullanmayın):</p>
-                <code className="text-xs block break-words bg-white p-2 rounded border border-red-200 line-through text-[#999999]">
+                <code className="text-xs block break-words bg-white p-2 rounded border border-red-200 line-through text-muted-foreground">
                   GET {API_BASE_URL}/api/blog?status=published&limit=50&offset=0<br />
                   Authorization: Bearer YOUR_API_KEY
                 </code>
@@ -1612,8 +1612,8 @@ export default function ApiDocsPage() {
                 </p>
               </div>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Response (v1 endpoint):</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3">
+                <p className="text-xs font-medium text-foreground mb-2">Response (v1 endpoint):</p>
                 <pre className="text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({
                     success: true,
@@ -1642,28 +1642,28 @@ export default function ApiDocsPage() {
             </div>
 
             {/* Get Blog Post by ID */}
-            <div className="border-t border-[#e5e5e5] pt-4">
+            <div className="border-t border-[var(--border)] pt-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded">GET</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020] break-all">/api/blog/:id</code>
-                <span className="text-xs text-[#666666]">veya</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020] break-all">/v1/api/blog/:id</code>
+                <code className="text-xs md:text-sm font-mono text-foreground break-all">/api/blog/:id</code>
+                <span className="text-xs text-muted-foreground">veya</span>
+                <code className="text-xs md:text-sm font-mono text-foreground break-all">/v1/api/blog/:id</code>
               </div>
-              <p className="text-xs md:text-sm text-[#666666] mb-3">
-                ID ile tek bir blog yazısını getirir. Tam içerik, SEO, TOC, FAQ bilgileri dahildir. <code className="bg-[#f5f5f5] px-1 rounded">format</code> query parametresi ile <code className="bg-[#f5f5f5] px-1 rounded">content</code> alanının formatını (json | md | html) seçebilirsiniz. <strong>content_html</strong> her zaman döner (sitede render için kullanın). Workspace slug gerekmez, API key workspace&apos;e bağlıdır.
+              <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                ID ile tek bir blog yazısını getirir. Tam içerik, SEO, TOC, FAQ bilgileri dahildir. <code className="bg-[var(--secondary)] px-1 rounded">format</code> query parametresi ile <code className="bg-[var(--secondary)] px-1 rounded">content</code> alanının formatını (json | md | html) seçebilirsiniz. <strong>content_html</strong> her zaman döner (sitede render için kullanın). Workspace slug gerekmez, API key workspace&apos;e bağlıdır.
               </p>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3 mb-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Query: <code className="bg-white px-1 rounded">format</code> (opsiyonel) — json | md | html</p>
-                <p className="text-xs font-medium text-[#202020] mb-2">Örnek Request:</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3 mb-3">
+                <p className="text-xs font-medium text-foreground mb-2">Query: <code className="bg-white px-1 rounded">format</code> (opsiyonel) — json | md | html</p>
+                <p className="text-xs font-medium text-foreground mb-2">Örnek Request:</p>
                 <code className="text-xs block break-words">
                   GET {API_BASE_URL}/v1/api/blog/550e8400-e29b-41d4-a716-446655440000?format=html<br />
                   Authorization: Bearer YOUR_API_KEY
                 </code>
               </div>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Response:</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3">
+                <p className="text-xs font-medium text-foreground mb-2">Response:</p>
                 <pre className="text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({
                     success: true,
@@ -1695,19 +1695,19 @@ export default function ApiDocsPage() {
             </div>
 
             {/* Get Blog Post by Slug */}
-            <div className="border-t border-[#e5e5e5] pt-4">
+            <div className="border-t border-[var(--border)] pt-4">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded">GET</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020] break-all">/api/blog/slug/:slug</code>
-                <span className="text-xs text-[#666666]">veya</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020] break-all">/v1/api/blog/slug/:slug</code>
+                <code className="text-xs md:text-sm font-mono text-foreground break-all">/api/blog/slug/:slug</code>
+                <span className="text-xs text-muted-foreground">veya</span>
+                <code className="text-xs md:text-sm font-mono text-foreground break-all">/v1/api/blog/slug/:slug</code>
               </div>
-              <p className="text-xs md:text-sm text-[#666666] mb-3">
-                Slug ile tek bir blog yazısını getirir. <code className="bg-[#f5f5f5] px-1 rounded">format</code> query parametresi desteklenir. Get Blog Post by ID ile aynı response yapısına sahiptir (content, contentFormat, content_html dahil). Workspace slug gerekmez, API key workspace&apos;e bağlıdır.
+              <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                Slug ile tek bir blog yazısını getirir. <code className="bg-[var(--secondary)] px-1 rounded">format</code> query parametresi desteklenir. Get Blog Post by ID ile aynı response yapısına sahiptir (content, contentFormat, content_html dahil). Workspace slug gerekmez, API key workspace&apos;e bağlıdır.
               </p>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3 mb-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Örnek Request:</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3 mb-3">
+                <p className="text-xs font-medium text-foreground mb-2">Örnek Request:</p>
                 <code className="text-xs block break-words">
                   GET {API_BASE_URL}/v1/api/blog/slug/getting-started-with-react-hooks?format=html<br />
                   Authorization: Bearer YOUR_API_KEY
@@ -1725,19 +1725,19 @@ export default function ApiDocsPage() {
             </div>
 
             {/* Publish Blog Post */}
-            <div className="border-t border-[#e5e5e5] pt-4">
+            <div className="border-t border-[var(--border)] pt-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="px-2 py-0.5 bg-purple-500 text-white text-xs font-medium rounded">POST</span>
-                <code className="text-xs md:text-sm font-mono text-[#202020]">/posts/:id/publish</code>
+                <code className="text-xs md:text-sm font-mono text-foreground">/posts/:id/publish</code>
               </div>
-              <p className="text-xs md:text-sm text-[#666666] mb-3">
-                Draft bir blog yazısını yayınlar ve herkese açık hale getirir. Sadece <code className="bg-[#f5f5f5] px-1 rounded">draft</code> veya <code className="bg-[#f5f5f5] px-1 rounded">generated</code> durumundaki postlar yayınlanabilir. Webhook event tetiklenir (post.published). Workspace slug gerekmez, JWT token workspace&apos;e bağlıdır.
+              <p className="text-xs md:text-sm text-muted-foreground mb-3">
+                Draft bir blog yazısını yayınlar ve herkese açık hale getirir. Sadece <code className="bg-[var(--secondary)] px-1 rounded">draft</code> veya <code className="bg-[var(--secondary)] px-1 rounded">generated</code> durumundaki postlar yayınlanabilir. Webhook event tetiklenir (post.published). Workspace slug gerekmez, JWT token workspace&apos;e bağlıdır.
               </p>
 
               <div className="mb-3">
-                <h4 className="text-sm font-medium text-[#202020] mb-2">Authentication:</h4>
-                <div className="space-y-1 text-xs text-[#666666]">
-                  <div><code className="bg-[#f5f5f5] px-2 py-1 rounded">Authorization</code> - Bearer token (JWT token - dashboard authentication)</div>
+                <h4 className="text-sm font-medium text-foreground mb-2">Authentication:</h4>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div><code className="bg-[var(--secondary)] px-2 py-1 rounded">Authorization</code> - Bearer token (JWT token - dashboard authentication)</div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mt-2">
                     <p className="text-xs text-yellow-800">
                       <strong>Not:</strong> Bu endpoint JWT token gerektirir (dashboard authentication). API key ile çalışmaz.
@@ -1746,16 +1746,16 @@ export default function ApiDocsPage() {
                 </div>
               </div>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3 mb-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Örnek Request:</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3 mb-3">
+                <p className="text-xs font-medium text-foreground mb-2">Örnek Request:</p>
                 <code className="text-xs block break-words">
                   POST {API_BASE_URL}/posts/550e8400-e29b-41d4-a716-446655440000/publish<br />
                   Authorization: Bearer YOUR_JWT_TOKEN
                 </code>
               </div>
 
-              <div className="bg-[#f5f5f5] rounded-lg p-2 md:p-3">
-                <p className="text-xs font-medium text-[#202020] mb-2">Response (200 OK):</p>
+              <div className="bg-[var(--secondary)] rounded-lg p-2 md:p-3">
+                <p className="text-xs font-medium text-foreground mb-2">Response (200 OK):</p>
                 <pre className="text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({
                     success: true,
@@ -1829,7 +1829,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="bg-white rounded-xl p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-6 border border-[var(--border)] shadow-sm"
       >
         <button
           onClick={() => toggleSection('seo')}
@@ -1841,33 +1841,33 @@ export default function ApiDocsPage() {
             </div>
             <div className="text-left">
               <h2
-                className="text-xl font-semibold text-[#202020]"
+                className="text-xl font-semibold text-foreground"
               style={{
                   fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
               }}
             >
                 SEO Features
               </h2>
-              <p className="text-sm text-[#666666] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Blog yazılarınızda mevcut SEO verileri ve özellikleri
             </p>
           </div>
             </div>
           {expandedSections.has('seo') ? (
-            <ChevronUp className="w-5 h-5 text-[#666666]" />
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-[#666666]" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
           )}
         </button>
         {expandedSections.has('seo') && (
           <div className="mt-4 space-y-4">
             <p
-              className="text-sm text-[#666666] mb-3"
+              className="text-sm text-muted-foreground mb-3"
               style={{
                 fontFamily: 'var(--font-sans), "Inter", sans-serif',
               }}
             >
-              Blog yazılarınızda SEO verileri mevcuttur. Blog detaylarını çekerken <code className="bg-[#f5f5f5] px-2 py-1 rounded">seo</code>, <code className="bg-[#f5f5f5] px-2 py-1 rounded">toc</code>, <code className="bg-[#f5f5f5] px-2 py-1 rounded">faq</code> ve <code className="bg-[#f5f5f5] px-2 py-1 rounded">schema_jsonld</code> alanları otomatik olarak döndürülür.
+              Blog yazılarınızda SEO verileri mevcuttur. Blog detaylarını çekerken <code className="bg-[var(--secondary)] px-2 py-1 rounded">seo</code>, <code className="bg-[var(--secondary)] px-2 py-1 rounded">toc</code>, <code className="bg-[var(--secondary)] px-2 py-1 rounded">faq</code> ve <code className="bg-[var(--secondary)] px-2 py-1 rounded">schema_jsonld</code> alanları otomatik olarak döndürülür.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
               <div className="flex items-start gap-2">
@@ -1895,9 +1895,9 @@ export default function ApiDocsPage() {
                 'Okunabilirlik Skoru',
                 'AI İzi Azaltma'
               ].map((feature) => (
-                <div key={feature} className="flex items-center gap-2 p-2 bg-[#f5f5f5] rounded-lg">
+                <div key={feature} className="flex items-center gap-2 p-2 bg-[var(--secondary)] rounded-lg">
                   <Check className="w-4 h-4 text-green-500" />
-                  <span className="text-sm text-[#202020]">{feature}</span>
+                  <span className="text-sm text-foreground">{feature}</span>
           </div>
               ))}
             </div>
@@ -1911,7 +1911,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.68 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <button
           onClick={() => toggleSection('ratelimits')}
@@ -1923,63 +1923,63 @@ export default function ApiDocsPage() {
             </div>
             <div className="text-left flex-1 min-w-0">
               <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
                 style={{
                   fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
                 }}
               >
                 Rate Limits & Best Practices
               </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 API kullanım limitleri ve en iyi uygulamalar
               </p>
             </div>
           </div>
           {expandedSections.has('ratelimits') ? (
-            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           )}
         </button>
         {expandedSections.has('ratelimits') && (
           <div className="mt-4 space-y-6">
             {/* Rate Limits */}
-            <div className="border-t border-[#e5e5e5] pt-4">
-              <h3 className="text-sm md:text-base font-semibold text-[#202020] mb-3">📊 Rate Limit Tablosu (Plan Bazlı)</h3>
+            <div className="border-t border-[var(--border)] pt-4">
+              <h3 className="text-sm md:text-base font-semibold text-foreground mb-3">📊 Rate Limit Tablosu (Plan Bazlı)</h3>
               <div className="overflow-x-auto -mx-2 md:mx-0">
                 <table className="w-full text-xs border-collapse min-w-[500px]">
                   <thead>
-                    <tr className="bg-[#f5f5f5]">
-                      <th className="border border-[#e5e5e5] px-2 md:px-3 py-2 text-left">Plan</th>
-                      <th className="border border-[#e5e5e5] px-2 md:px-3 py-2 text-left">Requests/Minute</th>
-                      <th className="border border-[#e5e5e5] px-2 md:px-3 py-2 text-left">Requests/Day</th>
-                      <th className="border border-[#e5e5e5] px-2 md:px-3 py-2 text-left">Monthly Quota</th>
+                    <tr className="bg-[var(--secondary)]">
+                      <th className="border border-[var(--border)] px-2 md:px-3 py-2 text-left">Plan</th>
+                      <th className="border border-[var(--border)] px-2 md:px-3 py-2 text-left">Requests/Minute</th>
+                      <th className="border border-[var(--border)] px-2 md:px-3 py-2 text-left">Requests/Day</th>
+                      <th className="border border-[var(--border)] px-2 md:px-3 py-2 text-left">Monthly Quota</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2 font-medium">Free</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">10</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">100</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">1,000</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2 font-medium">Free</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">10</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">100</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">1,000</td>
                     </tr>
-                    <tr className="bg-[#f5f5f5]/50">
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2 font-medium">Starter</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">30</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">1,000</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">30,000</td>
+                    <tr className="bg-[var(--secondary)]/50">
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2 font-medium">Starter</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">30</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">1,000</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">30,000</td>
                     </tr>
                     <tr>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2 font-medium">Pro</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">100</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">10,000</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">300,000</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2 font-medium">Pro</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">100</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">10,000</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">300,000</td>
                     </tr>
-                    <tr className="bg-[#f5f5f5]/50">
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2 font-medium">Enterprise</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">Custom</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">Custom</td>
-                      <td className="border border-[#e5e5e5] px-2 md:px-3 py-2">Custom</td>
+                    <tr className="bg-[var(--secondary)]/50">
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2 font-medium">Enterprise</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">Custom</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">Custom</td>
+                      <td className="border border-[var(--border)] px-2 md:px-3 py-2">Custom</td>
                     </tr>
                   </tbody>
                 </table>
@@ -2007,8 +2007,8 @@ export default function ApiDocsPage() {
             </div>
 
             {/* Best Practices */}
-            <div className="border-t border-[#e5e5e5] pt-4">
-              <h3 className="text-sm md:text-base font-semibold text-[#202020] mb-3">✨ Best Practices</h3>
+            <div className="border-t border-[var(--border)] pt-4">
+              <h3 className="text-sm md:text-base font-semibold text-foreground mb-3">✨ Best Practices</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-2 p-2 md:p-3 bg-green-50 border border-green-200 rounded-lg">
                   <Check className="w-3 h-3 md:w-4 md:h-4 text-green-600 flex-shrink-0 mt-0.5" />
@@ -2072,7 +2072,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.7 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
           <div className="flex items-center gap-2 md:gap-3">
@@ -2081,14 +2081,14 @@ export default function ApiDocsPage() {
             </div>
             <div>
               <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
               style={{
                 fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
               }}
             >
                 Code Examples
             </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Birden fazla dilde hazır kullanıma hazır kod parçacıkları
               </p>
             </div>
@@ -2097,7 +2097,7 @@ export default function ApiDocsPage() {
             variant="outline"
             size="sm"
             onClick={() => handleCopy(getExampleCode(), 'code')}
-            className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] w-full sm:w-auto"
+            className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] w-full sm:w-auto"
           >
             {copied === 'code' ? <Check className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
             Copy Code
@@ -2106,7 +2106,7 @@ export default function ApiDocsPage() {
         
         {/* Language Tabs */}
         <div className="mb-4">
-          <div className="flex flex-wrap gap-1 bg-[#f5f5f5] p-1 rounded-lg border border-[#e5e5e5]">
+          <div className="flex flex-wrap gap-1 bg-[var(--secondary)] p-1 rounded-lg border border-[var(--border)]">
             {[
               { id: 'list', label: 'Blog Listing', shortLabel: 'Listing', lang: 'JS', color: 'bg-blue-500' },
               { id: 'hmac', label: 'HMAC Auth', shortLabel: 'HMAC', lang: 'JS', color: 'bg-blue-500' },
@@ -2119,14 +2119,14 @@ export default function ApiDocsPage() {
               onClick={() => setSelectedExample(lang.id as any)}
                 className={'px-2 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium transition-all rounded-md flex items-center gap-1 md:gap-2 flex-1 sm:flex-none ' + 
                   (selectedExample === lang.id
-                    ? 'bg-white text-[#202020] shadow-sm border border-[#e5e5e5]'
-                    : 'text-[#666666] hover:text-[#202020] hover:bg-white/50')
+                    ? 'bg-white text-foreground shadow-sm border border-[var(--border)]'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-white/50')
                 }
               >
                 <span className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${lang.color} ${selectedExample === lang.id ? 'opacity-100' : 'opacity-50'} flex-shrink-0`}></span>
                 <span className="hidden sm:inline">{lang.label}</span>
                 <span className="sm:hidden">{lang.shortLabel}</span>
-                <span className="text-xs px-1 md:px-1.5 py-0.5 bg-[#e5e5e5] rounded text-[#666666] flex-shrink-0">{lang.lang}</span>
+                <span className="text-xs px-1 md:px-1.5 py-0.5 bg-[var(--border)] rounded text-muted-foreground flex-shrink-0">{lang.lang}</span>
             </button>
           ))}
           </div>
@@ -2180,7 +2180,7 @@ export default function ApiDocsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
-        className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm"
+        className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm"
       >
         <button
           onClick={() => toggleSection('errors')}
@@ -2192,45 +2192,45 @@ export default function ApiDocsPage() {
             </div>
             <div className="text-left flex-1 min-w-0">
               <h2
-                className="text-lg md:text-xl font-semibold text-[#202020]"
+                className="text-lg md:text-xl font-semibold text-foreground"
           style={{
             fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
           }}
         >
                 Error Handling
         </h2>
-              <p className="text-xs md:text-sm text-[#666666] mt-1">
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">
                 Yaygın hatalar ve nasıl ele alınacağı
               </p>
             </div>
           </div>
           {expandedSections.has('errors') ? (
-            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronUp className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-[#666666] flex-shrink-0" />
+            <ChevronDown className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
           )}
         </button>
         {expandedSections.has('errors') && (
           <div className="mt-4 space-y-4">
             <div className="space-y-3">
               <div className="border-l-4 border-red-500 pl-3 md:pl-4">
-                <h3 className="text-sm md:text-base font-medium text-[#202020] mb-1">400 Bad Request</h3>
-                <p className="text-xs md:text-sm text-[#666666] mb-2">Geçersiz parametreler</p>
-                <pre className="bg-[#f5f5f5] rounded p-2 text-xs overflow-x-auto">
+                <h3 className="text-sm md:text-base font-medium text-foreground mb-1">400 Bad Request</h3>
+                <p className="text-xs md:text-sm text-muted-foreground mb-2">Geçersiz parametreler</p>
+                <pre className="bg-[var(--secondary)] rounded p-2 text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({ success: false, error: "topic must be longer than or equal to 5 characters" }, null, 2)}</code>
                 </pre>
               </div>
               <div className="border-l-4 border-yellow-500 pl-3 md:pl-4">
-                <h3 className="text-sm md:text-base font-medium text-[#202020] mb-1">401 Unauthorized</h3>
-                <p className="text-xs md:text-sm text-[#666666] mb-2">Token eksik veya geçersiz</p>
-                <pre className="bg-[#f5f5f5] rounded p-2 text-xs overflow-x-auto">
+                <h3 className="text-sm md:text-base font-medium text-foreground mb-1">401 Unauthorized</h3>
+                <p className="text-xs md:text-sm text-muted-foreground mb-2">Token eksik veya geçersiz</p>
+                <pre className="bg-[var(--secondary)] rounded p-2 text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({ statusCode: 401, message: "Unauthorized" }, null, 2)}</code>
                 </pre>
               </div>
               <div className="border-l-4 border-red-600 pl-3 md:pl-4">
-                <h3 className="text-sm md:text-base font-medium text-[#202020] mb-1">500 Internal Server Error</h3>
-                <p className="text-xs md:text-sm text-[#666666] mb-2">Sunucu hatası</p>
-                <pre className="bg-[#f5f5f5] rounded p-2 text-xs overflow-x-auto">
+                <h3 className="text-sm md:text-base font-medium text-foreground mb-1">500 Internal Server Error</h3>
+                <p className="text-xs md:text-sm text-muted-foreground mb-2">Sunucu hatası</p>
+                <pre className="bg-[var(--secondary)] rounded p-2 text-xs overflow-x-auto">
                   <code className="break-words whitespace-pre-wrap">{JSON.stringify({ success: false, message: "Failed to generate blog" }, null, 2)}</code>
                 </pre>
               </div>
@@ -2275,11 +2275,11 @@ export default function ApiDocsPage() {
           </div>
 
         {/* Support & Resources */}
-        <div className="bg-white rounded-xl p-4 md:p-6 border border-[#e5e5e5] shadow-sm">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-[var(--border)] shadow-sm">
           <div className="flex items-center gap-2 md:gap-3 mb-3">
             <Info className="w-5 h-5 md:w-6 md:h-6 text-[#203eec] flex-shrink-0" />
             <h3
-              className="text-base md:text-lg font-semibold text-[#202020]"
+              className="text-base md:text-lg font-semibold text-foreground"
               style={{
                 fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
               }}
@@ -2287,7 +2287,7 @@ export default function ApiDocsPage() {
               Destek & Kaynaklar
             </h3>
           </div>
-          <div className="space-y-2 text-xs md:text-sm text-[#666666]">
+          <div className="space-y-2 text-xs md:text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Check className="w-3 h-3 md:w-4 md:h-4 text-green-500 flex-shrink-0" />
               <span className="break-words">E-posta: support@blogenerate.com</span>

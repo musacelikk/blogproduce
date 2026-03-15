@@ -403,9 +403,9 @@ function GenerateBlogPageContent() {
     if (!source || typeof source !== 'string') return '';
     
     let html = source
-      .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-[#202020]">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#202020]">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-[#202020]">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-foreground">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-foreground">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-foreground">$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
       .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2">• $1</li>')
@@ -418,7 +418,7 @@ function GenerateBlogPageContent() {
       if (trimmed.startsWith('<h') || trimmed.startsWith('<li')) {
         return trimmed;
       }
-      return `<p class="mb-4 text-[#666666] leading-relaxed">${trimmed.replace(/\n/g, '<br />')}</p>`;
+      return `<p class="mb-4 text-muted-foreground leading-relaxed">${trimmed.replace(/\n/g, '<br />')}</p>`;
     }).join('');
     
     return html;
@@ -594,7 +594,7 @@ function GenerateBlogPageContent() {
                   id="topic"
                   {...register('topic')}
                   placeholder="Örn: Yapay Zeka ve Blog İçerik Üretimi"
-                  className="border-[#e5e5e5] focus:border-[#203eec]"
+                  className="border-[var(--border)] focus:border-[#203eec]"
                   maxLength={200}
                 />
                 <div className="flex items-center justify-between mt-1">
@@ -628,7 +628,7 @@ function GenerateBlogPageContent() {
                   {...register('additionalContext')}
                   placeholder="Blog hakkında ek bilgiler, odaklanılacak noktalar..."
                   rows={3}
-                  className="border-[#e5e5e5] focus:border-[#203eec]"
+                  className="border-[var(--border)] focus:border-[#203eec]"
                   maxLength={1000}
                 />
                 {errors.additionalContext && (
@@ -649,7 +649,7 @@ function GenerateBlogPageContent() {
                 <div>
                   <label
                     htmlFor="tone"
-                    className="text-sm font-medium text-[#202020] mb-3 block"
+                    className="text-sm font-medium text-foreground mb-3 block"
                     style={{
                     }}
                   >
@@ -726,10 +726,10 @@ function GenerateBlogPageContent() {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
                             isSelected
                               ? 'border-[#203eec] bg-[#203eec]/10 text-[#203eec] font-medium shadow-sm'
-                              : 'border-[#e5e5e5] bg-white hover:border-[#203eec]/50 hover:bg-[#f5f5f5] text-[#202020]'
+                              : 'border-[var(--border)] bg-white hover:border-[#203eec]/50 hover:bg-[var(--secondary)] text-foreground'
                           }`}
                         >
-                          <IconComponent className={`w-4 h-4 ${isSelected ? 'text-[#203eec]' : 'text-[#666666]'}`} />
+                          <IconComponent className={`w-4 h-4 ${isSelected ? 'text-[#203eec]' : 'text-muted-foreground'}`} />
                           <span>{toneOption.label}</span>
                         </button>
                       );
@@ -737,7 +737,7 @@ function GenerateBlogPageContent() {
                   </div>
                   {selectedTones.length > 0 && (
                     <p
-                      className="text-xs text-[#666666] mt-2"
+                      className="text-xs text-muted-foreground mt-2"
                       style={{
                       }}
                     >
@@ -748,7 +748,7 @@ function GenerateBlogPageContent() {
                     <div className="mt-3">
                       <label
                         htmlFor="customTone"
-                        className="text-xs font-medium text-[#666666] mb-1.5 block"
+                        className="text-xs font-medium text-muted-foreground mb-1.5 block"
                         style={{
                         }}
                       >
@@ -776,12 +776,12 @@ function GenerateBlogPageContent() {
                           setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
                         }}
                         placeholder="Özel bir ton yazın (örn: Mizahi, Akademik...)"
-                    className="border-[#e5e5e5] focus:border-[#203eec]"
+                    className="border-[var(--border)] focus:border-[#203eec]"
                         maxLength={100}
                       />
                       {customToneInput && (
                         <p
-                          className="text-xs text-[#999999] mt-1 text-right"
+                          className="text-xs text-muted-foreground mt-1 text-right"
                           style={{
                           }}
                         >
@@ -803,12 +803,12 @@ function GenerateBlogPageContent() {
                 <div>
                   <label
                     htmlFor="targetAudience"
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
                     Hedef Kitle
-                    <span className="text-xs text-[#666666] ml-2 font-normal">
+                    <span className="text-xs text-muted-foreground ml-2 font-normal">
                       (Enter&apos;a basarak ekleyin)
                     </span>
                   </label>
@@ -850,7 +850,7 @@ function GenerateBlogPageContent() {
                       }
                     }}
                     placeholder="Geliştiriciler, Pazarlamacılar... (Enter'a basın)"
-                    className="border-[#e5e5e5] focus:border-[#203eec]"
+                    className="border-[var(--border)] focus:border-[#203eec]"
                     maxLength={100}
                   />
                   {errors.targetAudience && (
@@ -863,7 +863,7 @@ function GenerateBlogPageContent() {
                     </p>
                   )}
                   <p
-                    className="text-xs text-[#999999] mt-1"
+                    className="text-xs text-muted-foreground mt-1"
                     style={{
                     }}
                   >
@@ -876,7 +876,7 @@ function GenerateBlogPageContent() {
                 <div>
                   <label
                     htmlFor="contentLength"
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -885,7 +885,7 @@ function GenerateBlogPageContent() {
                   <select
                     id="contentLength"
                     {...register('contentLength')}
-                    className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
                   >
                     <option value="kısa">Kısa (300-500 kelime)</option>
                     <option value="orta">Orta (500-1000 kelime)</option>
@@ -895,7 +895,7 @@ function GenerateBlogPageContent() {
                 <div>
                   <label
                     htmlFor="language"
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -904,7 +904,7 @@ function GenerateBlogPageContent() {
                   <select
                     id="language"
                     {...register('language')}
-                    className="w-full px-3 py-2 border border-[#e5e5e5] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
                   >
                     <option value="tr">Türkçe</option>
                     <option value="en">English</option>
@@ -914,7 +914,7 @@ function GenerateBlogPageContent() {
 
               <div>
                 <label
-                  className="text-sm font-medium text-[#202020] mb-3 block"
+                  className="text-sm font-medium text-foreground mb-3 block"
                   style={{
                   }}
                 >
@@ -981,13 +981,13 @@ function GenerateBlogPageContent() {
                           </span>
                         )}
                         <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 ${isSelected ? 'text-[#203eec]' : 'text-[#666666]'}`}>
+                          <div className={`flex-shrink-0 ${isSelected ? 'text-[#203eec]' : 'text-muted-foreground'}`}>
                             <IconComponent className="w-6 h-6" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
                               <h4
-                                className="text-sm font-semibold text-[#202020]"
+                                className="text-sm font-semibold text-foreground"
                                 style={{
                                 }}
                               >
@@ -1000,7 +1000,7 @@ function GenerateBlogPageContent() {
                               )}
                             </div>
                             <p
-                              className="text-xs text-[#666666] mb-1"
+                              className="text-xs text-muted-foreground mb-1"
                               style={{
                               }}
                             >
@@ -1019,10 +1019,10 @@ function GenerateBlogPageContent() {
                   <input
                     type="checkbox"
                     {...register('seoMode')}
-                    className="w-4 h-4 text-[#203eec] border-[#e5e5e5] rounded focus:ring-[#203eec]"
+                    className="w-4 h-4 text-[#203eec] border-[var(--border)] rounded focus:ring-[#203eec]"
                   />
                   <span
-                    className="text-sm text-[#202020]"
+                    className="text-sm text-foreground"
                     style={{
                     }}
                   >
@@ -1032,7 +1032,7 @@ function GenerateBlogPageContent() {
               </div>
 
               {/* Image Search Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[#e5e5e5]/50">
+              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
                 <div className="flex items-center justify-between mb-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1046,10 +1046,10 @@ function GenerateBlogPageContent() {
                           setImageSearchQuery('');
                         }
                       }}
-                      className="w-4 h-4 text-[#203eec] border-[#e5e5e5] rounded focus:ring-[#203eec]"
+                      className="w-4 h-4 text-[#203eec] border-[var(--border)] rounded focus:ring-[#203eec]"
                     />
                     <span
-                      className="text-sm font-medium text-[#202020]"
+                      className="text-sm font-medium text-foreground"
                       style={{
                       }}
                     >
@@ -1071,7 +1071,7 @@ function GenerateBlogPageContent() {
                           }
                         }}
                         placeholder="Arama terimi (örn: cyber security, technology)"
-                        className="flex-1 px-3 py-2 border border-[#e5e5e5] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
+                        className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
                       />
                       <Button
                         type="button"
@@ -1090,7 +1090,7 @@ function GenerateBlogPageContent() {
                     {unsplashPhotos.length > 0 && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs text-[#666666]">
+                          <p className="text-xs text-muted-foreground">
                             {unsplashPhotos.length} resim bulundu
                           </p>
                           <Button
@@ -1144,7 +1144,7 @@ function GenerateBlogPageContent() {
                           ))}
                         </div>
                         {selectedImage && (
-                          <p className="text-xs text-[#666666] mt-2">
+                          <p className="text-xs text-muted-foreground mt-2">
                             Seçili: {selectedImage.user.name} tarafından
                           </p>
                         )}
@@ -1191,7 +1191,7 @@ function GenerateBlogPageContent() {
                 )}
               </Button>
               {(!watch('workspaceId') || !watch('topic')) && (
-                <p className="text-xs text-[#999999] text-center mt-2">
+                <p className="text-xs text-muted-foreground text-center mt-2">
                   {!watch('workspaceId') && 'Workspace seçin • '}
                   {!watch('topic') && 'Konu girin'}
                 </p>
@@ -1201,7 +1201,7 @@ function GenerateBlogPageContent() {
         </Card>
 
         {/* Result */}
-        <Card className="border-[#e5e5e5]">
+        <Card className="border-[var(--border)]">
           <CardHeader className="p-5">
             <CardTitle
               className="text-base"
@@ -1244,7 +1244,7 @@ function GenerateBlogPageContent() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3
-                    className="text-lg font-semibold text-[#202020]"
+                    className="text-lg font-semibold text-foreground"
                     style={{
                     }}
                   >
@@ -1256,7 +1256,7 @@ function GenerateBlogPageContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(`/dashboard/blogs/${postId}`)}
-                        className="border-[#e5e5e5]"
+                        className="border-[var(--border)]"
                       >
                         Detay
                       </Button>
@@ -1265,7 +1265,7 @@ function GenerateBlogPageContent() {
                       variant="outline"
                       size="sm"
                       onClick={handleCopy}
-                      className="border-[#e5e5e5]"
+                      className="border-[var(--border)]"
                     >
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
@@ -1273,14 +1273,14 @@ function GenerateBlogPageContent() {
                       variant="outline"
                       size="sm"
                       onClick={handleDownload}
-                      className="border-[#e5e5e5]"
+                      className="border-[var(--border)]"
                     >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
                 <div
-                  className="prose prose-lg max-w-none p-4 bg-[#fafafa] rounded-xl border border-[#e5e5e5] max-h-[600px] overflow-y-auto"
+                  className="prose prose-lg max-w-none p-4 bg-[var(--secondary)] rounded-xl border border-[var(--border)] max-h-[600px] overflow-y-auto"
                   style={{
                   }}
                 >
@@ -1295,7 +1295,7 @@ function GenerateBlogPageContent() {
                         let htmlContent = '';
 
                         if ((parsed as any).title) {
-                          htmlContent += `<h1 class="text-4xl font-bold mb-6 text-[#202020]">${parsed.title}</h1>`;
+                          htmlContent += `<h1 class="text-4xl font-bold mb-6 text-foreground">${parsed.title}</h1>`;
                         }
 
                         let mainContent = '';
@@ -1323,7 +1323,7 @@ function GenerateBlogPageContent() {
                         if ((parsed as any).sections && Array.isArray((parsed as any).sections)) {
                           (parsed as any).sections.forEach((section: any) => {
                             if (section.title) {
-                              mainContent += `<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#202020]">${section.title}</h2>`;
+                              mainContent += `<h2 class="text-3xl font-semibold mt-8 mb-4 text-foreground">${section.title}</h2>`;
                             }
                             if (section.content && typeof section.content === 'string') {
                               mainContent += formatMarkdownToHtml(section.content);
@@ -1350,7 +1350,7 @@ function GenerateBlogPageContent() {
                                 case 'heading': {
                                   const level = block.level || 2;
                                   const headingTag = `h${Math.min(Math.max(level, 1), 6)}`;
-                                  mainContent += `<${headingTag} class="mt-8 mb-3 font-semibold text-[#202020] text-${level >= 3 ? '2xl' : '3xl'}">${block.content}</${headingTag}>`;
+                                  mainContent += `<${headingTag} class="mt-8 mb-3 font-semibold text-foreground text-${level >= 3 ? '2xl' : '3xl'}">${block.content}</${headingTag}>`;
                                   break;
                                 }
                                 case 'paragraph': {
@@ -1363,7 +1363,7 @@ function GenerateBlogPageContent() {
                                     const listItems = items
                                       .map((item: string) => `<li class="ml-4 mb-2">• ${item}</li>`)
                                       .join('');
-                                    mainContent += `<ul class="mb-4 text-[#666666] leading-relaxed">${listItems}</ul>`;
+                                    mainContent += `<ul class="mb-4 text-muted-foreground leading-relaxed">${listItems}</ul>`;
                                   }
                                   break;
                                 }
@@ -1407,7 +1407,7 @@ function GenerateBlogPageContent() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-12 text-[#999999]">
+              <div className="text-center py-12 text-muted-foreground">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p
                   className="text-sm"

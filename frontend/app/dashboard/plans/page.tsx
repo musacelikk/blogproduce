@@ -62,8 +62,8 @@ export default function PlansPage() {
     return (
       <div className="space-y-6">
         <div className="mb-6">
-          <div className="h-8 w-64 bg-[#e5e5e5] animate-pulse rounded mb-2" />
-          <div className="h-4 w-96 bg-[#e5e5e5] animate-pulse rounded" />
+          <div className="h-8 w-64 bg-[var(--border)] animate-pulse rounded mb-2" />
+          <div className="h-4 w-96 bg-[var(--border)] animate-pulse rounded" />
         </div>
 
         <div className="bg-gradient-to-r from-[#203eec] to-[#1a32cc] rounded-xl p-6">
@@ -85,12 +85,30 @@ export default function PlansPage() {
 
     return (
       <div className="space-y-6">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="flex items-center gap-4"
+        >
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <Crown className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Planlar</h1>
+            <p className="text-sm text-muted-foreground">Abonelik planlarını karşılaştırın ve ihtiyacınıza göre seçin</p>
+          </div>
+        </motion.div>
+
         {currentPlanInfo && currentPlanInfo.currentPlan ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-gradient-to-r from-[#203eec] to-[#1a32cc] rounded-xl p-6 text-white"
+            className="rounded-2xl p-6"
+            style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)', color: 'white' }}
           >
             <div className="flex items-start justify-between">
               <div>
@@ -127,13 +145,14 @@ export default function PlansPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                className={`bg-white rounded-xl border-2 p-5 relative ${
+                className={`rounded-2xl border-2 p-5 relative transition-all hover:shadow-md ${
                   isPopular
                     ? 'border-[#10B981] shadow-lg'
                     : isCurrentPlan
-                    ? 'border-[#203eec]'
-                    : 'border-[#e5e5e5]'
+                    ? 'border-[#203eec] shadow-md shadow-[#203eec]/10'
+                    : 'border-[var(--border)] hover:border-[#203eec]/30'
                 }`}
+                style={{ background: 'var(--card)' }}
               >
                 {isPopular ? (
                   <div className="absolute top-0 left-0 right-0 bg-[#10B981] text-white text-center py-1 text-xs font-medium rounded-t-xl">
@@ -149,17 +168,17 @@ export default function PlansPage() {
                 <div className={`w-12 h-12 ${colorClass} rounded-lg flex items-center justify-center mb-4`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                 <h3 className="text-xl font-semibold text-[#202020] mb-1">{String(plan?.name || 'Plan')}</h3>
+                 <h3 className="text-xl font-semibold text-foreground mb-1">{String(plan?.name || 'Plan')}</h3>
                  {plan?.description ? (
-                   <p className="text-sm text-[#666666] mb-3">{String(plan.description)}</p>
+                   <p className="text-sm text-muted-foreground mb-3">{String(plan.description)}</p>
                  ) : null}
                  <div className="mb-4">
                    <div className="flex items-baseline gap-1 mb-1">
-                     <span className="text-3xl font-bold text-[#202020]">{formatPrice(monthlyPrice)}</span>
-                     <span className="text-sm text-[#666666]">/ay</span>
+                     <span className="text-3xl font-bold text-foreground">{formatPrice(monthlyPrice)}</span>
+                     <span className="text-sm text-muted-foreground">/ay</span>
                    </div>
                    {yearlyPrice > 0 ? (
-                     <p className="text-xs text-[#666666]">
+                     <p className="text-xs text-muted-foreground">
                        Yıllık: {formatPrice(Math.round(yearlyPrice / 12))}/ay
                        {(() => {
                          const totalMonthly = monthlyPrice * 12;

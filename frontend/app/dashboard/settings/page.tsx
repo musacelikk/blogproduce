@@ -133,12 +133,30 @@ export default function SettingsPage() {
 
     return (
       <div className="space-y-5">
+        {/* Page Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="flex items-center gap-4"
+        >
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Ayarlar</h1>
+            <p className="text-sm text-muted-foreground">Profil, güvenlik ve uygulama tercihlerinizi yönetin</p>
+          </div>
+        </motion.div>
+
         {/* Tabs Navigation */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }} p-1.5"
+        className="rounded-2xl p-1.5"
+        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
@@ -150,10 +168,8 @@ export default function SettingsPage() {
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-[#203eec] text-white shadow-sm'
-                    : 'text-[#666666] hover:bg-[#f5f5f5] hover:text-[#202020]'
+                    : 'text-muted-foreground hover:bg-[var(--secondary)] hover:text-foreground'
                 }`}
-                style={{
-                }}
               >
                 <Icon className="w-4 h-4" />
                 <span className="font-medium">{tab.label}</span>
@@ -169,22 +185,23 @@ export default function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-          <div className="rounded-2xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }} p-5 lg:p-6">
+          <div className="rounded-2xl p-5 lg:p-6"
+               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             {/* Tab Header */}
-            <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-[#e5e5e5]">
+            <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-[var(--border)]">
               <div className="w-9 h-9 bg-[#203eec]/10 rounded-lg flex items-center justify-center">
                 <ActiveTabIcon className="w-4 h-4 text-[#203eec]" />
               </div>
               <div>
                 <h2
-                  className="text-lg font-medium text-[#202020]"
+                  className="text-lg font-medium text-foreground"
                   style={{
                   }}
                 >
                   {tabs.find(t => t.id === activeTab)?.label}
                 </h2>
                 <p
-                  className="text-xs text-[#666666]"
+                  className="text-xs text-muted-foreground"
                   style={{
                   }}
                 >
@@ -206,11 +223,11 @@ export default function SettingsPage() {
                     {profileData.name.charAt(0)}
                   </div>
                   <div>
-                    <Button variant="outline" size="sm" className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-sm">
+                    <Button variant="outline" size="sm" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] text-sm">
                       Fotoğraf Değiştir
                     </Button>
                     <p
-                      className="text-[10px] text-[#999999] mt-1.5"
+                      className="text-[10px] text-muted-foreground mt-1.5"
                       style={{
                       }}
                     >
@@ -222,7 +239,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                   <div>
                     <label
-                      className="text-sm font-medium text-[#202020] mb-2 block"
+                      className="text-sm font-medium text-foreground mb-2 block"
                       style={{
                       }}
                     >
@@ -231,58 +248,58 @@ export default function SettingsPage() {
                     <Input
                       value={profileData.name}
                       onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      className="border-[#e5e5e5] focus:border-[#203eec]"
+                      className="border-[var(--border)] focus:border-[#203eec]"
                     />
                   </div>
                   <div>
                     <label
-                      className="text-sm font-medium text-[#202020] mb-2 block"
+                      className="text-sm font-medium text-foreground mb-2 block"
                       style={{
                       }}
                     >
                       E-posta
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999999]" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         type="email"
                         value={profileData.email}
                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                        className="pl-10 border-[#e5e5e5] focus:border-[#203eec]"
+                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
                       />
                     </div>
                   </div>
                   <div>
                     <label
-                      className="text-sm font-medium text-[#202020] mb-2 block"
+                      className="text-sm font-medium text-foreground mb-2 block"
                       style={{
                       }}
                     >
                       Telefon
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999999]" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         value={profileData.phone}
                         onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                        className="pl-10 border-[#e5e5e5] focus:border-[#203eec]"
+                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
                       />
                     </div>
                   </div>
                   <div>
                     <label
-                      className="text-sm font-medium text-[#202020] mb-2 block"
+                      className="text-sm font-medium text-foreground mb-2 block"
                       style={{
                       }}
                     >
                       Konum
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999999]" />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
                         value={profileData.location}
                         onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                        className="pl-10 border-[#e5e5e5] focus:border-[#203eec]"
+                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
                       />
                     </div>
                   </div>
@@ -290,7 +307,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -300,7 +317,7 @@ export default function SettingsPage() {
                     value={profileData.bio}
                     onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                     rows={4}
-                    className="w-full px-4 py-2 border border-[#e5e5e5] rounded-xl focus:border-[#203eec] focus:outline-none resize-none"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none resize-none"
                     style={{
                     }}
                   />
@@ -313,7 +330,7 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -322,7 +339,7 @@ export default function SettingsPage() {
                   <select
                     value={accountData.language}
                     onChange={(e) => setAccountData({ ...accountData, language: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#e5e5e5] rounded-xl focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
                   >
                     <option value="tr">Türkçe</option>
                     <option value="en">English</option>
@@ -331,7 +348,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -340,7 +357,7 @@ export default function SettingsPage() {
                   <select
                     value={accountData.timezone}
                     onChange={(e) => setAccountData({ ...accountData, timezone: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#e5e5e5] rounded-xl focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
                   >
                     <option value="Europe/Istanbul">İstanbul (GMT+3)</option>
                     <option value="Europe/London">London (GMT+0)</option>
@@ -350,7 +367,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -359,7 +376,7 @@ export default function SettingsPage() {
                   <select
                     value={accountData.dateFormat}
                     onChange={(e) => setAccountData({ ...accountData, dateFormat: e.target.value })}
-                    className="w-full px-4 py-2 border border-[#e5e5e5] rounded-xl focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
                   >
                     <option value="DD/MM/YYYY">GG/AA/YYYY</option>
                     <option value="MM/DD/YYYY">AA/GG/YYYY</option>
@@ -373,10 +390,10 @@ export default function SettingsPage() {
             {activeTab === 'notifications' && (
               <div className="space-y-4">
                 {Object.entries(notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between p-4 bg-[#fafafa] rounded-xl">
+                  <div key={key} className="flex items-center justify-between p-4 bg-[var(--secondary)] rounded-xl">
                     <div>
                       <p
-                        className="font-medium text-[#202020]"
+                        className="font-medium text-foreground"
                         style={{
                         }}
                       >
@@ -387,7 +404,7 @@ export default function SettingsPage() {
                         {key === 'marketing' && 'Pazarlama E-postaları'}
                       </p>
                       <p
-                        className="text-sm text-[#666666]"
+                        className="text-sm text-muted-foreground"
                         style={{
                         }}
                       >
@@ -417,7 +434,7 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -428,17 +445,17 @@ export default function SettingsPage() {
                       type="password"
                       value={apiSettings.apiKey}
                       readOnly
-                      className="border-[#e5e5e5] bg-[#fafafa] font-mono"
+                      className="border-[var(--border)] bg-[var(--secondary)] font-mono"
                     />
-                    <Button variant="outline" className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]">
+                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
                       Kopyala
                     </Button>
-                    <Button variant="outline" className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]">
+                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
                       Yenile
                     </Button>
                   </div>
                   <p
-                    className="text-xs text-[#999999] mt-2"
+                    className="text-xs text-muted-foreground mt-2"
                     style={{
                     }}
                   >
@@ -448,7 +465,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -459,10 +476,10 @@ export default function SettingsPage() {
                     value={apiSettings.webhookUrl}
                     onChange={(e) => setApiSettings({ ...apiSettings, webhookUrl: e.target.value })}
                     placeholder="https://example.com/webhook"
-                    className="border-[#e5e5e5] focus:border-[#203eec]"
+                    className="border-[var(--border)] focus:border-[#203eec]"
                   />
                   <p
-                    className="text-xs text-[#999999] mt-2"
+                    className="text-xs text-muted-foreground mt-2"
                     style={{
                     }}
                   >
@@ -472,7 +489,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -482,7 +499,7 @@ export default function SettingsPage() {
                     type="number"
                     value={apiSettings.rateLimit}
                     onChange={(e) => setApiSettings({ ...apiSettings, rateLimit: e.target.value })}
-                    className="border-[#e5e5e5] focus:border-[#203eec]"
+                    className="border-[var(--border)] focus:border-[#203eec]"
                   />
                 </div>
 
@@ -502,18 +519,18 @@ export default function SettingsPage() {
             {/* Billing Tab */}
             {activeTab === 'billing' && (
               <div className="space-y-6">
-                <div className="p-6 bg-[#fafafa] rounded-xl border border-[#e5e5e5]">
+                <div className="p-6 bg-[var(--secondary)] rounded-xl border border-[var(--border)]">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3
-                        className="text-lg font-medium text-[#202020] mb-1"
+                        className="text-lg font-medium text-foreground mb-1"
                         style={{
                         }}
                       >
                         Mevcut Plan
                       </h3>
                       <p
-                        className="text-sm text-[#666666]"
+                        className="text-sm text-muted-foreground"
                         style={{
                         }}
                       >
@@ -527,14 +544,14 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p
-                        className="text-[#666666] mb-1"
+                        className="text-muted-foreground mb-1"
                         style={{
                         }}
                       >
                         Kullanılan Blog
                       </p>
                       <p
-                        className="text-lg font-semibold text-[#202020]"
+                        className="text-lg font-semibold text-foreground"
                         style={{
                         }}
                       >
@@ -543,14 +560,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p
-                        className="text-[#666666] mb-1"
+                        className="text-muted-foreground mb-1"
                         style={{
                         }}
                       >
                         Sonraki Fatura
                       </p>
                       <p
-                        className="text-lg font-semibold text-[#202020]"
+                        className="text-lg font-semibold text-foreground"
                         style={{
                         }}
                       >
@@ -559,14 +576,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p
-                        className="text-[#666666] mb-1"
+                        className="text-muted-foreground mb-1"
                         style={{
                         }}
                       >
                         Ödeme Yöntemi
                       </p>
                       <p
-                        className="text-lg font-semibold text-[#202020]"
+                        className="text-lg font-semibold text-foreground"
                         style={{
                         }}
                       >
@@ -578,16 +595,16 @@ export default function SettingsPage() {
 
                 <div>
                   <h3
-                    className="text-lg font-medium text-[#202020] mb-4"
+                    className="text-lg font-medium text-foreground mb-4"
                     style={{
                     }}
                   >
                     Fatura Geçmişi
                   </h3>
-                  <div className="p-8 text-center border border-[#e5e5e5] rounded-xl">
-                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-[#999999] opacity-50" />
+                  <div className="p-8 text-center border border-[var(--border)] rounded-xl">
+                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
                     <p
-                      className="text-[#666666]"
+                      className="text-muted-foreground"
                       style={{
                       }}
                     >
@@ -613,7 +630,7 @@ export default function SettingsPage() {
                 )}
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -625,12 +642,12 @@ export default function SettingsPage() {
                       placeholder="Mevcut şifrenizi girin"
                       value={passwordData.currentPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="pr-10 border-[#e5e5e5] focus:border-[#203eec]"
+                      className="pr-10 border-[var(--border)] focus:border-[#203eec]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999999] hover:text-[#202020]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -639,7 +656,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -651,18 +668,18 @@ export default function SettingsPage() {
                       placeholder="Yeni şifrenizi girin"
                       value={passwordData.newPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="pr-10 border-[#e5e5e5] focus:border-[#203eec]"
+                      className="pr-10 border-[var(--border)] focus:border-[#203eec]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999999] hover:text-[#202020]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                   <p
-                    className="text-xs text-[#999999] mt-2"
+                    className="text-xs text-muted-foreground mt-2"
                     style={{
                     }}
                   >
@@ -672,7 +689,7 @@ export default function SettingsPage() {
 
                 <div>
                   <label
-                    className="text-sm font-medium text-[#202020] mb-2 block"
+                    className="text-sm font-medium text-foreground mb-2 block"
                     style={{
                     }}
                   >
@@ -683,7 +700,7 @@ export default function SettingsPage() {
                     placeholder="Yeni şifrenizi tekrar girin"
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    className="border-[#e5e5e5] focus:border-[#203eec]"
+                    className="border-[var(--border)] focus:border-[#203eec]"
                   />
                 </div>
 
@@ -697,32 +714,32 @@ export default function SettingsPage() {
                   </p>
                 </div>
 
-                <div className="pt-6 border-t border-[#e5e5e5]">
+                <div className="pt-6 border-t border-[var(--border)]">
                   <h3
-                    className="text-lg font-medium text-[#202020] mb-4"
+                    className="text-lg font-medium text-foreground mb-4"
                     style={{
                     }}
                   >
                     İki Faktörlü Doğrulama
                   </h3>
-                  <div className="flex items-center justify-between p-4 bg-[#fafafa] rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-[var(--secondary)] rounded-xl">
                     <div>
                       <p
-                        className="font-medium text-[#202020]"
+                        className="font-medium text-foreground"
                         style={{
                         }}
                       >
                         2FA Aktif Değil
                       </p>
                       <p
-                        className="text-sm text-[#666666]"
+                        className="text-sm text-muted-foreground"
                         style={{
                         }}
                       >
                         Hesabınızı daha güvenli hale getirin
                       </p>
                     </div>
-                    <Button variant="outline" className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec]">
+                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
                       Etkinleştir
                     </Button>
                   </div>
@@ -731,7 +748,7 @@ export default function SettingsPage() {
             )}
 
           {/* Save Button */}
-          <div className="mt-6 pt-5 border-t border-[#e5e5e5] flex justify-end">
+          <div className="mt-6 pt-5 border-t border-[var(--border)] flex justify-end">
             <Button
               onClick={handleSave}
               disabled={saving}

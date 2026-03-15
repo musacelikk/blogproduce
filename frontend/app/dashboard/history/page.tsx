@@ -154,7 +154,7 @@ export default function HistoryPage() {
       case 'published':
         return <TrendingUp className="w-5 h-5 text-[#F59E0B]" />;
       default:
-        return <Clock className="w-5 h-5 text-[#666666]" />;
+        return <Clock className="w-5 h-5 text-muted-foreground" />;
     }
   };
 
@@ -202,7 +202,7 @@ export default function HistoryPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 mx-auto mb-3 text-[#203eec] animate-spin" />
-          <p className="text-base text-[#666666]">Yükleniyor...</p>
+          <p className="text-base text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -234,12 +234,41 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Page Header */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <History className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Geçmiş</h1>
+            <p className="text-sm text-muted-foreground">Tüm aktivite ve işlem geçmişinizi görüntüleyin</p>
+          </div>
+        </div>
+        {/* Stats Pills */}
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: '#203eec12', color: '#203eec', border: '1px solid #203eec20' }}>
+            <Sparkles className="w-3.5 h-3.5" />
+            {totalGenerated} Üretildi
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: '#10B98112', color: '#10B981', border: '1px solid #10B98120' }}>
+            <FileText className="w-3.5 h-3.5" />
+            {totalEdited} Düzenlendi
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: '#F59E0B12', color: '#F59E0B', border: '1px solid #F59E0B20' }}>
+            <TrendingUp className="w-3.5 h-3.5" />
+            {totalPublished} Yayınlandı
+          </span>
+        </div>
       </motion.div>
 
       {/* Search and Filter */}
@@ -247,28 +276,25 @@ export default function HistoryPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-white rounded-xl p-3.5 border border-[#e5e5e5] flex flex-col md:flex-row gap-3"
+        className="rounded-2xl p-3.5 flex flex-col md:flex-row gap-3"
+        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999999]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Geçmişte ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#f5f5f5] rounded-xl border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
-            style={{
-            }}
+            className="w-full pl-10 pr-4 py-2 bg-[var(--secondary)] rounded-xl border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-[#666666]" />
+          <Filter className="w-5 h-5 text-muted-foreground" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as ActivityType | 'Tümü')}
-            className="px-4 py-2 bg-[#f5f5f5] rounded-xl border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
-            style={{
-            }}
+            className="px-4 py-2 bg-[var(--secondary)] rounded-xl border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
           >
             <option value="Tümü">Tümü</option>
             <option value="generated">Üretildi</option>
@@ -279,103 +305,36 @@ export default function HistoryPage() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl p-6 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-sm text-[#666666]"
-              style={{
-              }}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Toplam Aktivite', value: history.length, icon: History, gradient: 'linear-gradient(135deg,#203eec,#00d4ff)' },
+          { label: 'Üretilen', value: totalGenerated, icon: Sparkles, gradient: 'linear-gradient(135deg,#203eec,#818cf8)' },
+          { label: 'Düzenlenen', value: totalEdited, icon: FileText, gradient: 'linear-gradient(135deg,#10B981,#34d399)' },
+          { label: 'Yayınlanan', value: totalPublished, icon: TrendingUp, gradient: 'linear-gradient(135deg,#F59E0B,#fbbf24)' },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
+              className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
             >
-              Toplam Aktivite
-            </span>
-            <History className="w-5 h-5 text-[#203eec]" />
-          </div>
-          <p
-            className="text-2xl font-semibold text-[#202020]"
-            style={{
-            }}
-          >
-            {history.length}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-xl p-6 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-sm text-[#666666]"
-              style={{
-              }}
-            >
-              Üretilen
-            </span>
-            <Sparkles className="w-5 h-5 text-[#203eec]" />
-          </div>
-          <p
-            className="text-2xl font-semibold text-[#202020]"
-            style={{
-            }}
-          >
-            {totalGenerated}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-white rounded-xl p-6 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-sm text-[#666666]"
-              style={{
-              }}
-            >
-              Düzenlenen
-            </span>
-            <FileText className="w-5 h-5 text-[#10B981]" />
-          </div>
-          <p
-            className="text-2xl font-semibold text-[#202020]"
-            style={{
-            }}
-          >
-            {totalEdited}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="bg-white rounded-xl p-6 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span
-              className="text-sm text-[#666666]"
-              style={{
-              }}
-            >
-              Yayınlanan
-            </span>
-            <TrendingUp className="w-5 h-5 text-[#F59E0B]" />
-          </div>
-          <p
-            className="text-2xl font-semibold text-[#202020]"
-            style={{
-            }}
-          >
-            {totalPublished}
-          </p>
-        </motion.div>
+              <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-[0.07] blur-xl"
+                   style={{ background: stat.gradient }} />
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                     style={{ background: stat.gradient }}>
+                  <Icon className="w-3.5 h-3.5 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* History Timeline */}
@@ -383,22 +342,18 @@ export default function HistoryPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="bg-white rounded-xl border border-[#e5e5e5] overflow-hidden"
+        className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
       >
         {filteredHistory.length === 0 ? (
           <div className="p-12 text-center">
-            <History className="w-16 h-16 mx-auto mb-4 text-[#999999] opacity-50" />
+            <History className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p
-              className="text-lg text-[#666666] mb-2"
-              style={{
-              }}
+              className="text-lg text-muted-foreground mb-2"
             >
               {history.length === 0 ? 'Henüz aktivite bulunmuyor' : 'Aktivite bulunamadı'}
             </p>
             <p
-              className="text-sm text-[#999999]"
-              style={{
-              }}
+              className="text-sm text-muted-foreground"
             >
               {history.length === 0 
                 ? 'Blog üretmeye başladığınızda aktiviteleriniz burada görünecek'
@@ -410,16 +365,14 @@ export default function HistoryPage() {
             {Object.entries(groupedHistory).map(([date, items], dateIndex) => (
               <div key={date} className={dateIndex > 0 ? 'mt-8' : ''}>
                 <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="w-5 h-5 text-[#666666]" />
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
                   <h3
-                    className="text-lg font-medium text-[#202020]"
-                    style={{
-                    }}
+                    className="text-lg font-medium text-foreground"
                   >
                     {date}
                   </h3>
                 </div>
-                <div className="relative pl-8 border-l-2 border-[#e5e5e5] space-y-6">
+                <div className="relative pl-8 border-l-2 border-[var(--border)] space-y-6">
                   {items.map((item, index) => (
                     <motion.div
                       key={item.id}
@@ -429,7 +382,7 @@ export default function HistoryPage() {
                       className="relative"
                     >
                       {/* Timeline dot */}
-                      <div className="absolute -left-[29px] top-1 w-3.5 h-3.5 bg-white border-2 border-[#e5e5e5] rounded-full flex items-center justify-center">
+                      <div className="absolute -left-[29px] top-1 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: 'var(--card)', border: '2px solid var(--border)' }}>
                         <div className={`w-1.5 h-1.5 rounded-full ${
                           item.type === 'generated' ? 'bg-[#203eec]' :
                           item.type === 'edited' ? 'bg-[#10B981]' :
@@ -450,16 +403,12 @@ export default function HistoryPage() {
                               </div>
                               <div>
                                 <h4
-                                  className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-red-700' : 'text-[#202020]'}`}
-                                  style={{
-                                  }}
+                                  className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-red-700' : 'text-foreground'}`}
                                 >
                                   {item.title}
                                 </h4>
                                 <p
-                                  className={`text-xs ${item.hiddenByAdmin ? 'text-red-600' : 'text-[#666666]'}`}
-                                  style={{
-                                  }}
+                                  className={`text-xs ${item.hiddenByAdmin ? 'text-red-600' : 'text-muted-foreground'}`}
                                 >
                                   {item.description}
                                   {item.hiddenByAdmin && item.hiddenReason && (
@@ -485,7 +434,7 @@ export default function HistoryPage() {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] text-[#999999] mt-1.5">
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-1.5">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               <span>{item.time}</span>

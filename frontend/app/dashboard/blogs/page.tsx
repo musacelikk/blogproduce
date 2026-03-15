@@ -253,7 +253,7 @@ function BlogsPageContent() {
               ? extractText(textContent)
               : (parsed.title || JSON.stringify(parsed, null, 2).substring(0, 200));
             return (
-              <div className="text-xs text-[#666666] line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[#e5e5e5]">
+              <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
                 {preview}
               </div>
             );
@@ -261,7 +261,7 @@ function BlogsPageContent() {
         } catch {
           // If JSON parsing fails, treat as text
           return (
-            <div className="text-xs text-[#666666] line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[#e5e5e5]">
+            <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
               {extractText(content)}
             </div>
           );
@@ -270,7 +270,7 @@ function BlogsPageContent() {
         // Strip HTML tags for preview
         const textContent = extractText(content);
         return (
-          <div className="text-xs text-[#666666] line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[#e5e5e5]">
+          <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
             {textContent}
           </div>
         );
@@ -278,7 +278,7 @@ function BlogsPageContent() {
         // Markdown or other text formats
         const preview = extractText(content);
         return (
-          <div className="text-xs text-[#666666] line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[#e5e5e5]">
+          <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
             {preview}
           </div>
         );
@@ -286,7 +286,7 @@ function BlogsPageContent() {
     } catch (err) {
       // If parsing fails, show raw content preview
       return (
-        <div className="text-xs text-[#666666] line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[#e5e5e5]">
+        <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
           {content.substring(0, 200)}
         </div>
       );
@@ -295,40 +295,62 @@ function BlogsPageContent() {
 
   return (
     <div className="space-y-5">
-      {/* Header with Action Button */}
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">Bloglarım</h1>
+            <p className="text-sm text-muted-foreground">Tüm blog içeriklerinizi buradan yönetin</p>
+          </div>
+        </div>
+        <Link href="/dashboard/generate">
+          <Button className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg"
+                  style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+            <FileText className="w-4 h-4 mr-2" />
+            Yeni Blog Üret
+          </Button>
+        </Link>
+      </motion.div>
+
+      {/* Search + Filter Row */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="flex flex-col gap-4"
       >
-        {/* Top Row: Search and Button */}
+        {/* Top Row: Search */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 w-full sm:w-auto">
             {/* Search Bar */}
             {workspaceId && (
-              <div className="rounded-2xl p-4 border border-[#e5e5e5]">
+              <div className="rounded-2xl p-4 border border-[var(--border)]">
                 <div className="flex flex-col md:flex-row gap-3">
                   <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999999]" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       type="text"
                       placeholder="Bloglarımda ara..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 text-sm bg-[#f5f5f5] rounded-lg border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
-                      style={{
-                      }}
+                      className="w-full pl-10 pr-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[#666666]" />
+                    <Filter className="w-4 h-4 text-muted-foreground" />
                     <select
                       value={selectedTag}
                       onChange={(e) => setSelectedTag(e.target.value)}
-                      className="px-3 py-2 text-sm bg-[#f5f5f5] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
-                      style={{
-                      }}
+                      className="px-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
                     >
                       <option value="Tümü">Tüm Etiketler</option>
                       {allTags.map((tag) => (
@@ -342,14 +364,6 @@ function BlogsPageContent() {
               </div>
             )}
           </div>
-          <div className="flex-shrink-0">
-            <Link href="/dashboard/generate">
-              <Button className="bg-[#203eec] hover:bg-[#1a32cc] text-white rounded-full px-6 py-2.5 text-sm font-medium shadow-lg shadow-[#203eec]/20 hover:shadow-xl hover:shadow-[#203eec]/30 transition-all duration-200">
-                <FileText className="w-4 h-4 mr-2" />
-                Yeni Blog Oluştur
-              </Button>
-            </Link>
-          </div>
         </div>
       </motion.div>
 
@@ -359,11 +373,11 @@ function BlogsPageContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-2xl p-4 border border-[#e5e5e5]"
+          className="rounded-2xl p-4 border border-[var(--border)]"
         >
           <div className="flex items-center gap-3">
-            <Filter className="w-4 h-4 text-[#666666]" />
-            <label className="text-sm font-medium text-[#202020] whitespace-nowrap">Workspace:</label>
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <label className="text-sm font-medium text-foreground whitespace-nowrap">Workspace:</label>
             <select
               value={selectedWorkspaceId || ''}
               onChange={(e) => {
@@ -374,9 +388,7 @@ function BlogsPageContent() {
                   router.push(`/dashboard/blogs?workspaceId=${wsId}`);
                 }
               }}
-              className="flex-1 px-3 py-2 text-sm bg-[#f5f5f5] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
-              style={{
-              }}
+              className="flex-1 px-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
             >
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>
@@ -401,15 +413,11 @@ function BlogsPageContent() {
             <div>
               <h3
                 className="text-sm font-medium text-yellow-900 mb-1"
-                style={{
-                }}
               >
                 Workspace Bulunamadı
               </h3>
               <p
                 className="text-xs text-yellow-700 mb-3"
-                style={{
-                }}
               >
                 Blog görüntülemek için önce bir workspace oluşturmanız gerekiyor.
               </p>
@@ -425,79 +433,36 @@ function BlogsPageContent() {
 
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="rounded-2xl p-5 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { label: 'Toplam Blog', value: blogs.length, icon: FileText, gradient: 'linear-gradient(135deg,#203eec,#00d4ff)', sub: `${blogs.filter(b=>b.status==='published').length} yayında` },
+          { label: 'Toplam Etiket', value: allTags.length, icon: Filter, gradient: 'linear-gradient(135deg,#10B981,#34d399)', sub: 'benzersiz etiket' },
+          { label: 'Yayınlanan', value: blogs.filter(b => b.status === 'published').length, icon: Eye, gradient: 'linear-gradient(135deg,#F59E0B,#fbbf24)', sub: 'aktif yayın' },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
+              className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
             >
-              Toplam Blog
-            </span>
-            <FileText className="w-5 h-5 text-[#203eec]" />
-          </div>
-          <p
-            className="text-xl font-semibold text-[#202020] mb-1"
-            style={{
-            }}
-          >
-            {blogs.length}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="rounded-2xl p-5 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
-            >
-              Toplam Etiket
-            </span>
-            <Filter className="w-5 h-5 text-[#10B981]" />
-          </div>
-          <p
-            className="text-xl font-semibold text-[#202020] mb-1"
-            style={{
-            }}
-          >
-            {allTags.length}
-          </p>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="rounded-2xl p-5 border border-[#e5e5e5]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-[#666666]"
-              style={{
-              }}
-            >
-              Toplam Görüntülenme
-            </span>
-            <Eye className="w-5 h-5 text-[#203eec]" />
-          </div>
-          <p
-            className="text-xl font-semibold text-[#202020] mb-1"
-            style={{
-            }}
-          >
-            -
-          </p>
-        </motion.div>
+              <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-[0.07] blur-xl"
+                   style={{ background: stat.gradient }} />
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                     style={{ background: stat.gradient }}>
+                  <Icon className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</p>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Error Message */}
@@ -524,24 +489,22 @@ function BlogsPageContent() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="rounded-2xl border border-[#e5e5e5] overflow-hidden"
+        className="rounded-2xl border border-[var(--border)] overflow-hidden"
       >
         {/* View Mode Toggle */}
         {!isLoading && filteredBlogs.length > 0 && (
-          <div className="p-3 sm:p-4 border-b border-[#e5e5e5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="p-3 sm:p-4 border-b border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h2
-              className="text-base sm:text-lg font-medium text-[#202020]"
-              style={{
-              }}
+              className="text-base sm:text-lg font-medium text-foreground"
             >
               Bloglarım ({filteredBlogs.length})
             </h2>
-            <div className="flex items-center gap-1 border border-[#e5e5e5] rounded-lg p-0.5">
+            <div className="flex items-center gap-1 border border-[var(--border)] rounded-lg p-0.5">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className={viewMode === 'grid' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[#f5f5f5]'}
+                className={viewMode === 'grid' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[var(--secondary)]'}
               >
                 <Grid3x3 className="w-3.5 h-3.5" />
               </Button>
@@ -549,7 +512,7 @@ function BlogsPageContent() {
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[#f5f5f5]'}
+                className={viewMode === 'list' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[var(--secondary)]'}
               >
                 <List className="w-3.5 h-3.5" />
               </Button>
@@ -564,18 +527,14 @@ function BlogsPageContent() {
           </div>
         ) : filteredBlogs.length === 0 ? (
           <div className="p-10 text-center">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-[#999999] opacity-50" />
+            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
             <p
-              className="text-base text-[#666666] mb-1.5"
-              style={{
-              }}
+              className="text-base text-muted-foreground mb-1.5"
             >
               {blogs.length === 0 ? 'Henüz blog oluşturulmamış' : 'Blog bulunamadı'}
             </p>
             <p
-              className="text-xs text-[#999999] mb-4"
-              style={{
-              }}
+              className="text-xs text-muted-foreground mb-4"
             >
               {blogs.length === 0
                 ? 'İlk blogunu oluşturmak için "Yeni Blog Oluştur" butonuna tıkla'
@@ -598,7 +557,7 @@ function BlogsPageContent() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group relative bg-white border border-[#e5e5e5] rounded-xl overflow-hidden hover:shadow-lg hover:border-[#203eec] transition-all flex flex-col h-full"
+                className="group relative border border-[var(--border)] rounded-xl overflow-hidden hover:shadow-lg hover:border-[#203eec] transition-all flex flex-col h-full"
               >
                 {/* Cover Image */}
                 {blog.coverImageUrl && (
@@ -620,9 +579,7 @@ function BlogsPageContent() {
                 <div className="flex items-start justify-between mb-3 sm:mb-4">
                   <div className="flex-1 min-w-0">
                     <h3
-                      className="text-sm sm:text-base font-semibold text-[#202020] mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors line-clamp-2"
-                      style={{
-                      }}
+                      className="text-sm sm:text-base font-semibold text-foreground mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors line-clamp-2"
                     >
                       {blog.title}
                     </h3>
@@ -631,16 +588,16 @@ function BlogsPageContent() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 hover:bg-[#f5f5f5]"
+                      className="h-6 w-6 p-0 hover:bg-[var(--secondary)]"
                       onClick={() => setSelectedBlog(selectedBlog === blog.id ? null : blog.id)}
                     >
-                      <MoreVertical className="w-4 h-4 text-[#666666]" />
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
                     </Button>
                     {selectedBlog === blog.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-[#e5e5e5] z-10">
+                      <div className="absolute right-0 top-full mt-1.5 w-40 sm:w-48 rounded-lg shadow-lg border border-[var(--border)] z-10">
                         <Link
                           href={`/dashboard/blogs/${blog.id}`}
-                          className="w-full px-3 py-1.5 text-left text-xs text-[#202020] hover:bg-[#f5f5f5] flex items-center gap-1.5 block"
+                          className="w-full px-3 py-1.5 text-left text-xs text-foreground hover:bg-[var(--secondary)] flex items-center gap-1.5 block"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           Görüntüle
@@ -690,18 +647,18 @@ function BlogsPageContent() {
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-2 text-xs text-[#666666]">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{blog.createdAt}</span>
                     </div>
                     {blog.contentLength !== undefined && blog.contentLength > 0 && (
-                      <div className="flex items-center gap-2 text-xs text-[#666666]">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <FileText className="w-3.5 h-3.5" />
                         <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
                       </div>
                     )}
                     {blog.model && (
-                      <div className="flex items-center gap-2 text-xs text-[#666666]">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span className="px-2 py-0.5 rounded-full bg-[#203eec]/10 text-[#203eec] font-medium">
                           {blog.model}
                         </span>
@@ -709,7 +666,7 @@ function BlogsPageContent() {
                     )}
                   </div>
                   
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-[#e5e5e5]">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-[var(--border)]">
                     <div className="flex items-center gap-1">
                       {getStatusBadge(blog.status)}
                     </div>
@@ -730,14 +687,14 @@ function BlogsPageContent() {
             ))}
           </div>
         ) : (
-          <div className="divide-y divide-[#e5e5e5]">
+          <div className="divide-y divide-[var(--border)]">
             {filteredBlogs.map((blog, index) => (
               <motion.div
                 key={blog.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="p-5 hover:bg-[#fafafa] transition-colors group relative"
+                className="p-5 hover:bg-[var(--secondary)] transition-colors group relative"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   {blog.coverImageUrl && (
@@ -757,9 +714,7 @@ function BlogsPageContent() {
                   )}
                   <div className="flex-1 min-w-0">
                     <h3
-                      className="text-sm sm:text-base font-medium text-[#202020] mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors"
-                      style={{
-                      }}
+                      className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors"
                     >
                       {blog.title}
                     </h3>
@@ -772,12 +727,12 @@ function BlogsPageContent() {
                     )}
                     
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                      <div className="flex items-center gap-1.5 text-xs text-[#666666]">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{blog.createdAt}</span>
                       </div>
                       {blog.contentLength !== undefined && blog.contentLength > 0 && (
-                        <div className="flex items-center gap-1.5 text-xs text-[#666666]">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <FileText className="w-3.5 h-3.5" />
                           <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
                         </div>
@@ -795,7 +750,7 @@ function BlogsPageContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
+                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
                         title="Görüntüle"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -805,7 +760,7 @@ function BlogsPageContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0 hidden sm:flex"
+                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0 hidden sm:flex"
                         title="Düzenle"
                       >
                         <Edit className="w-3.5 h-3.5" />
@@ -815,16 +770,16 @@ function BlogsPageContent() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
+                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
                         onClick={() => setSelectedBlog(selectedBlog === blog.id ? null : blog.id)}
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
                       </Button>
                       {selectedBlog === blog.id && (
-                        <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-lg shadow-lg border border-[#e5e5e5] z-10">
+                        <div className="absolute right-0 top-full mt-1.5 w-48 rounded-lg shadow-lg border border-[var(--border)] z-10">
                           <Link
                             href={`/dashboard/blogs/${blog.id}`}
-                            className="w-full px-3 py-1.5 text-left text-xs text-[#202020] hover:bg-[#f5f5f5] flex items-center gap-1.5 block"
+                            className="w-full px-3 py-1.5 text-left text-xs text-foreground hover:bg-[var(--secondary)] flex items-center gap-1.5 block"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             Görüntüle
