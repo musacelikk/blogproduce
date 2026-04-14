@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    document.title = 'Admin Girişi - BlogGenerator';
+    document.title = 'Admin Girişi - BlogProduce';
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

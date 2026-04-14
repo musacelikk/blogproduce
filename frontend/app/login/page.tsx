@@ -35,7 +35,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    document.title = 'Giriş Yap - BlogGenerator';
+    document.title = 'Giriş Yap - BlogProduce';
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,7 +75,7 @@ export default function LoginPage() {
             transition={{ duration: 0.55 }}
           >
             <Link href="/" className="inline-flex items-center gap-3">
-              <Image src="/images/logo.png" alt="BlogGenerator Logo" width={400} height={400} className="w-44 h-44 object-contain" />
+              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="w-44 h-44 object-contain" />
             </Link>
           </motion.div>
 

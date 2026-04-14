@@ -37,7 +37,7 @@ export const Footer = () => {
             <Link href="/" className="inline-flex items-center gap-2.5 text-xl font-semibold tracking-tight">
               <Image
                 src="/images/logo.png"
-                alt="BlogGenerator"
+                alt="BlogProduce"
                 width={400}
                 height={400}
                 className="w-44 h-44 object-contain"

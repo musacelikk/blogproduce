@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
             <Link href="/" className="inline-flex items-center gap-3">
               <Image
                 src="/images/logo.png"
-                alt="BlogGenerator Logo"
+                alt="BlogProduce Logo"
                 width={400}
                 height={400}
                 className="w-44 h-44 object-contain"

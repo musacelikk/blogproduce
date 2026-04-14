@@ -30,7 +30,7 @@ const mockBlogs: BlogPost[] = [
     title: 'Mail Servisi Nedir? Detaylı Bir İnceleme',
     excerpt:
       'Mail servisinin ne olduğu, temel bileşenleri ve e-posta sunucuları hakkında kapsamlı bir rehber.',
-    author: 'BlogGenerator',
+    author: 'BlogProduce',
     date: new Date().toISOString(),
     category: 'Teknoloji',
     image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=600&fit=crop',
@@ -166,7 +166,7 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
               Örnek Bloglar
             </h2>
             <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-lg">
-              BlogGenerator ile üretilmiş, SEO optimizasyonlu ve prompt&apos;a göre özelleştirilmiş profesyonel içerikler
+              BlogProduce ile üretilmiş, SEO optimizasyonlu ve prompt&apos;a göre özelleştirilmiş profesyonel içerikler
             </p>
           </motion.div>
 

@@ -103,7 +103,7 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
               <div className="relative rounded-2xl md:rounded-3xl overflow-hidden shadow-xl md:shadow-2xl shadow-slate-200/60 ring-1 ring-slate-200/80 bg-white aspect-[4/3] max-h-[280px] md:max-h-[360px] lg:max-h-[420px]">
                 <Image
                   src="/images/Gemini_Generated_Image_5oknoz5oknoz5okn.png"
-                  alt="BlogGenerator — AI destekli blog üretimi"
+                  alt="BlogProduce — AI destekli blog üretimi"
                   fill
                   className="object-cover object-center"
                   sizes="(max-width: 1024px) 100vw, 50vw"

@@ -62,7 +62,7 @@ Blog Generator API is a **delivery and management** API that enables you to retr
 
 ### Step 1: Get Your API Key
 
-1. Log in to your [BlogGenerator Dashboard](https://blogproduce.com/dashboard)
+1. Log in to your [BlogProduce Dashboard](https://blogproduce.com/dashboard)
 2. Navigate to **API Docs** section
 3. Select your workspace
 4. Click **"Create New API Key"**

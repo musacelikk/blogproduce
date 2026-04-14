@@ -433,7 +433,7 @@ function GenerateBlogPageContent() {
             Yeni Blog Üret
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Konu, ton ve hedef kitlenizi belirleyin; BlogGenerator sizin için SEO uyumlu tam bir blog yazısı üretsin.
+            Konu, ton ve hedef kitlenizi belirleyin; BlogProduce sizin için SEO uyumlu tam bir blog yazısı üretsin.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">

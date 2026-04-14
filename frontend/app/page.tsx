@@ -13,19 +13,19 @@ export const dynamic = 'force-dynamic';
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 
 export const metadata: Metadata = {
-  title: 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API',
-  description: 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogGenerator AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.',
+  title: 'BlogProduce - AI Destekli Blog İçerik Üretimi ve API',
+  description: 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogProduce AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.',
   openGraph: {
-    title: 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API',
+    title: 'BlogProduce - AI Destekli Blog İçerik Üretimi ve API',
     description: 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. Dakikalar içinde profesyonel blog yazıları oluşturun.',
     url: siteUrl,
-    siteName: 'BlogGenerator',
+    siteName: 'BlogProduce',
     images: [
       {
         url: `${siteUrl}/images/og-image.png`,
         width: 1200,
         height: 630,
-        alt: 'BlogGenerator - AI Destekli Blog İçerik Üretimi',
+        alt: 'BlogProduce - AI Destekli Blog İçerik Üretimi',
       },
     ],
     locale: 'tr_TR',
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API',
+    title: 'BlogProduce - AI Destekli Blog İçerik Üretimi ve API',
     description: 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. Dakikalar içinde profesyonel blog yazıları oluşturun.',
     images: [`${siteUrl}/images/og-image.png`],
   },

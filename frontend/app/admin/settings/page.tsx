@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState({
-    siteName: 'BlogGenerator',
+    siteName: 'BlogProduce',
     siteDescription: 'AI-powered blog content generator',
     maintenanceMode: false,
     allowRegistration: true,

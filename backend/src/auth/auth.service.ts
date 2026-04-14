@@ -72,10 +72,10 @@ export class AuthService {
     const mailOptions = {
       from,
       to: email,
-      subject: 'Şifre Sıfırlama Talebi - BlogGenerator',
+      subject: 'Şifre Sıfırlama Talebi - BlogProduce',
       html: `
         <p>Merhaba,</p>
-        <p>BlogGenerator hesabınız için bir şifre sıfırlama talebi aldık. Şifrenizi sıfırlamak için aşağıdaki butona tıklayın:</p>
+        <p>BlogProduce hesabınız için bir şifre sıfırlama talebi aldık. Şifrenizi sıfırlamak için aşağıdaki butona tıklayın:</p>
         <p>
           <a href="${resetUrl}" style="display:inline-block;padding:10px 16px;background:#3B82F6;color:#ffffff;border-radius:6px;text-decoration:none;">
             Şifremi Sıfırla
@@ -84,7 +84,7 @@ export class AuthService {
         <p>Buton çalışmıyorsa, aşağıdaki linki tarayıcınıza kopyalayın:</p>
         <p><a href="${resetUrl}">${resetUrl}</a></p>
         <p>Bu bağlantı 1 saat sonra geçerliliğini yitirecektir. Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
-        <p>BlogGenerator Ekibi</p>
+        <p>BlogProduce Ekibi</p>
       `,
     };
 

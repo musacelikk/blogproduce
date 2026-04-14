@@ -21,7 +21,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/dashboard/history':    { title: 'Geçmiş',                   description: 'Tüm aktivite geçmişiniz' },
   '/dashboard/reports':    { title: 'Raporlar & Analitik',      description: 'Blog performansınızı görüntüleyin' },
   '/dashboard/settings':   { title: 'Ayarlar',                  description: 'Hesap ayarlarınızı yönetin' },
-  '/dashboard/api-docs':   { title: 'API Dokümantasyonu',       description: "BlogGenerator API'sini entegre edin" },
+  '/dashboard/api-docs':   { title: 'API Dokümantasyonu',       description: "BlogProduce API'sini entegre edin" },
 };
 
 export function DashboardHeader() {
@@ -110,8 +110,8 @@ export function DashboardHeader() {
       {/* Left: Logo + Page title */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-shrink-0">
-          <Image src="/images/logo.png" alt="BlogGenerator" width={32} height={32} className="w-8 h-8 object-contain" />
-          <span className="text-base font-bold text-foreground tracking-tight">BlogGenerator</span>
+          <Image src="/images/logo.png" alt="BlogProduce" width={32} height={32} className="w-8 h-8 object-contain" />
+          <span className="text-base font-bold text-foreground tracking-tight">BlogProduce</span>
         </Link>
 
         {currentMeta && (

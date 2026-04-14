@@ -12,9 +12,9 @@ const interTight = Inter_Tight({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
-const siteName = 'BlogGenerator';
-const defaultTitle = 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API | SEO Optimizasyonlu Blog Yazıları';
-const defaultDescription = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogGenerator AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
+const siteName = 'BlogProduce';
+const defaultTitle = 'BlogProduce - AI Destekli Blog İçerik Üretimi ve API | SEO Optimizasyonlu Blog Yazıları';
+const defaultDescription = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogProduce AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -40,9 +40,9 @@ export const metadata: Metadata = {
     'AI içerik üretimi',
     'blog otomasyonu',
   ],
-  authors: [{ name: 'BlogGenerator Team' }],
-  creator: 'BlogGenerator',
-  publisher: 'BlogGenerator',
+  authors: [{ name: 'BlogProduce Team' }],
+  creator: 'BlogProduce',
+  publisher: 'BlogProduce',
   formatDetection: {
     email: false,
     address: false,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
         url: `${siteUrl}/images/og-image.png`,
         width: 1200,
         height: 630,
-        alt: 'BlogGenerator - AI Destekli Blog İçerik Üretimi',
+        alt: 'BlogProduce - AI Destekli Blog İçerik Üretimi',
       },
     ],
   },
@@ -100,13 +100,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
-  const description = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogGenerator AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
+  const description = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogProduce AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
   
   // Structured Data (JSON-LD) for Organization
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'BlogGenerator',
+    name: 'BlogProduce',
     url: siteUrl,
     logo: `${siteUrl}/images/logo.png`,
     description: description,
@@ -126,7 +126,7 @@ export default function RootLayout({
   const softwareApplicationSchema = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'BlogGenerator',
+    name: 'BlogProduce',
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     offers: {

@@ -22,7 +22,7 @@ export default function AboutPage() {
             <p
               className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4"
             >
-              BlogGenerator, AI destekli blog içerik üretim uygulaması ve RESTful API&apos;si olarak, içerik üreticileri ve geliştiricilerin hayatını kolaylaştırmayı hedefliyor. Prompt&apos;a göre size özel, SEO optimizasyonlu blog içerikleri üretiyoruz.
+              BlogProduce, AI destekli blog içerik üretim uygulaması ve RESTful API&apos;si olarak, içerik üreticileri ve geliştiricilerin hayatını kolaylaştırmayı hedefliyor. Prompt&apos;a göre size özel, SEO optimizasyonlu blog içerikleri üretiyoruz.
             </p>
           </motion.div>
 
@@ -40,7 +40,7 @@ export default function AboutPage() {
               <p
                 className="text-base md:text-lg text-muted-foreground mb-3 md:mb-4 leading-6 md:leading-7"
               >
-                BlogGenerator olarak, içerik üreticileri ve geliştiricilerin blog üretim süreçlerini hızlandırmayı hedefliyoruz. Prompt&apos;a göre size özel, SEO optimizasyonlu blog içerikleri üreterek, zamanınızı tasarruf etmenizi ve daha fazla içerik oluşturmanızı sağlıyoruz.
+                BlogProduce olarak, içerik üreticileri ve geliştiricilerin blog üretim süreçlerini hızlandırmayı hedefliyoruz. Prompt&apos;a göre size özel, SEO optimizasyonlu blog içerikleri üreterek, zamanınızı tasarruf etmenizi ve daha fazla içerik oluşturmanızı sağlıyoruz.
               </p>
               <p
                 className="text-base md:text-lg text-muted-foreground leading-6 md:leading-7"

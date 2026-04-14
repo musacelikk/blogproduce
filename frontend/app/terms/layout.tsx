@@ -4,17 +4,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 
 export const metadata: Metadata = {
   title: 'Hizmet Şartları',
-  description: 'BlogGenerator hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
+  description: 'BlogProduce hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
   openGraph: {
-    title: 'Hizmet Şartları - BlogGenerator',
-    description: 'BlogGenerator hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
+    title: 'Hizmet Şartları - BlogProduce',
+    description: 'BlogProduce hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
     url: `${siteUrl}/terms`,
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Hizmet Şartları - BlogGenerator',
-    description: 'BlogGenerator hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
+    title: 'Hizmet Şartları - BlogProduce',
+    description: 'BlogProduce hizmet şartları ve kullanım koşulları. Platformu kullanırken uymanız gereken kurallar ve yasal yükümlülükler.',
   },
   alternates: {
     canonical: `${siteUrl}/terms`,

@@ -4,17 +4,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 
 export const metadata: Metadata = {
   title: 'Çözümlerimiz',
-  description: 'BlogGenerator ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler. RESTful API, webhook entegrasyonları, SEO optimizasyonu ve çok dilli destek ile işletmenizin içerik ihtiyaçlarını karşılayın.',
+  description: 'BlogProduce ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler. RESTful API, webhook entegrasyonları, SEO optimizasyonu ve çok dilli destek ile işletmenizin içerik ihtiyaçlarını karşılayın.',
   openGraph: {
-    title: 'Çözümlerimiz - BlogGenerator',
-    description: 'BlogGenerator ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler.',
+    title: 'Çözümlerimiz - BlogProduce',
+    description: 'BlogProduce ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler.',
     url: `${siteUrl}/solutions`,
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Çözümlerimiz - BlogGenerator',
-    description: 'BlogGenerator ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler.',
+    title: 'Çözümlerimiz - BlogProduce',
+    description: 'BlogProduce ile içerik üretim sürecinizi kolaylaştıran kapsamlı çözümler.',
   },
   alternates: {
     canonical: `${siteUrl}/solutions`,

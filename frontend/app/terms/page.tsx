@@ -40,7 +40,7 @@ export default function TermsPage() {
               <p
                 className="text-muted-foreground leading-relaxed mb-4"
               >
-                BlogGenerator hizmetini kullanarak aşağıdaki şartları kabul etmiş sayılırsınız:
+                BlogProduce hizmetini kullanarak aşağıdaki şartları kabul etmiş sayılırsınız:
               </p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                 <li>Hesabınızı kişisel kullanımınız için kullanmalısınız</li>
@@ -80,7 +80,7 @@ export default function TermsPage() {
               <p
                 className="text-muted-foreground leading-relaxed"
               >
-                BlogGenerator, oluşturulan içeriklerin doğruluğu, uygunluğu veya yasal uyumluluğu konusunda sorumluluk kabul etmez. Kullanıcılar, ürettikleri içeriklerin telif hakları, gizlilik ve diğer yasal konularda tam sorumluluğa sahiptir.
+                BlogProduce, oluşturulan içeriklerin doğruluğu, uygunluğu veya yasal uyumluluğu konusunda sorumluluk kabul etmez. Kullanıcılar, ürettikleri içeriklerin telif hakları, gizlilik ve diğer yasal konularda tam sorumluluğa sahiptir.
               </p>
             </section>
 

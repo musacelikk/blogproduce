@@ -5,7 +5,7 @@ AI-powered blog post generator using Next.js and NestJS with ChatGPT API integra
 ## Project Structure
 
 ```
-BlogGenerator/
+BlogProduce/
 ├── backend/          # NestJS API server
 └── frontend/         # Next.js application
 ```
@@ -44,7 +44,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 CORS_ORIGIN=http://localhost:3000
 
 # Database Configuration
-DATABASE_URL=postgresql://user:password@localhost:5432/bloggenerator
+DATABASE_URL=postgresql://user:password@localhost:5432/blogproduce
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

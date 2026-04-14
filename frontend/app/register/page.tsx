@@ -40,7 +40,7 @@ export default function RegisterPage() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   useEffect(() => {
-    document.title = 'Kayıt Ol - BlogGenerator';
+    document.title = 'Kayıt Ol - BlogProduce';
     const timer = setInterval(() => setActiveTestimonial((p) => (p + 1) % testimonials.length), 4000);
     return () => clearInterval(timer);
   }, []);
@@ -80,7 +80,7 @@ export default function RegisterPage() {
           {/* Logo */}
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55 }}>
             <Link href="/" className="inline-flex items-center gap-3">
-              <Image src="/images/logo.png" alt="BlogGenerator Logo" width={400} height={400} className="w-44 h-44 object-contain" />
+              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="w-44 h-44 object-contain" />
             </Link>
           </motion.div>
 

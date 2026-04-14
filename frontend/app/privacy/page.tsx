@@ -40,7 +40,7 @@ export default function PrivacyPage() {
               <p
                 className="text-muted-foreground leading-relaxed mb-4"
               >
-                BlogGenerator, hizmetlerimizi sağlamak için aşağıdaki verileri toplamaktadır:
+                BlogProduce, hizmetlerimizi sağlamak için aşağıdaki verileri toplamaktadır:
               </p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                 <li>Hesap bilgileri (ad, e-posta, şifre)</li>

@@ -99,7 +99,7 @@ export function PricingSectionClient({ plans, features }: PricingSectionClientPr
               fontFamily: 'var(--font-sans), "Inter", sans-serif',
             }}
           >
-            BlogGenerator AI destekli blog üretim API&apos;si ile başlayın. Tüm planlar RESTful API erişimi, SEO optimizasyonu ve prompt&apos;a göre özelleştirilebilir içerik üretimi içerir.
+            BlogProduce AI destekli blog üretim API&apos;si ile başlayın. Tüm planlar RESTful API erişimi, SEO optimizasyonu ve prompt&apos;a göre özelleştirilebilir içerik üretimi içerir.
           </p>
         </div>
 

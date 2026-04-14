@@ -13,8 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
   // FAQ'lardan ilk birkaç soruyu description'a ekle
   const faqTitles = pageFAQs.slice(0, 3).map(faq => faq.question).join(', ');
   const description = pageFAQs.length > 0
-    ? `BlogGenerator hakkında sık sorulan sorular: ${faqTitles} ve daha fazlası.`
-    : 'BlogGenerator hakkında sık sorulan sorular ve cevapları.';
+    ? `BlogProduce hakkında sık sorulan sorular: ${faqTitles} ve daha fazlası.`
+    : 'BlogProduce hakkında sık sorulan sorular ve cevapları.';
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
   
@@ -22,14 +22,14 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Sık Sorulan Sorular',
     description,
     openGraph: {
-      title: 'Sık Sorulan Sorular - BlogGenerator',
+      title: 'Sık Sorulan Sorular - BlogProduce',
       description,
       url: `${siteUrl}/faq`,
       type: 'website',
     },
     twitter: {
       card: 'summary',
-      title: 'Sık Sorulan Sorular - BlogGenerator',
+      title: 'Sık Sorulan Sorular - BlogProduce',
       description,
     },
     alternates: {

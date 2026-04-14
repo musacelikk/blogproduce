@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Put, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Delete, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -66,6 +66,19 @@ export class AuthController {
     return {
       success: true,
       message: 'Password updated successfully',
+    };
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(
+    @CurrentUser() user: any,
+    @Body() body: { currentPassword: string },
+  ) {
+    await this.authService.deleteAccount(user.id, body.currentPassword);
+    return {
+      success: true,
+      message: 'Hesabınız başarıyla silindi',
     };
   }
 

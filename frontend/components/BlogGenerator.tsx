@@ -19,7 +19,7 @@ const blogSchema = z.object({
 
 type BlogFormData = z.infer<typeof blogSchema>;
 
-export default function BlogGenerator() {
+export default function BlogProduce() {
   const [generatedBlog, setGeneratedBlog] = useState<{
     title: string;
     content: string;

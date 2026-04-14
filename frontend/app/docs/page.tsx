@@ -134,7 +134,7 @@ export default function DocsPage() {
             API Dokümantasyonu
           </span>
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground mb-4 leading-tight">
-            BlogGenerator API
+            BlogProduce API
           </h1>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mb-6">
             Yayınlanmış blog yazılarınızı listeleyin, tekil içerik çekin ve uygulamanıza entegre edin.
@@ -212,7 +212,7 @@ export default function DocsPage() {
               <section id="genel-bakis" className="scroll-mt-28 mb-14 pb-14" style={{ borderBottom: '1px solid var(--border)' }}>
                 <SectionHeading icon={BookOpen}>Genel Bakış</SectionHeading>
                 <p className="text-muted-foreground leading-relaxed mb-4">
-                  BlogGenerator API, yayınladığınız blog yazılarını programatik olarak almanızı sağlar.
+                  BlogProduce API, yayınladığınız blog yazılarını programatik olarak almanızı sağlar.
                   REST API ile içerikleri uygulamanıza, sitenize veya otomasyon sistemlerinize entegre edebilirsiniz.
                 </p>
                 <ul className="space-y-2 mb-4">

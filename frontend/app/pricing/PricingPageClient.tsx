@@ -567,7 +567,7 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                 14 gün ücretsiz, iptal garantili
               </h2>
               <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-lg mx-auto">
-                BlogGenerator ile içerik üretimini hızlandırın. Risk almadan deneyin.
+                BlogProduce ile içerik üretimini hızlandırın. Risk almadan deneyin.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link

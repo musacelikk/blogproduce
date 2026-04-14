@@ -4,7 +4,7 @@ import { useState } from "react"
 import { SectionTitle } from "@/components/ui/section-title"
 
 const testimonials = [
-  { id: 1, quote: "İçerik üreticisi olarak bloglar ve tanıtım metinleri için sürekli metin yazıyordum. BlogGenerator tam da aradığım tek duraklı çözüm oldu. Haftalarca süren işi günler içinde yapıyorum.", author: "Ayşe K.", role: "Pazarlama Müdürü", company: "TechStartup", blurColor: "bg-blue-500" },
+  { id: 1, quote: "İçerik üreticisi olarak bloglar ve tanıtım metinleri için sürekli metin yazıyordum. BlogProduce tam da aradığım tek duraklı çözüm oldu. Haftalarca süren işi günler içinde yapıyorum.", author: "Ayşe K.", role: "Pazarlama Müdürü", company: "TechStartup", blurColor: "bg-blue-500" },
   { id: 2, quote: "API ile kendi sitemize entegre ettik. Dakikalar içinde SEO uyumlu, özgün bloglar üretiyoruz. Ekip olarak hem zaman hem maliyet kazandık. Kesinlikle tavsiye ederim.", author: "Mehmet Y.", role: "Teknik Lead", company: "DevAgency", blurColor: "bg-purple-500" },
   { id: 3, quote: "50+ dil desteği harika. Uluslararası pazarlarda içerik üretmek artık çok kolay. SEO meta verileri otomatik oluşturuluyor, zamandan büyük tasarruf.", author: "Zeynep A.", role: "Dijital Pazarlama Uzmanı", company: "GrowthCo", blurColor: "bg-emerald-500" },
   { id: 4, quote: "Workspace yönetimi çok pratik. Her müşteri için ayrı çalışma alanı, ayrı API anahtarı. Ajans olarak çalışırken bu özellik hayat kurtarıyor.", author: "Burak D.", role: "Kurucu", company: "ContentAgency", blurColor: "bg-orange-500" },

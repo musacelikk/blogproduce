@@ -7,7 +7,7 @@ const stats = [
   { value: "3K+", label: "Günlük üretilen\nblog içeriği" },
   { value: "%99", label: "Google EEAT ve SEO Uyumluluk Garantisi" },
   { value: "50+", label: "Global Dil Desteği" },
-  { value: "100+", label: "BlogGenerator\nkullanan geliştirici" },
+  { value: "100+", label: "BlogProduce\nkullanan geliştirici" },
 ]
 
 export const BankingScaleHero = () => {
@@ -90,7 +90,7 @@ export const BankingScaleHero = () => {
             className="mt-8 max-w-xl leading-relaxed text-left text-lg"
             style={{ color: "var(--muted-foreground)" }}
           >
-            Sadece bir başlık veya anahtar kelime girin; BlogGenerator SEO uyumlu içeriği, görselleri ve meta etiketleriyle birlikte dakikalar içinde hazırlasın. RESTful API ile sisteminize anında entegre edin.
+            Sadece bir başlık veya anahtar kelime girin; BlogProduce SEO uyumlu içeriği, görselleri ve meta etiketleriyle birlikte dakikalar içinde hazırlasın. RESTful API ile sisteminize anında entegre edin.
           </p>
 
           <div className="flex flex-row items-start gap-4 mt-10">

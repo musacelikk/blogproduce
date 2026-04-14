@@ -23,7 +23,7 @@ const exampleBlogs: BlogPost[] = [
     title: 'Mail Servisi Nedir? Detaylı Bir İnceleme',
     excerpt:
       'Mail servisinin ne olduğu, temel bileşenleri ve e-posta sunucuları hakkında kapsamlı bir rehber.',
-    author: 'BlogGenerator',
+    author: 'BlogProduce',
     date: '1 Şubat 2026',
     category: 'Teknoloji',
     image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=600&fit=crop',
@@ -78,7 +78,7 @@ export const ExampleBlogs = () => {
               fontFamily: 'var(--font-sans), "Inter", sans-serif',
             }}
           >
-            BlogGenerator AI destekli blog üretim API&apos;si ile oluşturulmuş, prompt&apos;a göre özelleştirilmiş ve SEO optimizasyonlu profesyonel blog içeriklerinden örnekler
+            BlogProduce AI destekli blog üretim API&apos;si ile oluşturulmuş, prompt&apos;a göre özelleştirilmiş ve SEO optimizasyonlu profesyonel blog içeriklerinden örnekler
           </p>
         </motion.div>
 

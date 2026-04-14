@@ -51,7 +51,7 @@ export const FeatureHighlightsSection = () => {
               Özellikler
             </h2>
             <p className="mt-6 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-              BlogGenerator, içerik üretimini tam olarak özelleştirmenizi sağlar. Anahtar kelimeden tona, kelime sayısından görsellere kadar her parametreyi siz belirleyin.
+              BlogProduce, içerik üretimini tam olarak özelleştirmenizi sağlar. Anahtar kelimeden tona, kelime sayısından görsellere kadar her parametreyi siz belirleyin.
             </p>
             <p className="mt-4 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
               RESTful API ile üretilen içerikleri doğrudan sisteminize entegre edin. Gelişmiş SEO optimizasyonu ile içerikleriniz arama motorlarında öne çıksın.

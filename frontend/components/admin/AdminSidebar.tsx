@@ -113,7 +113,7 @@ export function AdminSidebar() {
                   Admin Panel
                 </span>
                 <span className="text-xs text-[#666666] block truncate" style={{ fontFamily: 'var(--font-sans), "Inter", sans-serif' }}>
-                  BlogGenerator
+                  BlogProduce
                 </span>
               </div>
             )}

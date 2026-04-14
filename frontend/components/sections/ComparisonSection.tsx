@@ -56,7 +56,7 @@ export const ComparisonSection = () => {
       <div className="max-w-[1280px] mx-auto px-6 md:px-12">
         <div className="mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-balance mb-4">
-            Neden BlogGenerator?
+            Neden BlogProduce?
           </h2>
           <p className="text-lg leading-relaxed max-w-xl" style={{ color: "var(--muted-foreground)" }}>
             AI araç kullanmak ile geleneksel yazı yöntemi arasındaki farkı inceleyin.

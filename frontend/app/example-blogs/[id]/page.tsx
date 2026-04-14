@@ -238,7 +238,7 @@ export default async function ExampleBlogDetailPage({ params }: PageProps) {
   }
 
   const title = post.title;
-  const authorName = post.author?.name || post.author?.email || 'BlogGenerator';
+  const authorName = post.author?.name || post.author?.email || 'BlogProduce';
   const publishedAt = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString('tr-TR', {
         year: 'numeric',

@@ -44,7 +44,7 @@ export function FAQHeader() {
         transition={{ duration: 0.5, delay: 0.25 }}
         className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto"
       >
-        BlogGenerator hakkında en çok sorulan sorulara hızlıca ulaşın.
+        BlogProduce hakkında en çok sorulan sorulara hızlıca ulaşın.
       </motion.p>
     </motion.div>
   );
