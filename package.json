@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "build": "npm --prefix backend run build",
+    "start": "npm --prefix backend run start:prod",
+    "start:api": "npm --prefix backend run start:prod",
+    "start:worker": "npm --prefix backend run worker:prod"
+  },
   "dependencies": {
     "openai": "^6.15.0"
   }
