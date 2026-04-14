@@ -3,6 +3,7 @@
 import { useLayoutEffect, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -45,8 +46,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const isDashboardHome = pathname === '/dashboard';
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }} data-dashboard-page>
+    <div className="dashboard-shell min-h-screen flex flex-col" data-dashboard-page>
       <DashboardSidebar />
       <div 
         className={`transition-all duration-300 flex flex-col flex-1 ${
@@ -54,11 +57,26 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }`}
       >
         <DashboardHeader />
-        <main className="flex-1 p-4 sm:p-5 lg:p-6 mt-14">
-          {children}
+        <main className="dashboard-main flex-1 mt-14 px-4 sm:px-5 lg:px-8 pb-6">
+          <div className="dashboard-main-inner mx-auto w-full max-w-7xl">
+            {!isDashboardHome && (
+              <div className="dashboard-hero mb-5 rounded-3xl p-5 sm:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-white/20">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/75">BlogProduce Studio</p>
+                    <p className="text-white font-semibold">İçerik operasyonlarını tek panelden yönetin</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {children}
+          </div>
         </main>
         {/* Footer */}
-        <footer className="px-5 lg:px-6 py-2 mt-auto" style={{ borderTop: '1px solid var(--border)', background: 'var(--card)' }}>
+        <footer className="dashboard-footer px-5 lg:px-8 py-3 mt-auto">
           <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3">
             <p
               className="text-[9px] text-[#999999]"

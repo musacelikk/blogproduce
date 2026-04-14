@@ -482,3 +482,47 @@ body:has([data-login-page]) footer {
   color: #1a32cc;
 }
 
+/* Dashboard refresh - homepage-inspired surfaces */
+.dashboard-shell {
+  position: relative;
+  background:
+    radial-gradient(800px 400px at 10% -10%, rgba(32, 62, 236, 0.12), transparent 60%),
+    radial-gradient(700px 360px at 90% -5%, rgba(0, 212, 255, 0.12), transparent 60%),
+    #f7f9ff;
+}
+
+.dashboard-main {
+  position: relative;
+}
+
+.dashboard-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.06) 100%);
+}
+
+.dashboard-main-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-hero {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: linear-gradient(120deg, #203eec 0%, #2f6dff 45%, #00c2ff 100%);
+  box-shadow: 0 20px 40px rgba(32, 62, 236, 0.22);
+}
+
+.dashboard-footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+[data-dashboard-page] .rounded-2xl,
+[data-dashboard-page] .rounded-xl {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
