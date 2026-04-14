@@ -519,8 +519,8 @@ export class WorkerService {
       throw new Error('OpenAI client not initialized. Check OPENAI_API_KEY configuration.');
     }
 
-    // Determine model: use from message, or fallback to config, or default to gpt-4.1-mini
-    const model = message.model || this.configService.get<string>('OPENAI_MODEL') || 'gpt-4.1-mini';
+    // Map pricing tiers to concrete OpenAI models.
+    const model = this.resolveModel(message.model || this.configService.get<string>('OPENAI_MODEL'));
     this.logger.log(`Generating content with model: ${model}`);
 
     const maxTokens = parseInt(this.configService.get<string>('OPENAI_MAX_TOKENS') || '4000', 10);
@@ -755,6 +755,25 @@ export class WorkerService {
     ].filter(Boolean);
 
     return instructions.join(' ');
+  }
+
+  private resolveModel(modelOrTier?: string): string {
+    if (!modelOrTier) {
+      return 'gpt-4.1-mini';
+    }
+
+    const normalized = modelOrTier.trim().toLowerCase();
+    if (normalized === 'ucuz' || normalized === 'cheap') {
+      return 'gpt-4.1-mini';
+    }
+    if (normalized === 'orta' || normalized === 'medium') {
+      return 'gpt-4.1';
+    }
+    if (normalized === 'pahali' || normalized === 'pahalı' || normalized === 'expensive') {
+      return 'gpt-5';
+    }
+
+    return modelOrTier;
   }
 
   private buildUserPrompt(message: GeneratePostMessage): string {

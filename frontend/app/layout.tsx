@@ -4,7 +4,6 @@ import './globals.css';
 import { PortfolioNavbar } from '@/components/layout/PortfolioNavbar';
 import { Footer } from '@/components/layout/Footer';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
-import { MagneticCursor } from '@/components/ui/magnetic-cursor';
 
 const interTight = Inter_Tight({
   subsets: ['latin'],
@@ -161,7 +160,6 @@ export default function RootLayout({
       </head>
       <body className={`${interTight.variable} antialiased`}>
         <GoogleAnalytics />
-        <MagneticCursor />
         <PortfolioNavbar />
         <main>{children}</main>
         <Footer />
