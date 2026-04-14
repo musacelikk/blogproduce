@@ -101,7 +101,7 @@ export default function ContactPage() {
                     <p
                       className="text-muted-foreground"
                     >
-                      dev@skytechbilisim.com
+                      info@ibbmtech.com
                     </p>
                   </div>
                 </div>

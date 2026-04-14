@@ -46,8 +46,8 @@ export default function KVKKPage() {
                 <p
                   className="text-sm text-muted-foreground"
                 >
-                  <strong>Veri Sorumlusu:</strong> Skytech Veri Bilişim Hizmetleri A.Ş.<br />
-                  <strong>Adres:</strong> [Şirket Adresi]<br />
+                  <strong>Veri Sorumlusu:</strong> IBBM Tech.<br />
+                  <strong>Adres:</strong> İstanbul, Türkiye<br />
                   <strong>E-posta:</strong> <a href="/contact" className="text-[#203eec] hover:underline">İletişim Sayfası</a>
                 </p>
               </div>

@@ -68,12 +68,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             >
               © 2026{' '}
               <a
-                href="https://skytechbilisim.com"
+                href="https://ibbmtech.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-[#666666] transition-colors"
               >
-                Skytech Veri Bilişim Hizmetleri A.Ş.
+                IBBM Tech.
               </a>
               {' '}Tüm hakları saklıdır.
             </p>
