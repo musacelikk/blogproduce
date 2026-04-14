@@ -20,9 +20,9 @@ import {
 } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
-// Production URL: https://api.blogenerate.com
+// Production URL: https://api.blogproduce.com
 // Development için .env.local'de NEXT_PUBLIC_API_URL=http://localhost:3001 set edin
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogenerate.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogproduce.com';
 
 // Code examples for Blog Listing & Management
 const listPostsExample = `// Blog Listing & Management API
@@ -286,22 +286,22 @@ if __name__ == '__main__':
 
 const curlAllExample = `# cURL Examples - Complete API Reference
 
-# Base URL: https://api.blogenerate.com
+# Base URL: https://api.blogproduce.com
 
 # ============================================
 # 1. BLOG LISTING & RETRIEVAL
 # ============================================
 
 # List posts (cursor-based pagination, recommended)
-curl -X GET "https://api.blogenerate.com/v1/api/blog?status=published&limit=50&cursor=NEXT_CURSOR" \\
+curl -X GET "https://api.blogproduce.com/v1/api/blog?status=published&limit=50&cursor=NEXT_CURSOR" \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Get post by ID (full content)
-curl -X GET "https://api.blogenerate.com/v1/api/blog/POST_ID" \\
+curl -X GET "https://api.blogproduce.com/v1/api/blog/POST_ID" \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Get post by slug
-curl -X GET "https://api.blogenerate.com/v1/api/blog/slug/BLOG_SLUG" \\
+curl -X GET "https://api.blogproduce.com/v1/api/blog/slug/BLOG_SLUG" \\
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # ============================================
@@ -309,7 +309,7 @@ curl -X GET "https://api.blogenerate.com/v1/api/blog/slug/BLOG_SLUG" \\
 # ============================================
 
 # Publish a draft post (requires JWT token from dashboard)
-curl -X POST "https://api.blogenerate.com/posts/POST_ID/publish" \\
+curl -X POST "https://api.blogproduce.com/posts/POST_ID/publish" \\
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \\
   -H "Content-Type: application/json"
 
@@ -1281,7 +1281,7 @@ export default function ApiDocsPage() {
             fontFamily: 'var(--font-sans), "Inter", sans-serif',
           }}
         >
-            Production: <code className="bg-white px-1 rounded">https://api.blogenerate.com</code> | Development: <code className="bg-white px-1 rounded">http://localhost:3001</code><br />
+            Production: <code className="bg-white px-1 rounded">https://api.blogproduce.com</code> | Development: <code className="bg-white px-1 rounded">http://localhost:3001</code><br />
             Tüm API istekleri bu Base URL&apos;yi kullanır
         </p>
       </motion.div>
@@ -2290,7 +2290,7 @@ export default function ApiDocsPage() {
           <div className="space-y-2 text-xs md:text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Check className="w-3 h-3 md:w-4 md:h-4 text-green-500 flex-shrink-0" />
-              <span className="break-words">E-posta: support@blogenerate.com</span>
+              <span className="break-words">E-posta: support@blogproduce.com</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="w-3 h-3 md:w-4 md:h-4 text-green-500 flex-shrink-0" />

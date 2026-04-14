@@ -5,7 +5,7 @@
 | Önlem | Durum | Açıklama |
 |-------|--------|----------|
 | **Helmet** | ✅ | Güvenlik başlıkları (X-Content-Type-Options, X-Frame-Options vb.). CSP/COEP kapalı. |
-| **CORS** | ✅ | Origin whitelist, credentials, blogenerate/railway/vercel pattern. |
+| **CORS** | ✅ | Origin whitelist, credentials, blogproduce/railway/vercel pattern. |
 | **Rate limiting (Throttler)** | ✅ | Global: IP başına dakikada istek (varsayılan 150). `THROTTLE_LIMIT` ile ayarlanır. |
 | **IP Blacklist / Whitelist** | ✅ | `IP_BLACKLIST`, `IP_WHITELIST` (env boşsa kapalı). |
 | **Trust proxy** | ✅ | Production’da proxy arkasında doğru IP. |
@@ -151,7 +151,7 @@ HMAC authentication includes timestamp validation:
 
 - `CORS_ORIGIN`: izin verilen origin’ler (virgülle ayrılmış).
 - `ALLOW_ALL_ORIGINS=true`: tüm origin’lere izin (gerekirse).
-- Production’da blogenerate.com, railway.app, vercel.app pattern’leri desteklenir.
+- Production’da blogproduce.com, railway.app, vercel.app pattern’leri desteklenir.
 - `allowedHeaders`: Content-Type, Authorization, X-Request-ID.
 - `exposedHeaders`: X-RateLimit-Limit, X-RateLimit-Remaining.
 

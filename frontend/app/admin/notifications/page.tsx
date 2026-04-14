@@ -170,7 +170,7 @@ export default function AdminNotificationsPage() {
               <Input
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="Örn: /pricing veya https://blogenerate.com/yeni-ozellik"
+                placeholder="Örn: /pricing veya https://blogproduce.com/yeni-ozellik"
                 className="bg-[#111111] border-[#2b2b2b] text-[#ebebeb] placeholder:text-[#555555] focus-visible:ring-[#3B82F6]"
               />
               <p

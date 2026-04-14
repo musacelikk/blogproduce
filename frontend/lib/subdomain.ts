@@ -12,7 +12,7 @@ export function getSubdomain(): string | null {
     return null;
   }
   
-  // Subdomain'i çıkar (admin.blogenerate.com -> admin)
+  // Subdomain'i çıkar (admin.blogproduce.com -> admin)
   const parts = hostname.split('.');
   
   // Eğer 3 veya daha fazla parça varsa, ilk parça subdomain'dir
@@ -35,7 +35,7 @@ export function isMainDomain(): boolean {
 
 export function getCookieDomain(): string {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_COOKIE_DOMAIN || '.blogenerate.com';
+    return process.env.NEXT_PUBLIC_COOKIE_DOMAIN || '.blogproduce.com';
   }
   
   const hostname = window.location.hostname;
@@ -54,7 +54,7 @@ export function getCookieDomain(): string {
   // Otomatik domain çıkarımı
   const parts = hostname.split('.');
   if (parts.length >= 2) {
-    // .blogenerate.com formatında döndür
+    // .blogproduce.com formatında döndür
     return `.${parts.slice(-2).join('.')}`;
   }
   
@@ -64,7 +64,7 @@ export function getCookieDomain(): string {
 export function redirectToAdminSubdomain(path: string = ''): void {
   if (typeof window === 'undefined') return;
   
-  const adminDomain = process.env.NEXT_PUBLIC_ADMIN_DOMAIN || 'admin.blogenerate.com';
+  const adminDomain = process.env.NEXT_PUBLIC_ADMIN_DOMAIN || 'admin.blogproduce.com';
   const protocol = window.location.protocol;
   const url = `${protocol}//${adminDomain}${path}`;
   
@@ -74,7 +74,7 @@ export function redirectToAdminSubdomain(path: string = ''): void {
 export function redirectToMainDomain(path: string = ''): void {
   if (typeof window === 'undefined') return;
   
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'blogenerate.com';
+  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'blogproduce.com';
   const protocol = window.location.protocol;
   const url = `${protocol}//${mainDomain}${path}`;
   

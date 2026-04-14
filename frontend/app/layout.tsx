@@ -11,7 +11,7 @@ const interTight = Inter_Tight({
   weight: ['400', '500', '600', '700', '800'],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogenerate.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 const siteName = 'BlogGenerator';
 const defaultTitle = 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API | SEO Optimizasyonlu Blog Yazıları';
 const defaultDescription = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogGenerator AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
@@ -99,7 +99,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogenerate.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
   const description = 'Prompt\'a göre size özel, SEO optimizasyonlu blog içerikleri üretin. BlogGenerator AI destekli blog üretim uygulaması ve RESTful API ile web sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir. Dakikalar içinde profesyonel blog yazıları oluşturun.';
   
   // Structured Data (JSON-LD) for Organization

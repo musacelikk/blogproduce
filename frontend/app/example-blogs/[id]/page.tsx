@@ -16,7 +16,7 @@ interface PublicPost {
   } | null;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogenerate.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogproduce.com';
 
 async function getExampleBlog(slug: string): Promise<PublicPost | null> {
   try {

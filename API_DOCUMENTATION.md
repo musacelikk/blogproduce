@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Last Updated:** January 26, 2026  
-**Base URL:** `https://api.blogenerate.com`
+**Base URL:** `https://api.blogproduce.com`
 
 ---
 
@@ -41,7 +41,7 @@ Blog Generator API is a **delivery and management** API that enables you to retr
 
 | Environment | URL |
 |------------|-----|
-| Production | `https://api.blogenerate.com` |
+| Production | `https://api.blogproduce.com` |
 | Development | `http://localhost:3001` |
 
 ### API Versioning
@@ -62,7 +62,7 @@ Blog Generator API is a **delivery and management** API that enables you to retr
 
 ### Step 1: Get Your API Key
 
-1. Log in to your [BlogGenerator Dashboard](https://blogenerate.com/dashboard)
+1. Log in to your [BlogGenerator Dashboard](https://blogproduce.com/dashboard)
 2. Navigate to **API Docs** section
 3. Select your workspace
 4. Click **"Create New API Key"**
@@ -71,7 +71,7 @@ Blog Generator API is a **delivery and management** API that enables you to retr
 ### Step 2: Make Your First Request
 
 ```bash
-curl -X GET "https://api.blogenerate.com/v1/api/blog?status=published&limit=10" \
+curl -X GET "https://api.blogproduce.com/v1/api/blog?status=published&limit=10" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -187,7 +187,7 @@ const signature = crypto
 #### Example Request
 
 ```bash
-curl -X GET "https://api.blogenerate.com/api/v1/posts" \
+curl -X GET "https://api.blogproduce.com/api/v1/posts" \
   -H "X-Client-Id: bg_client_xxxxx" \
   -H "X-Signature: <hmac_signature>" \
   -H "X-Timestamp: 1641024000000"
@@ -279,15 +279,15 @@ GET /api/blog     ⚠️ Deprecated (Offset-based pagination - shows warning)
 ```bash
 # ✅ RECOMMENDED: v1 endpoint with cursor-based pagination
 # First request (no cursor needed)
-curl -X GET "https://api.blogenerate.com/v1/api/blog?status=published&limit=50" \
+curl -X GET "https://api.blogproduce.com/v1/api/blog?status=published&limit=50" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # Next page request (use cursor from previous response's meta.next_cursor)
-curl -X GET "https://api.blogenerate.com/v1/api/blog?status=published&limit=50&cursor=eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTA3VDEwOjAwOjAwLjAwMFoiLCJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMCJ9" \
+curl -X GET "https://api.blogproduce.com/v1/api/blog?status=published&limit=50&cursor=eyJ0aW1lc3RhbXAiOiIyMDI0LTAxLTA3VDEwOjAwOjAwLjAwMFoiLCJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMCJ9" \
   -H "Authorization: Bearer YOUR_API_KEY"
 
 # ⚠️ DEPRECATED: Legacy endpoint (shows warning in response)
-curl -X GET "https://api.blogenerate.com/api/blog?status=published&limit=10&offset=0" \
+curl -X GET "https://api.blogproduce.com/api/blog?status=published&limit=10&offset=0" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -393,7 +393,7 @@ GET /v1/api/blog/:id
 #### Request Example
 
 ```bash
-curl -X GET "https://api.blogenerate.com/v1/api/blog/550e8400-e29b-41d4-a716-446655440000" \
+curl -X GET "https://api.blogproduce.com/v1/api/blog/550e8400-e29b-41d4-a716-446655440000" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -514,7 +514,7 @@ GET /v1/api/blog/slug/:slug
 #### Request Example
 
 ```bash
-curl -X GET "https://api.blogenerate.com/v1/api/blog/slug/getting-started-with-react-hooks" \
+curl -X GET "https://api.blogproduce.com/v1/api/blog/slug/getting-started-with-react-hooks" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -551,7 +551,7 @@ POST /posts/:id/publish
 #### Request Example
 
 ```bash
-curl -X POST "https://api.blogenerate.com/posts/550e8400-e29b-41d4-a716-446655440000/publish" \
+curl -X POST "https://api.blogproduce.com/posts/550e8400-e29b-41d4-a716-446655440000/publish" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -782,7 +782,7 @@ When you exceed your rate limit, you'll receive a `429 Too Many Requests` respon
 ### JavaScript (Fetch API)
 
 ```javascript
-const API_BASE_URL = 'https://api.blogenerate.com';
+const API_BASE_URL = 'https://api.blogproduce.com';
 const API_KEY = process.env.BLOG_API_KEY;
 
 // ✅ RECOMMENDED: List published posts with cursor-based pagination
@@ -930,7 +930,7 @@ async function getPostBySlugPrivate(slug) {
 import requests
 import os
 
-API_BASE_URL = 'https://api.blogenerate.com'
+API_BASE_URL = 'https://api.blogproduce.com'
 API_KEY = os.getenv('BLOG_API_KEY')
 
 def list_published_posts(limit=50, cursor=None):
@@ -1041,7 +1041,7 @@ if __name__ == '__main__':
 // app/blog/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://api.blogenerate.com';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.blogproduce.com';
 const API_KEY = process.env.BLOG_API_KEY; // API key from environment (workspace'e bağlı)
 
 // Note: Workspace slug is NOT required - API key is workspace-specific
@@ -1179,10 +1179,10 @@ const response = await fetch('/v1/api/blog?status=published&limit=50', ...);
 
 ### Getting Help
 
-- 📧 **Email:** support@blogenerate.com
-- 💬 **Discord:** [Join our Discord server](https://discord.gg/blogenerate)
-- 📖 **Documentation:** [Full Documentation](https://blogenerate.com/docs)
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/blogenerate/issues)
+- 📧 **Email:** support@blogproduce.com
+- 💬 **Discord:** [Join our Discord server](https://discord.gg/blogproduce)
+- 📖 **Documentation:** [Full Documentation](https://blogproduce.com/docs)
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/blogproduce/issues)
 
 ### Response Times
 
@@ -1201,7 +1201,7 @@ This API is provided under the terms of your subscription agreement. Usage is su
 - Content guidelines
 - Privacy policy
 
-For full terms, see: [Terms of Service](https://blogenerate.com/terms)
+For full terms, see: [Terms of Service](https://blogproduce.com/terms)
 
 ---
 

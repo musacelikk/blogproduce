@@ -64,8 +64,8 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Blogenerate domain pattern kontrolü (blogenerate.com ve subdomain'leri)
-      if (origin.includes('blogenerate.com')) {
+      // BlogProduce domain pattern kontrolü (blogproduce.com ve subdomain'leri)
+      if (origin.includes('blogproduce.com')) {
         return callback(null, true);
       }
 

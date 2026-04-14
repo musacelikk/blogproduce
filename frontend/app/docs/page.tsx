@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogenerate.com';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.blogproduce.com';
 
 const navItems = [
   { id: 'genel-bakis',      label: 'Genel Bakış',       icon: BookOpen },

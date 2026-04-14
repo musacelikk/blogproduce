@@ -8,7 +8,7 @@ const socialLinks = [
   { href: "https://twitter.com", icon: Twitter, label: "Twitter" },
   { href: "https://linkedin.com", icon: Linkedin, label: "LinkedIn" },
   { href: "https://github.com", icon: Github, label: "GitHub" },
-  { href: "mailto:hello@blogenerate.com", icon: Mail, label: "Email" },
+  { href: "mailto:hello@blogproduce.com", icon: Mail, label: "Email" },
 ]
 
 const footerLinks = [
@@ -70,11 +70,11 @@ export const Footer = () => {
             </div>
             <div className="mt-4">
               <Link
-                href="mailto:hello@blogenerate.com"
+                href="mailto:hello@blogproduce.com"
                 className="text-sm transition-colors hover:underline"
                 style={{ color: "#203eec" }}
               >
-                hello@blogenerate.com
+                hello@blogproduce.com
               </Link>
             </div>
           </div>

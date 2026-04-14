@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogenerate.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 
 export const metadata: Metadata = {
   title: 'BlogGenerator - AI Destekli Blog İçerik Üretimi ve API',

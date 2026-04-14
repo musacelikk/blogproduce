@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ? `BlogGenerator hakkında sık sorulan sorular: ${faqTitles} ve daha fazlası.`
     : 'BlogGenerator hakkında sık sorulan sorular ve cevapları.';
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogenerate.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
   
   return {
     title: 'Sık Sorulan Sorular',

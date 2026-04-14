@@ -8,13 +8,13 @@ export function middleware(request: NextRequest) {
   // Development için localhost kontrolü
   const isLocalhost = hostname.includes('localhost') || hostname.includes('127.0.0.1');
   
-  // Subdomain'i çıkar (admin.blogenerate.com -> admin)
+  // Subdomain'i çıkar (admin.blogproduce.com -> admin)
   // Localhost'ta subdomain yok
   let subdomain: string | null = null;
   if (!isLocalhost) {
     const parts = hostname.split('.');
     // Eğer 3 veya daha fazla parça varsa, ilk parça subdomain'dir
-    // Örnek: admin.blogenerate.com -> ['admin', 'blogenerate', 'com']
+    // Örnek: admin.blogproduce.com -> ['admin', 'blogproduce', 'com']
     if (parts.length >= 3) {
       subdomain = parts[0];
     }
@@ -80,10 +80,10 @@ export function middleware(request: NextRequest) {
     // Ana domain'de /admin/* path'lerini admin subdomain'ine redirect et
     if (isAdminPath) {
       const isProduction = process.env.NODE_ENV === 'production';
-      const adminDomain = process.env.NEXT_PUBLIC_ADMIN_DOMAIN || 'admin.blogenerate.com';
+      const adminDomain = process.env.NEXT_PUBLIC_ADMIN_DOMAIN || 'admin.blogproduce.com';
       
       if (isProduction && !isLocalhost) {
-        // /admin/login -> admin.blogenerate.com/login (path'ten /admin kaldır)
+        // /admin/login -> admin.blogproduce.com/login (path'ten /admin kaldır)
         const newPath = pathname.replace(/^\/admin/, '') || '/login';
         const url = new URL(newPath, `https://${adminDomain}`);
         return NextResponse.redirect(url);
@@ -101,7 +101,7 @@ export function middleware(request: NextRequest) {
 
   // Cookie domain ayarları (cross-subdomain için)
   if (process.env.NODE_ENV === 'production') {
-    const cookieDomain = process.env.NEXT_PUBLIC_COOKIE_DOMAIN || '.blogenerate.com';
+    const cookieDomain = process.env.NEXT_PUBLIC_COOKIE_DOMAIN || '.blogproduce.com';
     
     // Set-Cookie header'larını güncelle
     const cookies = response.headers.get('set-cookie');

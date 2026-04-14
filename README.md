@@ -178,7 +178,7 @@ PORT=3001
 NODE_ENV=production
 OPENAI_API_KEY=your_openai_api_key_here
 CORS_ORIGIN=https://your-frontend-domain.com,https://your-frontend-domain.vercel.app
-# Blogenerate domain'leri otomatik olarak izin verilir (blogenerate.com ve subdomain'leri)
+# BlogProduce domain'leri otomatik olarak izin verilir (blogproduce.com ve subdomain'leri)
 # Veya Railway domain'leri için otomatik izin için:
 # ALLOW_ALL_ORIGINS=true (sadece güvenli ortamlarda kullanın)
 
@@ -205,7 +205,7 @@ UNSPLASH_SECRET_KEY=your-unsplash-secret-key
    - Örnek: `https://your-app.vercel.app,https://your-custom-domain.com`
    - Railway domain'leri (`*.railway.app`) otomatik olarak izin verilir
    - Vercel domain'leri (`*.vercel.app`) otomatik olarak izin verilir
-   - Blogenerate domain'leri (`*.blogenerate.com`) otomatik olarak izin verilir
+   - BlogProduce domain'leri (`*.blogproduce.com`) otomatik olarak izin verilir
 
 3. **CORS Hatası Çözümü**:
    - Railway'de CORS hatası alıyorsanız:
@@ -218,13 +218,13 @@ UNSPLASH_SECRET_KEY=your-unsplash-secret-key
 1. **Environment Variables** - Vercel/Railway dashboard'da:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.blogenerate.com
+NEXT_PUBLIC_API_URL=https://api.blogproduce.com
 ```
 
-**Not:** Production'da backend URL'i `https://api.blogenerate.com` olarak ayarlanmalıdır. Development'ta `http://localhost:3001` kullanılır.
+**Not:** Production'da backend URL'i `https://api.blogproduce.com` olarak ayarlanmalıdır. Development'ta `http://localhost:3001` kullanılır.
 
 2. **Backend URL'i güncelleyin**: Frontend'in `NEXT_PUBLIC_API_URL` değişkenini production backend URL'inize ayarlayın.
-   - Production: `https://api.blogenerate.com`
+   - Production: `https://api.blogproduce.com`
    - Development: `http://localhost:3001`
 
 ## License
