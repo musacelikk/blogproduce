@@ -61,7 +61,7 @@ export default function NotFound() {
               Sayfa bulunamadı
             </h1>
             <p className="text-base text-muted-foreground mb-10 max-w-sm mx-auto leading-relaxed">
-              Aradığınız sayfa mevcut değil veya taşınmış olabilir. URL'yi kontrol edin ya da aşağıdaki bağlantıları kullanın.
+              Aradığınız sayfa mevcut değil veya taşınmış olabilir. URL&apos;yi kontrol edin ya da aşağıdaki bağlantıları kullanın.
             </p>
           </motion.div>
 

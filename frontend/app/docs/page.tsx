@@ -242,9 +242,9 @@ export default function DocsPage() {
                 <SectionHeading icon={Zap}>Hızlı Başlangıç</SectionHeading>
                 <ol className="space-y-3 mb-4">
                   {[
-                    <>Dashboard'a giriş yapın ve <strong>API Docs</strong> bölümünden çalışma alanınız için API anahtarı oluşturun.</>,
-                    <>İsteklerde <InlineCode>Authorization: Bearer YOUR_API_KEY</InlineCode> header'ını kullanın.</>,
-                    <>Yayınlanmış yazıları listelemek için <InlineCode>GET /v1/api/blog?status=published</InlineCode> endpoint'ini çağırın.</>,
+                    <>Dashboard&apos;a giriş yapın ve <strong>API Docs</strong> bölümünden çalışma alanınız için API anahtarı oluşturun.</>,
+                    <>İsteklerde <InlineCode>Authorization: Bearer YOUR_API_KEY</InlineCode> header&apos;ını kullanın.</>,
+                    <>Yayınlanmış yazıları listelemek için <InlineCode>GET /v1/api/blog?status=published</InlineCode> endpoint&apos;ini çağırın.</>,
                   ].map((step, i) => (
                     <li key={i} className="flex gap-3 text-sm text-muted-foreground">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -272,7 +272,7 @@ export default function DocsPage() {
                 <p className="text-sm font-semibold text-foreground mb-2">Önerilen: Bearer token</p>
                 <CodeBlock lang="http">Authorization: Bearer bg_your_api_key_here</CodeBlock>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Alternatif: <InlineCode>X-API-Key: bg_your_api_key_here</InlineCode> header'ı da kullanılabilir.
+                  Alternatif: <InlineCode>X-API-Key: bg_your_api_key_here</InlineCode> header&apos;ı da kullanılabilir.
                   Anahtarı asla URL query parametresi olarak göndermeyin.
                 </p>
               </section>
@@ -319,7 +319,7 @@ export default function DocsPage() {
                 </div>
                 <p className="text-sm text-muted-foreground mt-6 flex items-center gap-1.5">
                   <ExternalLink className="w-4 h-4 flex-shrink-0" style={{ color: '#203eec' }} />
-                  Dashboard'taki{' '}
+                  Dashboard&apos;taki{' '}
                   <Link href="/dashboard/api-docs" className="hover:underline font-medium" style={{ color: '#203eec' }}>
                     API Docs
                   </Link>{' '}
@@ -353,7 +353,7 @@ export default function DocsPage() {
               <section id="limitler" className="scroll-mt-28 mb-14 pb-14" style={{ borderBottom: '1px solid var(--border)' }}>
                 <SectionHeading icon={BarChart2}>Limitler ve Kota</SectionHeading>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                  Planınıza göre dakikalık/günlük istek limitleri uygulanır. Yanıt header'larında limit bilgisi döner:
+                  Planınıza göre dakikalık/günlük istek limitleri uygulanır. Yanıt header&apos;larında limit bilgisi döner:
                 </p>
                 <CodeBlock lang="http">{`X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
