@@ -531,6 +531,13 @@ export async function updatePassword(currentPassword: string, newPassword: strin
   });
 }
 
+export async function deleteAccount(currentPassword: string) {
+  return apiRequest('/auth/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ currentPassword }),
+  });
+}
+
 // Posts API
 // Unsplash API
 export interface UnsplashPhoto {

@@ -383,6 +383,30 @@ export class AuthService {
     await this.usersRepository.save(user);
   }
 
+  async deleteAccount(userId: string, currentPassword: string): Promise<void> {
+    if (!currentPassword) {
+      throw new BadRequestException('Current password is required');
+    }
+
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.password) {
+      throw new BadRequestException('User password not set');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Clean refresh tokens explicitly, then remove user.
+    await this.refreshTokenRepository.delete({ userId });
+    await this.usersRepository.remove(user);
+  }
+
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
     const { email } = forgotPasswordDto;
 

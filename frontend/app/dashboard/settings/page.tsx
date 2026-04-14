@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, Shield, Key, CreditCard, Globe, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Bell, Shield, Key, CreditCard, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getProfile, updateProfile, updatePassword } from '@/lib/api';
+import { getProfile, updateProfile, updatePassword, deleteAccount } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
 type TabType = 'profile' | 'account' | 'notifications' | 'api' | 'billing' | 'security';
@@ -20,6 +21,7 @@ const tabs = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -27,6 +29,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: '',
@@ -130,6 +133,28 @@ export default function SettingsPage() {
   };
 
   const ActiveTabIcon = tabs.find(t => t.id === activeTab)?.icon || User;
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+    );
+    if (!confirmed) return;
+
+    const currentPassword = window.prompt('Onay için mevcut şifrenizi girin:');
+    if (!currentPassword) return;
+
+    try {
+      setDeletingAccount(true);
+      setError('');
+      await deleteAccount(currentPassword);
+      auth.logout();
+      router.push('/register');
+    } catch (err: any) {
+      setError(err?.message || 'Hesap silinirken bir hata oluştu');
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
 
     return (
       <div className="space-y-5">
@@ -382,6 +407,22 @@ export default function SettingsPage() {
                     <option value="MM/DD/YYYY">AA/GG/YYYY</option>
                     <option value="YYYY-MM-DD">YYYY-AA-GG</option>
                   </select>
+                </div>
+
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm font-semibold text-red-700 mb-1">Tehlikeli Alan</p>
+                  <p className="text-xs text-red-600 mb-3">
+                    Hesabınızı silerseniz profiliniz ve erişiminiz kalıcı olarak kaldırılır.
+                  </p>
+                  <Button
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                    variant="outline"
+                    className="border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {deletingAccount ? 'Hesap Siliniyor...' : 'Hesabı Sil'}
+                  </Button>
                 </div>
               </div>
             )}
