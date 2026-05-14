@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Bell, LogOut, Settings, ChevronDown, Check, Zap } from 'lucide-react';
+import { Bell, LogOut, Settings, ChevronDown, Check, Zap, Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -33,7 +33,7 @@ export function DashboardHeader() {
   const [notifications, setNotifications]       = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount]           = useState(0);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-  const { isCollapsed } = useSidebar();
+  const { isMobileOpen, setIsMobileOpen } = useSidebar();
   const router   = useRouter();
   const pathname = usePathname();
 
@@ -107,11 +107,20 @@ export function DashboardHeader() {
       className="fixed top-0 right-0 left-0 flex items-center justify-between px-4 sm:px-5 h-14 z-50"
       style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
     >
-      {/* Left: Logo + Page title */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* Left: Hamburger (mobile) + Logo + Page title */}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="lg:hidden p-2 rounded-xl transition-colors flex-shrink-0"
+          style={{ color: 'var(--foreground)' }}
+          aria-label="Menüyü aç/kapat"
+        >
+          {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
         <Link href="/dashboard" className="flex items-center gap-2.5 flex-shrink-0">
-          <Image src="/images/logo.png" alt="BlogProduce" width={32} height={32} className="w-8 h-8 object-contain" />
-          <span className="text-base font-bold text-foreground tracking-tight">BlogProduce</span>
+          <Image src="/images/logo.png" alt="BlogProduce" width={64} height={64} className="w-auto h-16 object-contain" />
         </Link>
 
         {currentMeta && (

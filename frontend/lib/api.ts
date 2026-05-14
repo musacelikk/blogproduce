@@ -757,6 +757,21 @@ export async function unpublishPost(id: string): Promise<Post> {
   return response.data || response;
 }
 
+export async function schedulePost(id: string, scheduledAt: string): Promise<Post> {
+  const response = await apiRequest(`/posts/${id}/schedule`, {
+    method: 'POST',
+    body: JSON.stringify({ scheduledAt }),
+  });
+  return response.data || response;
+}
+
+export async function unschedulePost(id: string): Promise<Post> {
+  const response = await apiRequest(`/posts/${id}/unschedule`, {
+    method: 'POST',
+  });
+  return response.data || response;
+}
+
 // Assets API
 export interface Asset {
   id: string;

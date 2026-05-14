@@ -30,6 +30,9 @@ export default function SettingsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
 
   const [profileData, setProfileData] = useState({
     name: '',
@@ -135,24 +138,32 @@ export default function SettingsPage() {
   const ActiveTabIcon = tabs.find(t => t.id === activeTab)?.icon || User;
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
-    );
-    if (!confirmed) return;
+    setDeleteConfirmText('');
+    setDeletePassword('');
+    setIsDeleteModalOpen(true);
+  };
 
-    const currentPassword = window.prompt('Onay için mevcut şifrenizi girin:');
-    if (!currentPassword) return;
+  const handleConfirmDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'HESABIMI SIL') {
+      setError('Devam etmek için onay metnini "HESABIMI SIL" olarak girin');
+      return;
+    }
+    if (!deletePassword) {
+      setError('Lütfen mevcut şifrenizi girin');
+      return;
+    }
 
     try {
       setDeletingAccount(true);
       setError('');
-      await deleteAccount(currentPassword);
+      await deleteAccount(deletePassword);
       auth.logout();
       router.push('/register');
     } catch (err: any) {
       setError(err?.message || 'Hesap silinirken bir hata oluştu');
     } finally {
       setDeletingAccount(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -431,7 +442,7 @@ export default function SettingsPage() {
             {activeTab === 'notifications' && (
               <div className="space-y-4">
                 {Object.entries(notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between p-4 bg-[var(--secondary)] rounded-xl">
+                  <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-4 bg-[var(--secondary)] rounded-xl">
                     <div>
                       <p
                         className="font-medium text-foreground"
@@ -481,19 +492,21 @@ export default function SettingsPage() {
                   >
                     API Anahtarı
                   </label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Input
                       type="password"
                       value={apiSettings.apiKey}
                       readOnly
-                      className="border-[var(--border)] bg-[var(--secondary)] font-mono"
+                      className="border-[var(--border)] bg-[var(--secondary)] font-mono flex-1"
                     />
-                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-                      Kopyala
-                    </Button>
-                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-                      Yenile
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 sm:flex-none border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
+                        Kopyala
+                      </Button>
+                      <Button variant="outline" className="flex-1 sm:flex-none border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
+                        Yenile
+                      </Button>
+                    </div>
                   </div>
                   <p
                     className="text-xs text-muted-foreground mt-2"
@@ -561,7 +574,7 @@ export default function SettingsPage() {
             {activeTab === 'billing' && (
               <div className="space-y-6">
                 <div className="p-6 bg-[var(--secondary)] rounded-xl border border-[var(--border)]">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div>
                       <h3
                         className="text-lg font-medium text-foreground mb-1"
@@ -582,7 +595,7 @@ export default function SettingsPage() {
                       Planı Yükselt
                     </Button>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p
                         className="text-muted-foreground mb-1"
@@ -763,7 +776,7 @@ export default function SettingsPage() {
                   >
                     İki Faktörlü Doğrulama
                   </h3>
-                  <div className="flex items-center justify-between p-4 bg-[var(--secondary)] rounded-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--secondary)] rounded-xl">
                     <div>
                       <p
                         className="font-medium text-foreground"
@@ -812,6 +825,54 @@ export default function SettingsPage() {
           </div>
         </div>
       </motion.div>
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/45"
+            onClick={() => !deletingAccount && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl border border-red-200 bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-foreground">Hesabı Sil</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Bu işlem geri alınamaz. Devam etmek için aşağıya <strong>HESABIMI SIL</strong> yazın ve mevcut şifrenizi girin.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="HESABIMI SIL"
+                className="border-red-200 focus:border-red-400"
+              />
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Mevcut şifreniz"
+                className="border-red-200 focus:border-red-400"
+              />
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={deletingAccount}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                onClick={handleConfirmDeleteAccount}
+                disabled={deletingAccount}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deletingAccount ? 'Siliniyor...' : 'Hesabı Kalıcı Olarak Sil'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

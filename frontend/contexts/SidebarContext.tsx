@@ -6,6 +6,8 @@ interface SidebarContextType {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (open: boolean) => void;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -14,9 +16,9 @@ const SIDEBAR_STORAGE_KEY = 'admin-sidebar-collapsed';
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
-    // Load from localStorage on mount
     const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     if (saved !== null) {
       setIsCollapsed(JSON.parse(saved));
@@ -24,7 +26,6 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Save to localStorage whenever it changes
     localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(isCollapsed));
   }, [isCollapsed]);
 
@@ -33,7 +34,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, toggleSidebar }}>
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, toggleSidebar, isMobileOpen, setIsMobileOpen }}>
       {children}
     </SidebarContext.Provider>
   );

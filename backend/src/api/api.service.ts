@@ -15,6 +15,7 @@ import { UpdatePostApiDto } from './dto/update-post-api.dto';
 import { SqsService } from '../queue/sqs.service';
 import { PostsService } from '../posts/posts.service';
 import { convertContentFormat, parseFormat, markdownToJson } from '../common/utils/content-format.util';
+import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -68,13 +69,14 @@ export class ApiService {
         }
       }
 
-      // Generate slug from topic
-      const slug = dto.topic
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 100);
+      // Generate unique slug from topic (Turkish chars → ASCII, no timestamp suffix)
+      const baseSlug = toSlug(dto.topic);
+      const slug = await toUniqueSlug(baseSlug, async (candidate) => {
+        const existing = await this.postsRepository.findOne({
+          where: { organizationId: organization.id, projectId: project.id, slug: candidate },
+        });
+        return !!existing;
+      });
 
       // Parse cover image credit JSON if provided
       let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
@@ -89,7 +91,7 @@ export class ApiService {
       // Create post with QUEUED status
       const postData: any = {
         title: dto.topic,
-        slug: `${slug}-${Date.now()}`,
+        slug,
         organizationId: organization.id,
         projectId: project.id,
         authorId: organization.ownerId,

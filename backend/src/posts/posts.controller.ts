@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -115,5 +116,37 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   async unpublish(@Param('id') id: string, @CurrentUser() user: User) {
     return this.postsService.unpublish(id, user);
+  }
+
+  /**
+   * Schedule a post for future publishing
+   * POST /posts/:id/schedule
+   * Body: { scheduledAt: ISO8601 string }
+   */
+  @Post(':id/schedule')
+  @UseGuards(JwtAuthGuard)
+  async schedule(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Body() body: { scheduledAt: string },
+  ) {
+    if (!body.scheduledAt) {
+      throw new BadRequestException('scheduledAt is required');
+    }
+    const scheduledAt = new Date(body.scheduledAt);
+    if (isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('scheduledAt must be a valid ISO date string');
+    }
+    return this.postsService.schedulePost(id, user, scheduledAt);
+  }
+
+  /**
+   * Remove scheduling from a post (revert to draft)
+   * POST /posts/:id/unschedule
+   */
+  @Post(':id/unschedule')
+  @UseGuards(JwtAuthGuard)
+  async unschedule(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.postsService.unschedulePost(id, user);
   }
 }

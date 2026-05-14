@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, LessThanOrEqual } from 'typeorm';
 import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
 import { Workspace } from '../entities/workspace.entity';
 import { Tag } from '../entities/tag.entity';
@@ -16,10 +16,13 @@ import { SqsService } from '../queue/sqs.service';
 import { WebhookService } from '../webhooks/webhook.service';
 import { WebhookEvent } from '../entities/webhook.entity';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
+import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
+
   constructor(
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
@@ -434,13 +437,12 @@ export class PostsService {
       }
     }
 
-    // Generate slug from topic
-    const slug = generatePostDto.topic
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .substring(0, 100);
+    // Generate unique slug from topic (Turkish chars → ASCII, no timestamp suffix)
+    const baseSlug = toSlug(generatePostDto.topic);
+    const slug = await toUniqueSlug(baseSlug, async (candidate) => {
+      const existing = await this.postsRepository.findOne({ where: { slug: candidate } });
+      return !!existing;
+    });
 
     // Parse cover image credit JSON if provided
     let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
@@ -455,7 +457,7 @@ export class PostsService {
     // Create post with queued status
     const postData: any = {
       title: generatePostDto.topic,
-      slug: `${slug}-${Date.now()}`,
+      slug,
       workspaceId: generatePostDto.workspaceId,
       authorId: user.id,
       language: generatePostDto.language || PostLanguage.TR,
@@ -737,8 +739,9 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
-    // Can only publish draft or generated posts
-    if (post.status !== PostStatus.DRAFT && post.status !== PostStatus.GENERATED) {
+    // Can only publish draft, generated, or scheduled posts
+    const publishableStatuses = [PostStatus.DRAFT, PostStatus.GENERATED, PostStatus.SCHEDULED];
+    if (!publishableStatuses.includes(post.status)) {
       throw new ForbiddenException(`Cannot publish post with status: ${post.status}`);
     }
 
@@ -818,5 +821,122 @@ export class PostsService {
       message: 'Post unpublished successfully',
       data: savedPost,
     };
+  }
+
+  /**
+   * Schedule a post for future publishing
+   * POST /posts/:id/schedule
+   */
+  async schedulePost(id: string, user: User, scheduledAt: Date) {
+    const post = await this.postsRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'workspace.owner', 'author'],
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.workspace && post.workspace.ownerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (scheduledAt <= new Date()) {
+      throw new ForbiddenException('Scheduled time must be in the future');
+    }
+
+    const schedulableStatuses = [PostStatus.DRAFT, PostStatus.GENERATED, PostStatus.SCHEDULED];
+    if (!schedulableStatuses.includes(post.status)) {
+      throw new ForbiddenException(`Cannot schedule post with status: ${post.status}`);
+    }
+
+    post.status = PostStatus.SCHEDULED;
+    post.scheduledAt = scheduledAt;
+    const savedPost = await this.postsRepository.save(post);
+
+    return {
+      success: true,
+      message: 'Post scheduled successfully',
+      data: savedPost,
+    };
+  }
+
+  /**
+   * Remove scheduling from a post (revert to draft)
+   * POST /posts/:id/unschedule
+   */
+  async unschedulePost(id: string, user: User) {
+    const post = await this.postsRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'workspace.owner', 'author'],
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    if (post.workspace && post.workspace.ownerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (post.status !== PostStatus.SCHEDULED) {
+      throw new ForbiddenException(`Post is not scheduled (current status: ${post.status})`);
+    }
+
+    post.status = PostStatus.DRAFT;
+    post.scheduledAt = null;
+    const savedPost = await this.postsRepository.save(post);
+
+    return {
+      success: true,
+      message: 'Post unscheduled successfully',
+      data: savedPost,
+    };
+  }
+
+  /**
+   * Cron job: publish all posts whose scheduledAt has passed
+   * Called by PostsSchedulerService every minute
+   */
+  async publishScheduledPosts(): Promise<void> {
+    const now = new Date();
+
+    const duePosts = await this.postsRepository.find({
+      where: {
+        status: PostStatus.SCHEDULED,
+        scheduledAt: LessThanOrEqual(now),
+      },
+      relations: ['organization', 'project', 'workspace'],
+    });
+
+    if (duePosts.length === 0) return;
+
+    this.logger.log(`Publishing ${duePosts.length} scheduled post(s)`);
+
+    for (const post of duePosts) {
+      try {
+        post.status = PostStatus.PUBLISHED;
+        post.publishedAt = now;
+        await this.postsRepository.save(post);
+
+        if (post.organizationId && post.projectId) {
+          await this.webhookService.triggerWebhook(
+            post.organizationId,
+            post.projectId,
+            WebhookEvent.POST_PUBLISHED,
+            {
+              postId: post.id,
+              title: post.title,
+              slug: post.slug,
+              publishedAt: post.publishedAt,
+            },
+          );
+        }
+
+        this.logger.log(`Scheduled post published: ${post.id} (${post.title})`);
+      } catch (err) {
+        this.logger.error(`Failed to publish scheduled post ${post.id}: ${err.message}`);
+      }
+    }
   }
 }

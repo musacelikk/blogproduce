@@ -30,10 +30,12 @@ import {
   RefreshCw,
   Check,
   ExternalLink,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { getPost, updatePost, publishPost, unpublishPost, deletePost, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
+import { getPost, updatePost, publishPost, unpublishPost, deletePost, schedulePost, unschedulePost, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
 
 const statusColors = {
   draft: 'bg-gray-100 text-gray-700',
@@ -42,6 +44,17 @@ const statusColors = {
   generated: 'bg-green-100 text-green-700',
   failed: 'bg-red-100 text-red-700',
   published: 'bg-purple-100 text-purple-700',
+  scheduled: 'bg-orange-100 text-orange-700',
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Taslak',
+  queued: 'Kuyrukta',
+  generating: 'Üretiliyor',
+  generated: 'Üretildi',
+  failed: 'Başarısız',
+  published: 'Yayında',
+  scheduled: 'Zamanlandı',
 };
 
 const statusIcons = {
@@ -51,6 +64,7 @@ const statusIcons = {
   generated: CheckCircle2,
   failed: XCircle,
   published: CheckCircle2,
+  scheduled: Bell,
 };
 
 export default function BlogDetailPage() {
@@ -75,6 +89,10 @@ export default function BlogDetailPage() {
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingImage, setUpdatingImage] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDateTime, setScheduleDateTime] = useState('');
+  const [scheduling, setScheduling] = useState(false);
+  const [unscheduling, setUnscheduling] = useState(false);
 
   useEffect(() => {
     if (postId) {
@@ -264,7 +282,7 @@ export default function BlogDetailPage() {
       setTogglingPublish(true);
       if (post.status === 'published') {
         await unpublishPost(post.id);
-      } else if (post.status === 'draft' || post.status === 'generated') {
+      } else if (post.status === 'draft' || post.status === 'generated' || post.status === 'scheduled') {
         await publishPost(post.id);
       }
       await loadPost();
@@ -273,6 +291,40 @@ export default function BlogDetailPage() {
     } finally {
       setTogglingPublish(false);
     }
+  };
+
+  const handleSchedule = async () => {
+    if (!post || !scheduleDateTime) return;
+    try {
+      setScheduling(true);
+      await schedulePost(post.id, new Date(scheduleDateTime).toISOString());
+      setShowScheduleModal(false);
+      setScheduleDateTime('');
+      await loadPost();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Zamanlama ayarlanırken bir hata oluştu');
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  const handleUnschedule = async () => {
+    if (!post) return;
+    try {
+      setUnscheduling(true);
+      await unschedulePost(post.id);
+      await loadPost();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Zamanlama iptal edilirken bir hata oluştu');
+    } finally {
+      setUnscheduling(false);
+    }
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    return now.toISOString().slice(0, 16);
   };
 
   const handleDelete = async () => {
@@ -570,10 +622,11 @@ export default function BlogDetailPage() {
             ) : (
               <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             )}
-            <span className="hidden sm:inline">{post.status}</span>
-            <span className="sm:hidden">{post.status.substring(0, 4)}</span>
+            <span>{statusLabels[post.status] ?? post.status}</span>
           </span>
-          {!isGenerating && (post.status === 'draft' || post.status === 'generated' || post.status === 'published') && (
+
+          {/* Publish / Unpublish / Publish Now */}
+          {!isGenerating && (post.status === 'draft' || post.status === 'generated' || post.status === 'published' || post.status === 'scheduled') && (
             <Button
               variant="outline"
               size="sm"
@@ -592,12 +645,51 @@ export default function BlogDetailPage() {
                   <FileX className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                   <span className="hidden sm:inline">Taslağa Al</span>
                 </>
+              ) : post.status === 'scheduled' ? (
+                <>
+                  <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Şimdi Yayınla</span>
+                </>
               ) : (
                 <>
                   <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                   <span className="hidden sm:inline">Yayınla</span>
                 </>
               )}
+            </Button>
+          )}
+
+          {/* Schedule button (for draft / generated) */}
+          {!isGenerating && (post.status === 'draft' || post.status === 'generated') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setScheduleDateTime(getMinDateTime());
+                setShowScheduleModal(true);
+              }}
+              className="text-orange-600 border-orange-200 hover:bg-orange-50 text-xs"
+            >
+              <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+              <span className="hidden sm:inline">Zamanla</span>
+            </Button>
+          )}
+
+          {/* Unschedule button */}
+          {post.status === 'scheduled' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUnschedule}
+              disabled={unscheduling}
+              className="text-gray-600 border-gray-200 hover:bg-gray-50 text-xs"
+            >
+              {unscheduling ? (
+                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
+              ) : (
+                <BellOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+              )}
+              <span className="hidden sm:inline">İptal Et</span>
             </Button>
           )}
           <Button
@@ -690,6 +782,37 @@ export default function BlogDetailPage() {
             <div className="flex items-center gap-2 text-sm text-[#666666]">
               <Globe className="w-4 h-4" />
               <span>Dil: {post.language}</span>
+            </div>
+          )}
+          {post.publishedAt && (
+            <div className="flex items-center gap-2 text-sm text-purple-600">
+              <Globe className="w-4 h-4" />
+              <span>
+                Yayın tarihi: {new Date(post.publishedAt).toLocaleDateString('tr-TR', {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                  hour: '2-digit', minute: '2-digit',
+                })}
+              </span>
+            </div>
+          )}
+          {post.scheduledAt && post.status === 'scheduled' && (
+            <div className="flex items-center gap-2 text-sm text-orange-600 col-span-full">
+              <Bell className="w-4 h-4" />
+              <span>
+                Zamanlanmış yayın: {new Date(post.scheduledAt).toLocaleDateString('tr-TR', {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                  hour: '2-digit', minute: '2-digit',
+                })}
+              </span>
+              <button
+                onClick={() => {
+                  setScheduleDateTime(new Date(post.scheduledAt!).toISOString().slice(0, 16));
+                  setShowScheduleModal(true);
+                }}
+                className="ml-1 text-orange-500 underline text-xs hover:text-orange-700"
+              >
+                Değiştir
+              </button>
             </div>
           )}
         </div>
@@ -1323,6 +1446,87 @@ export default function BlogDetailPage() {
                 </Button>
               </div>
             )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Schedule Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/45"
+            onClick={() => !scheduling && setShowScheduleModal(false)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full max-w-sm rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-100">
+                  <Bell className="w-4 h-4 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-[#202020]">Yayını Zamanla</h3>
+                  <p className="text-xs text-[#666666]">Belirtilen tarihte otomatik yayınlanır</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-[#666666]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-[#202020] mb-2 block">
+                  Yayın Tarihi ve Saati
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduleDateTime}
+                  min={getMinDateTime()}
+                  onChange={(e) => setScheduleDateTime(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-[#e5e5e5] rounded-xl text-sm text-[#202020] focus:border-[#203eec] focus:outline-none focus:ring-2 focus:ring-[#203eec]/10"
+                />
+                <p className="mt-1.5 text-[11px] text-[#999999]">
+                  Seçilen tarih ve saatte blog otomatik olarak yayınlanacaktır.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowScheduleModal(false)}
+                disabled={scheduling}
+                className="border-[#e5e5e5] text-[#666666]"
+              >
+                İptal
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSchedule}
+                disabled={scheduling || !scheduleDateTime}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {scheduling ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Zamanlanıyor...
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-3.5 h-3.5 mr-1.5" />
+                    Zamanla
+                  </>
+                )}
+              </Button>
+            </div>
           </motion.div>
         </div>
       )}

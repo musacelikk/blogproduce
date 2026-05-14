@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { logout } from '@/lib/api';
 import {
-  LayoutDashboard, FileText, History, Settings, LogOut, Menu, X,
+  LayoutDashboard, FileText, History, Settings, LogOut,
   Sparkles, ChevronLeft, ChevronRight, CreditCard, BarChart3,
   BookOpen, Folder, Receipt,
 } from 'lucide-react';
@@ -40,8 +39,7 @@ const sidebarGroups: { label?: string; items: { name: string; href: string; icon
 ];
 
 export function DashboardSidebar() {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { isCollapsed, setIsCollapsed } = useSidebar();
+  const { isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen } = useSidebar();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -52,15 +50,6 @@ export function DashboardSidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl shadow-sm transition-colors"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
-      >
-        {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
       {/* Sidebar */}
       <aside
         className={`fixed top-14 bottom-0 left-0 pt-3 z-40 flex flex-col transition-all duration-300 ${
@@ -68,31 +57,35 @@ export function DashboardSidebar() {
         } ${isCollapsed ? 'lg:w-[68px]' : 'lg:w-60'} w-60`}
         style={{ background: 'var(--card)', borderRight: '1px solid var(--border)' }}
       >
-        {/* Collapse Toggle - Desktop */}
+        {/* Collapse Toggle - Desktop only */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 rounded-full items-center justify-center shadow-sm z-50 transition-colors"
+          className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 rounded-full items-center justify-center transition-all duration-200"
           style={{
             background: 'var(--card)',
             border: '1.5px solid var(--border)',
             color: 'var(--muted-foreground)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            zIndex: 60,
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.background = '#203eec';
             (e.currentTarget as HTMLElement).style.color = 'white';
             (e.currentTarget as HTMLElement).style.borderColor = '#203eec';
+            (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(32,62,236,0.35)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.background = 'var(--card)';
             (e.currentTarget as HTMLElement).style.color = 'var(--muted-foreground)';
             (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+            (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
           }}
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={isCollapsed ? 'Sidebar\'ı genişlet' : 'Sidebar\'ı daralt'}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-3 h-3" />
+            <ChevronRight className="w-3.5 h-3.5" />
           ) : (
-            <ChevronLeft className="w-3 h-3" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           )}
         </button>
 

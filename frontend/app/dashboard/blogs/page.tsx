@@ -19,6 +19,8 @@ interface Blog {
   status: string;
   createdAt: string;
   updatedAt: string;
+  scheduledAt?: string;
+  publishedAt?: string;
   contentLength?: number;
   format?: string;
   model?: string;
@@ -133,6 +135,8 @@ function BlogsPageContent() {
           model: latestRevision?.model || undefined,
           content: latestRevision?.content || undefined, // For preview
           coverImageUrl: post.coverImageUrl || undefined,
+          scheduledAt: post.scheduledAt || undefined,
+          publishedAt: post.publishedAt || undefined,
         };
       });
       
@@ -162,7 +166,7 @@ function BlogsPageContent() {
     try {
       if (currentStatus === 'published') {
         await unpublishPost(blogId);
-      } else if (currentStatus === 'draft' || currentStatus === 'generated') {
+      } else if (currentStatus === 'draft' || currentStatus === 'generated' || currentStatus === 'scheduled') {
         await publishPost(blogId);
       }
       // Reload posts to reflect the change
@@ -187,20 +191,26 @@ function BlogsPageContent() {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, scheduledAt?: string) => {
     const statusMap: Record<string, { label: string; color: string }> = {
       queued: { label: 'Kuyruğa Eklendi', color: 'bg-yellow-100 text-yellow-700' },
       generating: { label: 'Üretiliyor...', color: 'bg-blue-100 text-blue-700' },
       generated: { label: 'Hazır', color: 'bg-green-100 text-green-700' },
       failed: { label: 'Başarısız', color: 'bg-red-100 text-red-700' },
       draft: { label: 'Taslak', color: 'bg-gray-100 text-gray-700' },
-      published: { label: 'Yayınlandı', color: 'bg-green-100 text-green-700' },
+      published: { label: 'Yayınlandı', color: 'bg-purple-100 text-purple-700' },
+      scheduled: { label: 'Zamanlandı', color: 'bg-orange-100 text-orange-700' },
     };
 
     const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
     return (
-      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
+      <span className={`inline-flex flex-col px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
         {statusInfo.label}
+        {status === 'scheduled' && scheduledAt && (
+          <span className="font-normal opacity-80" style={{ fontSize: '9px' }}>
+            {new Date(scheduledAt).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
       </span>
     );
   };
@@ -602,7 +612,7 @@ function BlogsPageContent() {
                           <Eye className="w-3.5 h-3.5" />
                           Görüntüle
                         </Link>
-                        {(blog.status === 'draft' || blog.status === 'generated') && (
+                        {(blog.status === 'draft' || blog.status === 'generated' || blog.status === 'scheduled') && (
                           <button
                             onClick={() => {
                               handleTogglePublish(blog.id, blog.status);
@@ -611,7 +621,7 @@ function BlogsPageContent() {
                             className="w-full px-3 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1.5"
                           >
                             <Globe className="w-3.5 h-3.5" />
-                            Yayınla
+                            {blog.status === 'scheduled' ? 'Şimdi Yayınla' : 'Yayınla'}
                           </button>
                         )}
                         {blog.status === 'published' && (
@@ -668,7 +678,7 @@ function BlogsPageContent() {
                   
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-[var(--border)]">
                     <div className="flex items-center gap-1">
-                      {getStatusBadge(blog.status)}
+                      {getStatusBadge(blog.status, blog.scheduledAt)}
                     </div>
                     <Link href={`/dashboard/blogs/${blog.id}`} className="w-full sm:w-auto">
                       <Button
@@ -742,7 +752,7 @@ function BlogsPageContent() {
                           {blog.model}
                         </span>
                       )}
-                      {getStatusBadge(blog.status)}
+                      {getStatusBadge(blog.status, blog.scheduledAt)}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -784,7 +794,7 @@ function BlogsPageContent() {
                             <Eye className="w-3.5 h-3.5" />
                             Görüntüle
                           </Link>
-                          {(blog.status === 'draft' || blog.status === 'generated') && (
+                          {(blog.status === 'draft' || blog.status === 'generated' || blog.status === 'scheduled') && (
                             <button
                               onClick={() => {
                                 handleTogglePublish(blog.id, blog.status);
@@ -793,7 +803,7 @@ function BlogsPageContent() {
                               className="w-full px-3 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1.5"
                             >
                               <Globe className="w-3.5 h-3.5" />
-                              Yayınla
+                              {blog.status === 'scheduled' ? 'Şimdi Yayınla' : 'Yayınla'}
                             </button>
                           )}
                           {blog.status === 'published' && (
