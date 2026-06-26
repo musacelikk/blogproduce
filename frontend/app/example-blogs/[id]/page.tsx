@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { ExternalLink } from 'lucide-react';
 
 interface PublicPost {
   id: string;
@@ -9,6 +10,7 @@ interface PublicPost {
   content_markdown?: string;
   content_html?: string;
   coverImageUrl?: string;
+  canonicalUrl?: string | null;
   publishedAt?: string;
   author?: {
     name?: string;
@@ -253,7 +255,21 @@ export default async function ExampleBlogDetailPage({ params }: PageProps) {
     <div className="min-h-screen bg-gradient-to-b from-white to-[#fafafa]">
       <main className="max-w-4xl mx-auto px-4 md:px-6 lg:px-0 pt-24 pb-16">
         <header className="mb-8 md:mb-10">
-          <p className="text-sm text-[#203eec] mb-2">Örnek Blog</p>
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <p className="text-sm text-[#203eec]">Örnek Blog</p>
+            {post.canonicalUrl && (
+              <a
+                href={post.canonicalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-full transition-opacity hover:opacity-80 flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Yayınlanan sitede görüntüle
+              </a>
+            )}
+          </div>
           <h1
             className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-[#202020] mb-4"
           >

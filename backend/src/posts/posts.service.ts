@@ -344,6 +344,7 @@ export class PostsService {
         slug: post.slug,
         excerpt: post.excerpt,
         coverImageUrl: post.coverImageUrl,
+        canonicalUrl: post.canonicalUrl || null,
         publishedAt: post.publishedAt,
         language: post.language,
         author: post.author

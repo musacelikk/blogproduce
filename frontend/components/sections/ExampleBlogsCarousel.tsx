@@ -2,7 +2,7 @@
 
 import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
-import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Sparkles, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,7 @@ type BlogPost = {
   category?: string;
   image?: string;
   coverImageUrl?: string;
+  canonicalUrl?: string | null;
 };
 
 type ExampleBlogsCarouselProps = {
@@ -242,6 +243,17 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
                       style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
                     >
                       {blog.category}
+                    </span>
+                  </div>
+                )}
+                {blog.canonicalUrl && (
+                  <div className="absolute top-3 right-3">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white rounded-full"
+                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+                    >
+                      <Globe className="w-2.5 h-2.5" />
+                      Yayında
                     </span>
                   </div>
                 )}

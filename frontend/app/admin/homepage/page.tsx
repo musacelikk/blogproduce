@@ -24,6 +24,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye as EyeIcon,
+  Link,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -36,6 +38,7 @@ import {
   getAdminPosts,
   getHomepagePostsAdmin,
   setHomepagePosts as saveHomepagePostsToApi,
+  updatePost,
   type FAQ,
   type Post,
 } from '@/lib/api';
@@ -75,6 +78,9 @@ export default function AdminHomepagePage() {
   const [postsPerPage] = useState(20);
   const [previewPost, setPreviewPost] = useState<Post | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [referenceUrls, setReferenceUrls] = useState<Record<string, string>>({});
+  const [editingReferenceId, setEditingReferenceId] = useState<string | null>(null);
+  const [savingReferenceId, setSavingReferenceId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -85,6 +91,21 @@ export default function AdminHomepagePage() {
     loadPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      setReferenceUrls((prev) => {
+        const updated = { ...prev };
+        posts.forEach((p) => {
+          if (!(p.id in updated)) {
+            updated[p.id] = (p as Post & { canonicalUrl?: string | null }).canonicalUrl ?? '';
+          }
+        });
+        return updated;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
 
   // Seçimlerin sayfa yenilenince hemen görünmesi: mount'ta ve loading bittiğinde yükle
   useEffect(() => {
@@ -163,11 +184,25 @@ export default function AdminHomepagePage() {
       const saved = await getHomepagePostsAdmin();
       const ids = Array.isArray(saved) ? saved.map((id) => String(id)) : [];
       setHomepagePosts(ids);
-      if (ids.length > 0) {
-        console.log('Homepage posts loaded:', ids.length, ids);
-      }
     } catch (err) {
       console.error('Error loading homepage posts:', err);
+    }
+  };
+
+  const handleSaveReferenceUrl = async (postId: string) => {
+    const url = referenceUrls[postId] ?? '';
+    setSavingReferenceId(postId);
+    try {
+      await updatePost(postId, { canonicalUrl: url || undefined } as Partial<Post>);
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, canonicalUrl: url || null } : p))
+      );
+      setEditingReferenceId(null);
+    } catch (err) {
+      console.error('Error saving reference URL:', err);
+      alert('Site linki kaydedilirken bir hata oluştu.');
+    } finally {
+      setSavingReferenceId(null);
     }
   };
 
@@ -622,69 +657,148 @@ export default function AdminHomepagePage() {
                     key={postId}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 p-3 bg-[#0f0f0f] border border-[#333333] rounded-lg hover:border-[#3B82F6]/50 transition-colors"
+                    className="flex flex-col gap-2 p-3 bg-[#0f0f0f] border border-[#333333] rounded-lg hover:border-[#3B82F6]/50 transition-colors"
                   >
-                    <div className="flex items-center gap-2 text-[#ebebeb] text-xs font-medium">
-                      <GripVertical className="w-4 h-4" />
-                      <span className="w-6 text-center">{index + 1}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 text-[#ebebeb] text-xs font-medium">
+                        <GripVertical className="w-4 h-4" />
+                        <span className="w-6 text-center">{index + 1}</span>
+                      </div>
+                      {post.coverImageUrl && (
+                        <Image
+                          src={post.coverImageUrl}
+                          alt={post.title}
+                          width={40}
+                          height={40}
+                          className="w-10 h-10 rounded object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-white truncate">
+                          {post.title}
+                        </h4>
+                        <p className="text-xs text-[#ebebeb] truncate">
+                          {post.status === 'published' ? 'Yayınlandı' : 'Hazır'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMovePost(postId, 'up');
+                          }}
+                          disabled={index === 0}
+                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
+                          title="Yukarı taşı"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMovePost(postId, 'down');
+                          }}
+                          disabled={index === homepagePosts.length - 1}
+                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
+                          title="Aşağı taşı"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingReferenceId(editingReferenceId === postId ? null : postId);
+                            if (editingReferenceId !== postId) {
+                              setReferenceUrls((prev) => ({
+                                ...prev,
+                                [postId]: (post as Post & { canonicalUrl?: string | null }).canonicalUrl ?? prev[postId] ?? '',
+                              }));
+                            }
+                          }}
+                          className={`h-7 w-7 p-0 hover:text-blue-300 hover:bg-blue-500/10 ${editingReferenceId === postId ? 'text-blue-400' : 'text-[#ebebeb]'}`}
+                          title="Site linki düzenle"
+                        >
+                          <Link className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTogglePost(postId);
+                          }}
+                          className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          title="Kaldır"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
-                    {post.coverImageUrl && (
-                      <Image
-                        src={post.coverImageUrl}
-                        alt={post.title}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      />
+
+                    {/* Reference URL editor */}
+                    {editingReferenceId === postId && (
+                      <div className="flex items-center gap-2 pl-12">
+                        <div className="relative flex-1">
+                          <ExternalLink className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#ebebeb]" />
+                          <input
+                            type="url"
+                            placeholder="https://siteadresi.com/blog/makale-adi"
+                            value={referenceUrls[postId] ?? ''}
+                            onChange={(e) =>
+                              setReferenceUrls((prev) => ({ ...prev, [postId]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveReferenceUrl(postId);
+                              if (e.key === 'Escape') setEditingReferenceId(null);
+                            }}
+                            autoFocus
+                            className="w-full pl-8 pr-3 py-1.5 bg-[#1a1a1a] rounded border border-[#444444] text-white text-xs placeholder:text-[#666666] focus:border-[#3B82F6] focus:outline-none"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveReferenceUrl(postId)}
+                          disabled={savingReferenceId === postId}
+                          className="h-7 px-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs"
+                        >
+                          {savingReferenceId === postId ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Save className="w-3 h-3" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingReferenceId(null)}
+                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-white truncate">
-                        {post.title}
-                      </h4>
-                      <p className="text-xs text-[#ebebeb] truncate">
-                        {post.status === 'published' ? 'Yayınlandı' : 'Hazır'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMovePost(postId, 'up');
-                        }}
-                        disabled={index === 0}
-                        className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
-                        title="Yukarı taşı"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMovePost(postId, 'down');
-                        }}
-                        disabled={index === homepagePosts.length - 1}
-                        className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
-                        title="Aşağı taşı"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTogglePost(postId);
-                        }}
-                        className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        title="Kaldır"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
+
+                    {/* Show saved URL */}
+                    {editingReferenceId !== postId && (post as Post & { canonicalUrl?: string | null }).canonicalUrl && (
+                      <div className="flex items-center gap-1.5 pl-12">
+                        <ExternalLink className="w-3 h-3 text-[#3B82F6] flex-shrink-0" />
+                        <a
+                          href={(post as Post & { canonicalUrl?: string | null }).canonicalUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#3B82F6] hover:text-blue-300 truncate"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {(post as Post & { canonicalUrl?: string | null }).canonicalUrl}
+                        </a>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
