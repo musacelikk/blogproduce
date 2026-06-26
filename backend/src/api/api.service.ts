@@ -16,6 +16,7 @@ import { SqsService } from '../queue/sqs.service';
 import { PostsService } from '../posts/posts.service';
 import { convertContentFormat, parseFormat, markdownToJson } from '../common/utils/content-format.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
+import { getPublishedRevision } from '../common/utils/revision.util';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -509,9 +510,7 @@ export class ApiService {
         throw new NotFoundException('Post not found');
       }
 
-      const latestRevision = post.revisions
-        ? post.revisions.sort((a, b) => b.version - a.version)[0]
-        : null;
+      const latestRevision = getPublishedRevision(post);
 
       if (!latestRevision || !latestRevision.content) {
         return {
@@ -738,9 +737,7 @@ export class ApiService {
       }
 
       // Get latest revision content
-      const latestRevision = post.revisions
-        ? post.revisions.sort((a, b) => b.version - a.version)[0]
-        : null;
+      const latestRevision = getPublishedRevision(post);
 
       if (!latestRevision || !latestRevision.content) {
         return {
@@ -891,9 +888,7 @@ export class ApiService {
       }
 
       // Get latest revision content
-      const latestRevision = post.revisions
-        ? post.revisions.sort((a, b) => b.version - a.version)[0]
-        : null;
+      const latestRevision = getPublishedRevision(post);
 
       if (!latestRevision || !latestRevision.content) {
         return {

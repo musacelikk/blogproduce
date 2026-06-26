@@ -19,6 +19,7 @@ import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-t
 import { encodeCursor, decodeCursor } from '../common/utils/cursor.util';
 import { jsonToMarkdown, convertContentFormat, parseFormat } from '../common/utils/content-format.util';
 import { ContentFormat } from '../entities/post-revision.entity';
+import { getPublishedRevision, sortRevisionsDesc } from '../common/utils/revision.util';
 
 export interface GenerateBlogResponse {
   title: string;
@@ -500,7 +501,7 @@ export class BlogService {
     }
 
     if (post.revisions && post.revisions.length > 0) {
-      post.revisions.sort((a, b) => b.version - a.version);
+      post.revisions = sortRevisionsDesc(post.revisions);
     }
 
     return this.formatPostForApi(post, true, format);
@@ -522,18 +523,16 @@ export class BlogService {
     }
 
     if (post.revisions && post.revisions.length > 0) {
-      post.revisions.sort((a, b) => b.version - a.version);
+      post.revisions = sortRevisionsDesc(post.revisions);
     }
 
     return this.formatPostForApi(post, true, format);
   }
 
   private formatPostForApi(post: Post, includeContent: boolean = false, format?: string) {
-    const latestRevision = includeContent && post.revisions && post.revisions.length > 0
-      ? post.revisions[post.revisions.length - 1]
-      : null;
-    const rawContent = latestRevision?.content ?? null;
-    const storedFormat = latestRevision?.contentFormat ?? ContentFormat.MD;
+    const activeRevision = includeContent ? getPublishedRevision(post) : null;
+    const rawContent = activeRevision?.content ?? null;
+    const storedFormat = activeRevision?.contentFormat ?? ContentFormat.MD;
 
     // Canonical JSON → markdown; MD/HTML → uygun işleme
     let contentMarkdown: string | null = null;

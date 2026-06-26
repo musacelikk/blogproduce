@@ -119,8 +119,8 @@ export function DashboardHeader() {
           {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <Link href="/dashboard" className="flex items-center gap-2.5 flex-shrink-0">
-          <Image src="/images/logo.png" alt="BlogProduce" width={64} height={64} className="w-auto h-16 object-contain" />
+        <Link href="/dashboard" className="flex items-center h-full flex-shrink-0">
+          <Image src="/images/logo.png" alt="BlogProduce" width={120} height={32} className="h-8 w-auto object-contain" priority />
         </Link>
 
         {currentMeta && (

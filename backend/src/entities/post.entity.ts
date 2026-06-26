@@ -119,6 +119,9 @@ export class Post {
   @Column({ name: 'scheduled_at', type: 'timestamp', nullable: true })
   scheduledAt: Date | null;
 
+  @Column({ name: 'published_revision_id', type: 'uuid', nullable: true })
+  publishedRevisionId: string | null;
+
   @Column({ name: 'last_error', type: 'text', nullable: true })
   lastError: string | null;
 

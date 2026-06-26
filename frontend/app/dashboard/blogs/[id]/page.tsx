@@ -115,11 +115,16 @@ export default function BlogDetailPage() {
       setLoading(true);
       setError(null);
       const postData = await getPost(postId);
-      setPost(postData);
+      const sortedRevisions = [...(postData.revisions || [])].sort((a, b) => b.version - a.version);
+      const normalizedPost = { ...postData, revisions: sortedRevisions };
+      setPost(normalizedPost);
       // En son versiyonu seç
-      if (postData.revisions && postData.revisions.length > 0) {
-        setSelectedRevisionIndex(0);
-        setEditedContent(postData.revisions[0].content);
+      if (sortedRevisions.length > 0) {
+        const activeIndex = postData.publishedRevisionId
+          ? sortedRevisions.findIndex((r) => r.id === postData.publishedRevisionId)
+          : 0;
+        setSelectedRevisionIndex(activeIndex >= 0 ? activeIndex : 0);
+        setEditedContent(sortedRevisions[activeIndex >= 0 ? activeIndex : 0].content);
       }
       if (postData.slug) {
         setEditedSlug(postData.slug);
@@ -275,15 +280,33 @@ export default function BlogDetailPage() {
     }
   };
 
+  const handlePublishSelectedRevision = async () => {
+    if (!post) return;
+    const selectedRevision = post.revisions?.[selectedRevisionIndex];
+    if (!selectedRevision) return;
+
+    try {
+      setTogglingPublish(true);
+      await publishPost(post.id, selectedRevision.id);
+      await loadPost();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Seçilen versiyon yayınlanırken bir hata oluştu');
+    } finally {
+      setTogglingPublish(false);
+    }
+  };
+
   const handleTogglePublish = async () => {
     if (!post) return;
+
+    const selectedRevision = post.revisions?.[selectedRevisionIndex];
 
     try {
       setTogglingPublish(true);
       if (post.status === 'published') {
         await unpublishPost(post.id);
       } else if (post.status === 'draft' || post.status === 'generated' || post.status === 'scheduled') {
-        await publishPost(post.id);
+        await publishPost(post.id, selectedRevision?.id);
       }
       await loadPost();
     } catch (err) {
@@ -295,9 +318,10 @@ export default function BlogDetailPage() {
 
   const handleSchedule = async () => {
     if (!post || !scheduleDateTime) return;
+    const selectedRevision = post.revisions?.[selectedRevisionIndex];
     try {
       setScheduling(true);
-      await schedulePost(post.id, new Date(scheduleDateTime).toISOString());
+      await schedulePost(post.id, new Date(scheduleDateTime).toISOString(), selectedRevision?.id);
       setShowScheduleModal(false);
       setScheduleDateTime('');
       await loadPost();
@@ -659,6 +683,27 @@ export default function BlogDetailPage() {
             </Button>
           )}
 
+          {post.status === 'published' &&
+            selectedRevision &&
+            selectedRevision.id !== post.publishedRevisionId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePublishSelectedRevision}
+              disabled={togglingPublish}
+              className="text-green-600 border-green-200 hover:bg-green-50 text-xs"
+            >
+              {togglingPublish ? (
+                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
+              ) : (
+                <>
+                  <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Bu Versiyonu Yayınla</span>
+                </>
+              )}
+            </Button>
+          )}
+
           {/* Schedule button (for draft / generated) */}
           {!isGenerating && (post.status === 'draft' || post.status === 'generated') && (
             <Button
@@ -1005,11 +1050,13 @@ export default function BlogDetailPage() {
                 className="w-full px-3 py-2 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5] text-[#202020] text-sm focus:border-[#203eec] focus:outline-none"
               >
                 {post.revisions.map((revision, index) => {
-                  // Versiyon numarasını hesapla (en yeni versiyon v1, en eski vN)
-                  const versionNumber = (post.revisions?.length || 0) - index;
+                  const isPublishedVersion = post.publishedRevisionId === revision.id;
                   return (
                     <option key={revision.id} value={index}>
-                      v{versionNumber} - {new Date(revision.createdAt).toLocaleDateString('tr-TR', {
+                      v{revision.version}
+                      {isPublishedVersion ? ' (Yayında)' : ''}
+                      {' - '}
+                      {new Date(revision.createdAt).toLocaleDateString('tr-TR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',

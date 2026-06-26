@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThanOrEqual } from 'typeorm';
 import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
@@ -17,6 +17,7 @@ import { WebhookService } from '../webhooks/webhook.service';
 import { WebhookEvent } from '../entities/webhook.entity';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
+import { getLatestRevision, getPublishedRevision, sortRevisionsDesc } from '../common/utils/revision.util';
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 
 @Injectable()
@@ -216,10 +217,11 @@ export class PostsService {
       let readingTime: number | undefined;
 
       if (slug && post.revisions && post.revisions.length > 0) {
-        const latestRevision = post.revisions[post.revisions.length - 1];
-        const raw = latestRevision.content || '';
+        const activeRevision = getPublishedRevision(post);
+        if (activeRevision) {
+        const raw = activeRevision.content || '';
 
-        if (latestRevision.contentFormat === ContentFormat.JSON && raw) {
+        if (activeRevision.contentFormat === ContentFormat.JSON && raw) {
           // Canonical JSON → markdown (desteklenen eski/yeni şemaları birleştir)
           let markdown = '';
           try {
@@ -312,9 +314,9 @@ export class PostsService {
           }
 
           contentMarkdown = markdown && markdown.trim() ? markdown : undefined;
-        } else if (latestRevision.contentFormat === ContentFormat.MD) {
+        } else if (activeRevision.contentFormat === ContentFormat.MD) {
           contentMarkdown = raw;
-        } else if (latestRevision.contentFormat === ContentFormat.HTML) {
+        } else if (activeRevision.contentFormat === ContentFormat.HTML) {
           // HTML olarak saklanmışsa direkt HTML kullan, markdown'ı sadeleştirmek isteğe bağlı
           contentHtml = this.htmlSanitizer.sanitize(raw, true);
           contentMarkdown = undefined;
@@ -332,6 +334,7 @@ export class PostsService {
           // Convert to HTML and sanitize
           contentHtml = this.htmlSanitizer.sanitize(markdownToHtml(contentMarkdown), true);
           readingTime = calculateReadingTime(contentMarkdown);
+        }
         }
       }
 
@@ -579,6 +582,10 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
+    if (post.revisions?.length) {
+      post.revisions = sortRevisionsDesc(post.revisions);
+    }
+
     return post;
   }
 
@@ -658,7 +665,13 @@ export class PostsService {
           editor: ContentEditor.HUMAN,
         });
 
-        await this.postRevisionsRepository.save(newRevision);
+        const savedRevision = await this.postRevisionsRepository.save(newRevision);
+
+        // Published posts should serve the newly saved revision
+        if (savedPost.status === PostStatus.PUBLISHED) {
+          savedPost.publishedRevisionId = savedRevision.id;
+          await this.postsRepository.save(savedPost);
+        }
       }
     }
 
@@ -673,10 +686,14 @@ export class PostsService {
     }
 
     // Reload post with revisions
-    return this.postsRepository.findOne({
+    const reloaded = await this.postsRepository.findOne({
       where: { id: savedPost.id },
       relations: ['revisions'],
     });
+    if (reloaded?.revisions?.length) {
+      reloaded.revisions = sortRevisionsDesc(reloaded.revisions);
+    }
+    return reloaded;
   }
 
   async remove(id: string, user: User) {
@@ -724,10 +741,10 @@ export class PostsService {
    * Publish a post
    * Changes status to PUBLISHED and triggers webhook
    */
-  async publish(id: string, user: User) {
+  async publish(id: string, user: User, revisionId?: string) {
     const post = await this.postsRepository.findOne({
       where: { id },
-      relations: ['workspace', 'workspace.owner', 'author', 'organization', 'project'],
+      relations: ['workspace', 'workspace.owner', 'author', 'organization', 'project', 'revisions'],
     });
 
     if (!post) {
@@ -739,15 +756,24 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
-    // Can only publish draft, generated, or scheduled posts
-    const publishableStatuses = [PostStatus.DRAFT, PostStatus.GENERATED, PostStatus.SCHEDULED];
+    const publishableStatuses = [PostStatus.DRAFT, PostStatus.GENERATED, PostStatus.SCHEDULED, PostStatus.PUBLISHED];
     if (!publishableStatuses.includes(post.status)) {
       throw new ForbiddenException(`Cannot publish post with status: ${post.status}`);
     }
 
-    // Update post status
-    post.status = PostStatus.PUBLISHED;
-    post.publishedAt = new Date();
+    const activeRevisionId = await this.resolvePublishedRevisionId(post, revisionId);
+    if (!activeRevisionId) {
+      throw new BadRequestException('No revision available to publish');
+    }
+
+    post.publishedRevisionId = activeRevisionId;
+
+    if (post.status !== PostStatus.PUBLISHED) {
+      post.status = PostStatus.PUBLISHED;
+      post.publishedAt = new Date();
+    }
+
+    post.scheduledAt = null;
     const savedPost = await this.postsRepository.save(post);
 
     // Trigger webhook if organization and project exist
@@ -827,10 +853,10 @@ export class PostsService {
    * Schedule a post for future publishing
    * POST /posts/:id/schedule
    */
-  async schedulePost(id: string, user: User, scheduledAt: Date) {
+  async schedulePost(id: string, user: User, scheduledAt: Date, revisionId?: string) {
     const post = await this.postsRepository.findOne({
       where: { id },
-      relations: ['workspace', 'workspace.owner', 'author'],
+      relations: ['workspace', 'workspace.owner', 'author', 'revisions'],
     });
 
     if (!post) {
@@ -852,6 +878,7 @@ export class PostsService {
 
     post.status = PostStatus.SCHEDULED;
     post.scheduledAt = scheduledAt;
+    post.publishedRevisionId = await this.resolvePublishedRevisionId(post, revisionId);
     const savedPost = await this.postsRepository.save(post);
 
     return {
@@ -906,7 +933,7 @@ export class PostsService {
         status: PostStatus.SCHEDULED,
         scheduledAt: LessThanOrEqual(now),
       },
-      relations: ['organization', 'project', 'workspace'],
+      relations: ['organization', 'project', 'workspace', 'revisions'],
     });
 
     if (duePosts.length === 0) return;
@@ -915,6 +942,9 @@ export class PostsService {
 
     for (const post of duePosts) {
       try {
+        if (!post.publishedRevisionId) {
+          post.publishedRevisionId = (await this.resolvePublishedRevisionId(post)) ?? null;
+        }
         post.status = PostStatus.PUBLISHED;
         post.publishedAt = now;
         await this.postsRepository.save(post);
@@ -938,5 +968,24 @@ export class PostsService {
         this.logger.error(`Failed to publish scheduled post ${post.id}: ${err.message}`);
       }
     }
+  }
+
+  private async resolvePublishedRevisionId(post: Post, revisionId?: string): Promise<string | null> {
+    if (!post.revisions?.length) {
+      post.revisions = await this.postRevisionsRepository.find({
+        where: { postId: post.id },
+        order: { version: 'DESC' },
+      });
+    }
+
+    if (revisionId) {
+      const found = post.revisions?.find((r) => r.id === revisionId);
+      if (!found) {
+        throw new NotFoundException('Revision not found');
+      }
+      return revisionId;
+    }
+
+    return getLatestRevision(post.revisions)?.id ?? null;
   }
 }

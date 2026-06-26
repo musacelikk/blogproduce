@@ -104,8 +104,12 @@ export class PostsController {
    */
   @Post(':id/publish')
   @UseGuards(JwtAuthGuard)
-  async publish(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.postsService.publish(id, user);
+  async publish(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Body() body: { revisionId?: string } = {},
+  ) {
+    return this.postsService.publish(id, user, body.revisionId);
   }
 
   /**
@@ -128,7 +132,7 @@ export class PostsController {
   async schedule(
     @Param('id') id: string,
     @CurrentUser() user: User,
-    @Body() body: { scheduledAt: string },
+    @Body() body: { scheduledAt: string; revisionId?: string },
   ) {
     if (!body.scheduledAt) {
       throw new BadRequestException('scheduledAt is required');
@@ -137,7 +141,7 @@ export class PostsController {
     if (isNaN(scheduledAt.getTime())) {
       throw new BadRequestException('scheduledAt must be a valid ISO date string');
     }
-    return this.postsService.schedulePost(id, user, scheduledAt);
+    return this.postsService.schedulePost(id, user, scheduledAt, body.revisionId);
   }
 
   /**

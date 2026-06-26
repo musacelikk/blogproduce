@@ -635,6 +635,7 @@ export interface Post {
   canonicalUrl?: string;
   publishedAt?: string;
   scheduledAt?: string;
+  publishedRevisionId?: string;
   lastError?: string;
   hiddenByAdmin?: boolean;
   hiddenAt?: string;
@@ -743,9 +744,10 @@ export async function deletePost(id: string): Promise<void> {
   return;
 }
 
-export async function publishPost(id: string): Promise<Post> {
+export async function publishPost(id: string, revisionId?: string): Promise<Post> {
   const response = await apiRequest(`/posts/${id}/publish`, {
     method: 'POST',
+    body: JSON.stringify(revisionId ? { revisionId } : {}),
   });
   return response.data || response;
 }
@@ -757,10 +759,10 @@ export async function unpublishPost(id: string): Promise<Post> {
   return response.data || response;
 }
 
-export async function schedulePost(id: string, scheduledAt: string): Promise<Post> {
+export async function schedulePost(id: string, scheduledAt: string, revisionId?: string): Promise<Post> {
   const response = await apiRequest(`/posts/${id}/schedule`, {
     method: 'POST',
-    body: JSON.stringify({ scheduledAt }),
+    body: JSON.stringify({ scheduledAt, ...(revisionId ? { revisionId } : {}) }),
   });
   return response.data || response;
 }

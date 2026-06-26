@@ -110,8 +110,8 @@ function BlogsPageContent() {
       
       // Transform posts to Blog format
       const transformedBlogs: Blog[] = posts.map((post: Post) => {
-        const latestRevision = post.revisions && post.revisions.length > 0 
-          ? post.revisions[post.revisions.length - 1] 
+        const latestRevision = post.revisions && post.revisions.length > 0
+          ? [...post.revisions].sort((a, b) => b.version - a.version)[0]
           : null;
         
         return {
