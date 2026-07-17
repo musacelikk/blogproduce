@@ -138,7 +138,7 @@ export const Footer = () => {
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-            © {new Date().getFullYear()} IBBM Tech. Tüm hakları saklıdır.
+            © {new Date().getFullYear()} <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer">Bilal ORHANLAR</a>. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-6">
             {legalLinks.map((link) => (
