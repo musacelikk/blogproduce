@@ -86,12 +86,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             >
               © 2026{' '}
               <a
-                href="https://ibbmtech.com"
+                href="https://bilalorhanlar.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-[#666666] transition-colors"
               >
-                IBBM Tech.
+                Bilal ORHANLAR
               </a>
               {' '}Tüm hakları saklıdır.
             </p>

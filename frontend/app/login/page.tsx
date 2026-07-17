@@ -238,10 +238,7 @@ export default function LoginPage() {
         {/* Mini footer */}
         <footer className="mt-auto pt-8 w-full text-center">
           <p className="text-[10px] text-muted-foreground">
-            © 2026{' '}
-            <a href="https://ibbmtech.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-              IBBM Tech.
-            </a>
+            © 2026 <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Bilal ORHANLAR</a>
           </p>
         </footer>
       </div>

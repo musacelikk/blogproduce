@@ -46,7 +46,7 @@ export default function KVKKPage() {
                 <p
                   className="text-sm text-muted-foreground"
                 >
-                  <strong>Veri Sorumlusu:</strong> IBBM Tech.<br />
+                  <strong>Veri Sorumlusu:</strong> Bilal ORHANLAR<br />
                   <strong>Adres:</strong> İstanbul, Türkiye<br />
                   <strong>E-posta:</strong> <a href="/contact" className="text-[#203eec] hover:underline">İletişim Sayfası</a>
                 </p>
