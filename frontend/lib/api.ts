@@ -1370,7 +1370,8 @@ export async function getPublicPlans(): Promise<PlanDefinition[]> {
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store',
+      // ISR: avoids "Dynamic server usage" build errors from cache: 'no-store'
+      next: { revalidate: 60 },
     });
 
     if (!response.ok) {
@@ -1380,8 +1381,8 @@ export async function getPublicPlans(): Promise<PlanDefinition[]> {
 
     const data = await response.json();
     return data.data || data || [];
-  } catch (error) {
-    console.error('Error fetching public plans:', error);
+  } catch {
+    // API often unavailable during `next build`; page falls back to empty plans
     return [];
   }
 }

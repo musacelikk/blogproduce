@@ -1,6 +1,8 @@
 import { getPublicPlans, PlanDefinition } from '@/lib/api';
 import { PricingPageClient } from './PricingPageClient';
 
+export const revalidate = 60;
+
 export default async function PricingPage() {
   let plans: PlanDefinition[] = [];
   

@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "npm --prefix backend run build",
+    "build": "npm --prefix backend install --include=dev && npm --prefix backend run build",
     "start": "npm --prefix backend run start:prod",
     "start:api": "npm --prefix backend run start:prod",
     "start:worker": "npm --prefix backend run worker:prod"
