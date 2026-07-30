@@ -195,7 +195,7 @@ export default function AdminHomepagePage() {
     try {
       await updatePost(postId, { canonicalUrl: url || undefined } as Partial<Post>);
       setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, canonicalUrl: url || null } : p))
+        prev.map((p) => (p.id === postId ? { ...p, canonicalUrl: url || undefined } : p))
       );
       setEditingReferenceId(null);
     } catch (err) {
