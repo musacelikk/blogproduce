@@ -3,6 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Github, Linkedin, Twitter, Mail } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 const socialLinks = [
   { href: "https://twitter.com", icon: Twitter, label: "Twitter" },
@@ -30,49 +32,39 @@ const legalLinks = [
 
 export const Footer = () => {
   return (
-    <footer style={{ borderTop: "1px solid var(--border)" }}>
-      <div className="max-w-[1280px] mx-auto px-6 md:px-12 py-16 md:py-24">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
+    <footer className="border-t border-border bg-card">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-4 md:gap-8">
           <div className="md:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-2.5 text-xl font-semibold tracking-tight">
+            <Link href="/" className="inline-flex items-center" aria-label="BlogProduce ana sayfa">
               <Image
                 src="/images/logo.png"
                 alt="BlogProduce"
                 width={400}
                 height={400}
-                className="w-44 h-44 object-contain"
+                className="h-10 w-auto object-contain"
               />
             </Link>
-            <p
-              className="mt-4 text-sm max-w-xs leading-relaxed"
-              style={{ color: "var(--muted-foreground)" }}
-            >
-              AI destekli blog içerik üretim platformu. Prompt yazın, SEO uyumlu profesyonel blog içerikleri dakikalar içinde hazır.
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+              AI destekli blog içerik üretim platformu. Prompt yazın, SEO uyumlu profesyonel blog
+              içerikleri dakikalar içinde hazır.
             </p>
-            <div className="flex items-center gap-3 mt-6">
+            <div className="mt-6 flex items-center gap-2">
               {socialLinks.map((social) => (
                 <Link
                   key={social.label}
                   href={social.href}
-                  className="p-2 rounded-full transition-colors"
-                  style={{ backgroundColor: "var(--secondary)" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(32, 62, 236, 0.1)"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--secondary)"
-                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   aria-label={social.label}
                 >
-                  <social.icon className="w-4 h-4" style={{ color: "#203eec" }} />
+                  <social.icon className="h-4 w-4" />
                 </Link>
               ))}
             </div>
             <div className="mt-4">
               <Link
                 href="mailto:hello@blogproduce.com"
-                className="text-sm transition-colors hover:underline"
-                style={{ color: "#203eec" }}
+                className="text-sm font-medium text-accent-foreground transition-colors hover:underline"
               >
                 hello@blogproduce.com
               </Link>
@@ -80,16 +72,13 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-4">Sayfalar</h4>
+            <h4 className="mb-4 text-sm font-semibold text-foreground">Sayfalar</h4>
             <ul className="space-y-3">
               {footerLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors"
-                    style={{ color: "var(--muted-foreground)" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--foreground)" }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted-foreground)" }}
+                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {link.label}
                   </Link>
@@ -99,56 +88,36 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-4">Güncel Kalın</h4>
-            <p className="text-sm mb-4" style={{ color: "var(--muted-foreground)" }}>
+            <h4 className="mb-4 text-sm font-semibold text-foreground">Güncel Kalın</h4>
+            <p className="mb-4 text-sm text-muted-foreground">
               Güncellemeler ve içerik ipuçları için bültenimize katılın.
             </p>
             <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="E-posta adresiniz"
-                className="px-4 py-2.5 text-sm rounded-xl border-0 outline-none focus:ring-2"
-                style={{
-                  backgroundColor: "var(--secondary)",
-                  color: "var(--foreground)",
-                }}
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-all"
-                style={{
-                  background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)",
-                  boxShadow: "0 4px 20px rgba(32, 62, 236, 0.3)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 30px rgba(32, 62, 236, 0.5), 0 0 40px rgba(0, 212, 255, 0.3)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(32, 62, 236, 0.3)"
-                }}
-              >
-                Abone Ol
-              </button>
+              <Input type="email" placeholder="E-posta adresiniz" aria-label="E-posta adresiniz" />
+              <Button type="submit">Abone Ol</Button>
             </form>
           </div>
         </div>
 
-        <div
-          className="flex flex-col md:flex-row items-center justify-between gap-4 mt-16 pt-8"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-            © {new Date().getFullYear()} <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer">Bilal ORHANLAR</a>. Tüm hakları saklıdır.
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()}{" "}
+            <a
+              href="https://bilalorhanlar.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-foreground"
+            >
+              Bilal ORHANLAR
+            </a>
+            . Tüm hakları saklıdır.
           </p>
           <div className="flex items-center gap-6">
             {legalLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-xs transition-colors"
-                style={{ color: "var(--muted-foreground)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--foreground)" }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted-foreground)" }}
+                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>

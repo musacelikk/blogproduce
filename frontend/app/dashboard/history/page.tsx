@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { History, Search, Clock, FileText, Sparkles, Calendar, TrendingUp, Filter, Loader2, AlertCircle, EyeOff, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 import { getPosts, type Post } from '@/lib/api';
 import Link from 'next/link';
 
@@ -34,7 +39,7 @@ const formatRelativeTime = (date: Date) => {
   if (diffMins < 60) return `${diffMins} dakika önce`;
   if (diffHours < 24) return `${diffHours} saat önce`;
   if (diffDays < 7) return `${diffDays} gün önce`;
-  
+
   return date.toLocaleDateString('tr-TR', {
     year: 'numeric',
     month: 'long',
@@ -73,14 +78,14 @@ export default function HistoryPage() {
       setIsLoading(true);
       setError(null);
       const posts = await getPosts();
-      
+
       const activities: HistoryItem[] = [];
-      
+
       posts.forEach((post) => {
         const createdAt = new Date(post.createdAt);
         const updatedAt = new Date(post.updatedAt);
         const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null;
-        
+
         // Generated activity
         activities.push({
           id: `${post.id}-generated`,
@@ -95,7 +100,7 @@ export default function HistoryPage() {
           hiddenByAdmin: post.hiddenByAdmin,
           hiddenReason: post.hiddenReason || undefined,
         });
-        
+
         // Edited activity (if updated after creation)
         if (updatedAt.getTime() > createdAt.getTime() + 1000) { // 1 second threshold
           activities.push({
@@ -110,7 +115,7 @@ export default function HistoryPage() {
             datetime: updatedAt,
           });
         }
-        
+
         // Published activity (if published)
         if (post.status === 'published' && publishedAt) {
           activities.push({
@@ -126,10 +131,10 @@ export default function HistoryPage() {
           });
         }
       });
-      
+
       // Sort by datetime (newest first)
       activities.sort((a, b) => b.datetime.getTime() - a.datetime.getTime());
-      
+
       setHistory(activities);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Geçmiş yüklenirken bir hata oluştu');
@@ -148,26 +153,39 @@ export default function HistoryPage() {
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
       case 'generated':
-        return <Sparkles className="w-5 h-5 text-[#203eec]" />;
+        return <Sparkles className="h-5 w-5 text-primary" />;
       case 'edited':
-        return <FileText className="w-5 h-5 text-[#10B981]" />;
+        return <FileText className="h-5 w-5 text-success" />;
       case 'published':
-        return <TrendingUp className="w-5 h-5 text-[#F59E0B]" />;
+        return <TrendingUp className="h-5 w-5 text-warning" />;
       default:
-        return <Clock className="w-5 h-5 text-muted-foreground" />;
+        return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
   const getActivityColor = (type: ActivityType) => {
     switch (type) {
       case 'generated':
-        return 'bg-[#203eec]/10 border-[#203eec]/20';
+        return 'bg-accent';
       case 'edited':
-        return 'bg-[#10B981]/10 border-[#10B981]/20';
+        return 'bg-success-muted';
       case 'published':
-        return 'bg-[#F59E0B]/10 border-[#F59E0B]/20';
+        return 'bg-warning-muted';
       default:
-        return 'bg-gray-100 border-gray-200';
+        return 'bg-secondary';
+    }
+  };
+
+  const getActivityDotColor = (type: ActivityType) => {
+    switch (type) {
+      case 'generated':
+        return 'bg-primary';
+      case 'edited':
+        return 'bg-success';
+      case 'published':
+        return 'bg-warning';
+      default:
+        return 'bg-muted-foreground';
     }
   };
 
@@ -199,9 +217,9 @@ export default function HistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 mx-auto mb-3 text-[#203eec] animate-spin" />
+          <Loader2 className="mx-auto mb-3 h-12 w-12 animate-spin text-primary" />
           <p className="text-base text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
@@ -211,18 +229,13 @@ export default function HistoryPage() {
   if (error) {
     return (
       <div className="space-y-5">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
+        <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-destructive">
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-medium">Hata</p>
               <p>{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadHistory}
-                className="mt-2 border-red-200 text-red-600 hover:bg-red-100"
-              >
+              <Button variant="outline" size="sm" onClick={loadHistory} className="mt-2">
                 Tekrar Dene
               </Button>
             </div>
@@ -234,67 +247,45 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <History className="w-5 h-5 text-white" />
+      <PageHeader
+        title="Geçmiş"
+        description="Tüm aktivite ve işlem geçmişinizi görüntüleyin"
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              {totalGenerated} Üretildi
+            </Badge>
+            <Badge variant="success">
+              <FileText className="h-3.5 w-3.5" />
+              {totalEdited} Düzenlendi
+            </Badge>
+            <Badge variant="warning">
+              <TrendingUp className="h-3.5 w-3.5" />
+              {totalPublished} Yayınlandı
+            </Badge>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Geçmiş</h1>
-            <p className="text-sm text-muted-foreground">Tüm aktivite ve işlem geçmişinizi görüntüleyin</p>
-          </div>
-        </div>
-        {/* Stats Pills */}
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{ background: '#203eec12', color: '#203eec', border: '1px solid #203eec20' }}>
-            <Sparkles className="w-3.5 h-3.5" />
-            {totalGenerated} Üretildi
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{ background: '#10B98112', color: '#10B981', border: '1px solid #10B98120' }}>
-            <FileText className="w-3.5 h-3.5" />
-            {totalEdited} Düzenlendi
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{ background: '#F59E0B12', color: '#F59E0B', border: '1px solid #F59E0B20' }}>
-            <TrendingUp className="w-3.5 h-3.5" />
-            {totalPublished} Yayınlandı
-          </span>
-        </div>
-      </motion.div>
+        }
+      />
 
       {/* Search and Filter */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-2xl p-3.5 flex flex-col md:flex-row gap-3"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
+      <Card className="flex flex-col gap-3 p-3.5 shadow-card md:flex-row">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="Geçmişte ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[var(--secondary)] rounded-xl border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
+            className="pl-9"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-muted-foreground" />
+          <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as ActivityType | 'Tümü')}
-            className="px-4 py-2 bg-[var(--secondary)] rounded-xl border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
+            className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="Tümü">Tümü</option>
             <option value="generated">Üretildi</option>
@@ -302,117 +293,66 @@ export default function HistoryPage() {
             <option value="published">Yayınlandı</option>
           </select>
         </div>
-      </motion.div>
+      </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Toplam Aktivite', value: history.length, icon: History, gradient: 'linear-gradient(135deg,#203eec,#00d4ff)' },
-          { label: 'Üretilen', value: totalGenerated, icon: Sparkles, gradient: 'linear-gradient(135deg,#203eec,#818cf8)' },
-          { label: 'Düzenlenen', value: totalEdited, icon: FileText, gradient: 'linear-gradient(135deg,#10B981,#34d399)' },
-          { label: 'Yayınlanan', value: totalPublished, icon: TrendingUp, gradient: 'linear-gradient(135deg,#F59E0B,#fbbf24)' },
-        ].map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
-              className="rounded-2xl p-4 relative overflow-hidden"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-[0.07] blur-xl"
-                   style={{ background: stat.gradient }} />
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                     style={{ background: stat.gradient }}>
-                  <Icon className="w-3.5 h-3.5 text-white" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-            </motion.div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Toplam Aktivite" value={history.length} icon={<History />} />
+        <StatCard label="Üretilen" value={totalGenerated} icon={<Sparkles />} />
+        <StatCard label="Düzenlenen" value={totalEdited} icon={<FileText />} />
+        <StatCard label="Yayınlanan" value={totalPublished} icon={<TrendingUp />} />
       </div>
 
       {/* History Timeline */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
+      <Card className="overflow-hidden shadow-card">
         {filteredHistory.length === 0 ? (
-          <div className="p-12 text-center">
-            <History className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <p
-              className="text-lg text-muted-foreground mb-2"
-            >
-              {history.length === 0 ? 'Henüz aktivite bulunmuyor' : 'Aktivite bulunamadı'}
-            </p>
-            <p
-              className="text-sm text-muted-foreground"
-            >
-              {history.length === 0 
+          <EmptyState
+            className="rounded-none border-0"
+            icon={<History />}
+            title={history.length === 0 ? 'Henüz aktivite bulunmuyor' : 'Aktivite bulunamadı'}
+            description={
+              history.length === 0
                 ? 'Blog üretmeye başladığınızda aktiviteleriniz burada görünecek'
-                : 'Arama kriterlerinizi değiştirip tekrar deneyin'}
-            </p>
-          </div>
+                : 'Arama kriterlerinizi değiştirip tekrar deneyin'
+            }
+          />
         ) : (
           <div className="p-6">
             {Object.entries(groupedHistory).map(([date, items], dateIndex) => (
               <div key={date} className={dateIndex > 0 ? 'mt-8' : ''}>
-                <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <h3
-                    className="text-lg font-medium text-foreground"
-                  >
+                <div className="mb-4 flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="text-lg font-medium text-foreground">
                     {date}
                   </h3>
                 </div>
-                <div className="relative pl-8 border-l-2 border-[var(--border)] space-y-6">
-                  {items.map((item, index) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: dateIndex * 0.1 + index * 0.05 }}
-                      className="relative"
-                    >
+                <div className="relative space-y-6 border-l-2 border-border pl-8">
+                  {items.map((item) => (
+                    <div key={item.id} className="relative">
                       {/* Timeline dot */}
-                      <div className="absolute -left-[29px] top-1 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ background: 'var(--card)', border: '2px solid var(--border)' }}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          item.type === 'generated' ? 'bg-[#203eec]' :
-                          item.type === 'edited' ? 'bg-[#10B981]' :
-                          'bg-[#F59E0B]'
-                        }`} />
+                      <div className="absolute -left-[29px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-border bg-card">
+                        <div className={`h-1.5 w-1.5 rounded-full ${getActivityDotColor(item.type)}`} />
                       </div>
 
                       <Link href={`/dashboard/blogs/${item.postId}`}>
-                        <div className={`p-3.5 rounded-lg border ${item.hiddenByAdmin ? 'bg-red-50 border-red-200' : getActivityColor(item.type)} cursor-pointer hover:shadow-md transition-all`}>
-                          <div className="flex items-start justify-between gap-3 mb-1.5">
+                        <div className={`rounded-lg border border-border p-3.5 transition-all hover:shadow-card-hover ${item.hiddenByAdmin ? 'bg-[var(--destructive-muted)]' : getActivityColor(item.type)}`}>
+                          <div className="mb-1.5 flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5">
-                              <div className={`p-1.5 rounded-lg ${item.hiddenByAdmin ? 'bg-red-100 border-red-200' : getActivityColor(item.type)}`}>
+                              <div className={`rounded-lg p-1.5 ${item.hiddenByAdmin ? 'bg-[var(--destructive-muted)]' : getActivityColor(item.type)}`}>
                                 {item.hiddenByAdmin ? (
-                                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                                  <AlertTriangle className="h-4 w-4 text-destructive" />
                                 ) : (
                                   getActivityIcon(item.type)
                                 )}
                               </div>
                               <div>
-                                <h4
-                                  className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-red-700' : 'text-foreground'}`}
-                                >
+                                <h4 className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-destructive' : 'text-foreground'}`}>
                                   {item.title}
                                 </h4>
-                                <p
-                                  className={`text-xs ${item.hiddenByAdmin ? 'text-red-600' : 'text-muted-foreground'}`}
-                                >
+                                <p className={`text-xs ${item.hiddenByAdmin ? 'text-destructive' : 'text-muted-foreground'}`}>
                                   {item.description}
                                   {item.hiddenByAdmin && item.hiddenReason && (
-                                    <span className="block mt-0.5 italic">
+                                    <span className="mt-0.5 block italic">
                                       Sebep: {item.hiddenReason}
                                     </span>
                                   )}
@@ -421,22 +361,20 @@ export default function HistoryPage() {
                             </div>
                             <div className="text-right">
                               {item.hiddenByAdmin ? (
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200 flex items-center gap-1">
-                                  <EyeOff className="w-3 h-3" />
+                                <Badge variant="destructive">
+                                  <EyeOff className="h-3 w-3" />
                                   Kaldırıldı
-                                </span>
+                                </Badge>
                               ) : (
-                                <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium ${getActivityColor(item.type)}`}
-                                >
+                                <span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                                   {getActivityLabel(item.type)}
                                 </span>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground mt-1.5">
+                          <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                              <Clock className="h-3 w-3" />
                               <span>{item.time}</span>
                             </div>
                             <span>•</span>
@@ -444,14 +382,14 @@ export default function HistoryPage() {
                           </div>
                         </div>
                       </Link>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
         )}
-      </motion.div>
+      </Card>
     </div>
   );
 }

@@ -1,20 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
-  Settings,
-  Save,
-  Loader2,
   AlertCircle,
+  Bell,
   CheckCircle2,
   Database,
-  Mail,
-  Shield,
-  Bell,
   Globe,
+  Loader2,
+  Save,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PageHeader } from '@/components/ui/page-header';
+
+const CHECKBOX_CLASS =
+  'mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(false);
@@ -136,85 +139,49 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1
-          className="text-[24px] font-normal text-white mb-2"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          Sistem Ayarları
-        </h1>
-        <p
-          className="text-sm text-[#ebebeb]"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          Sistem genelinde ayarları yönetin
-        </p>
-      </motion.div>
+      <PageHeader title="Sistem Ayarları" description="Sistem genelinde ayarları yönetin" />
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Hata</p>
-              <p>{error}</p>
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Hata</p>
+            <p className="mt-1">{error}</p>
           </div>
         </div>
       )}
 
       {saved && (
-        <div className="bg-green-500/10 border border-green-500/50 rounded-xl p-4 text-green-400">
-          <div className="flex items-start gap-2">
-            <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Başarılı</p>
-              <p>Ayarlar başarıyla kaydedildi</p>
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-success/30 bg-success-muted p-4 text-sm text-success">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Başarılı</p>
+            <p className="mt-1">Ayarlar başarıyla kaydedildi</p>
           </div>
         </div>
       )}
 
       {/* Settings Sections */}
       <div className="space-y-6">
-        {settingSections.map((section, sectionIndex) => {
+        {settingSections.map((section) => {
           const Icon = section.icon;
           return (
-            <motion.div
+            <div
               key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: sectionIndex * 0.1 }}
-              className="bg-[#1a1a1a] rounded-xl border border-[#333333] overflow-hidden"
+              className="overflow-hidden rounded-xl border border-border bg-card shadow-card"
             >
-              <div className="p-6 border-b border-[#333333] flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#3B82F6]/20 rounded-lg flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-[#3B82F6]" />
-                </div>
-                <h2
-                  className="text-base font-medium text-white"
-                  style={{
-                    fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                  }}
-                >
-                  {section.title}
-                </h2>
+              <div className="flex items-center gap-3 border-b border-border px-6 py-4">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <h2 className="text-base font-semibold text-foreground">{section.title}</h2>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="space-y-6 p-6">
                 {section.fields.map((field) => (
                   <div key={field.key}>
                     {field.type === 'checkbox' ? (
-                      <label className="flex items-start gap-3 cursor-pointer">
+                      <label className="flex cursor-pointer items-start gap-3">
                         <input
                           type="checkbox"
                           checked={settings[field.key as keyof typeof settings] as boolean}
@@ -224,24 +191,12 @@ export default function AdminSettingsPage() {
                               [field.key]: e.target.checked,
                             })
                           }
-                          className="mt-1 w-4 h-4 text-[#3B82F6] border-[#333333] rounded focus:ring-[#3B82F6] bg-[#0f0f0f]"
+                          className={CHECKBOX_CLASS}
                         />
                         <div className="flex-1">
-                          <p
-                            className="text-white font-medium mb-1"
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
-                          >
-                            {field.label}
-                          </p>
+                          <p className="text-sm font-medium text-foreground">{field.label}</p>
                           {field.description && (
-                            <p
-                              className="text-xs text-[#ebebeb]"
-                              style={{
-                                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                              }}
-                            >
+                            <p className="mt-1 text-xs text-muted-foreground">
                               {field.description}
                             </p>
                           )}
@@ -249,15 +204,10 @@ export default function AdminSettingsPage() {
                       </label>
                     ) : field.type === 'textarea' ? (
                       <div>
-                        <label
-                          className="block text-white font-medium mb-2"
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
+                        <label className="mb-2 block text-sm font-medium text-foreground">
                           {field.label}
                         </label>
-                        <textarea
+                        <Textarea
                           value={settings[field.key as keyof typeof settings] as string}
                           onChange={(e) =>
                             setSettings({
@@ -266,23 +216,15 @@ export default function AdminSettingsPage() {
                             })
                           }
                           rows={3}
-                          className="w-full px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none resize-none"
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
+                          className="resize-none"
                         />
                       </div>
                     ) : (
                       <div>
-                        <label
-                          className="block text-white font-medium mb-2"
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
+                        <label className="mb-2 block text-sm font-medium text-foreground">
                           {field.label}
                         </label>
-                        <input
+                        <Input
                           type={field.type}
                           value={settings[field.key as keyof typeof settings] as string | number}
                           onChange={(e) =>
@@ -291,46 +233,33 @@ export default function AdminSettingsPage() {
                               [field.key]: field.type === 'number' ? Number(e.target.value) : e.target.value,
                             })
                           }
-                          className="w-full px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none"
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
                         />
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
 
       {/* Save Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="flex justify-end"
-      >
-        <Button
-          onClick={handleSave}
-          disabled={loading}
-          className="bg-[#3B82F6] hover:bg-[#2563EB] text-white px-8"
-        >
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={loading} className="px-8">
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Kaydediliyor...
             </>
           ) : (
             <>
-              <Save className="w-4 h-4 mr-2" />
+              <Save className="h-4 w-4" />
               Ayarları Kaydet
             </>
           )}
         </Button>
-      </motion.div>
+      </div>
     </div>
   );
 }

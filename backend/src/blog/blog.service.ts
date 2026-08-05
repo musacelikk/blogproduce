@@ -2,8 +2,8 @@ import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
 import { GenerateBlogDto } from './dto/generate-blog.dto';
+import { BlogGeneratorService } from '../ai/blog-generator.service';
 import { SeoService } from './seo.service';
 import { Post, PostStatus } from '../entities/post.entity';
 import { PostRevision } from '../entities/post-revision.entity';
@@ -72,8 +72,6 @@ export interface GenerateBlogResponse {
 
 @Injectable()
 export class BlogService {
-  private openai: OpenAI;
-
   constructor(
     @InjectRepository(Post)
     private postRepository: Repository<Post>,
@@ -93,126 +91,123 @@ export class BlogService {
     private seoService: SeoService,
     private quotaService: ApiKeyQuotaService,
     private htmlSanitizer: HtmlSanitizerService,
-  ) {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
-    }
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-    });
-  }
+    private blogGenerator: BlogGeneratorService,
+  ) {}
 
   async generateBlog(dto: GenerateBlogDto, apiKeyId?: string): Promise<GenerateBlogResponse> {
     try {
-      const prompt = this.buildPrompt(dto);
       const seoEnabled = dto.options?.seo?.enabled === true;
 
-      // Estimate token usage (rough estimate: ~4 chars per token)
-      const estimatedInputTokens = Math.ceil((prompt.length + this.buildSystemPrompt(seoEnabled).length) / 4);
-      const estimatedOutputTokens = 2000; // max_tokens
-      const estimatedTotalTokens = estimatedInputTokens + estimatedOutputTokens;
-
-      // Check token budget if API key is provided
+      // Pre-check the API key token budget with a conservative estimate
       if (apiKeyId) {
+        const estimatedTotalTokens =
+          Math.ceil((dto.topic.length + (dto.additionalContext?.length || 0)) / 4) + 8000;
         await this.quotaService.checkTokenBudget(apiKeyId, estimatedTotalTokens);
       }
 
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.buildSystemPrompt(seoEnabled),
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
+      // Multi-stage AI pipeline (outline -> draft -> polish) with provider routing
+      const result = await this.blogGenerator.generate({
+        topic: dto.topic,
+        language: dto.language,
+        tone: dto.tone,
+        length: dto.length,
+        targetAudience: dto.targetAudience,
+        additionalContext: dto.additionalContext,
+        seoMode: seoEnabled,
+        modelOrTier: dto.model,
       });
 
-      const generatedContent = completion.choices[0]?.message?.content;
-      
-      // Record actual token usage
-      if (apiKeyId && completion.usage) {
-        const actualTokens = (completion.usage.prompt_tokens || 0) + (completion.usage.completion_tokens || 0);
-        await this.quotaService.recordTokenUsage(apiKeyId, actualTokens);
+      // Record actual token usage against the API key budget
+      if (apiKeyId) {
+        await this.quotaService.recordTokenUsage(apiKeyId, result.tokensIn + result.tokensOut);
       }
 
-      if (!generatedContent) {
-        throw new HttpException(
-          'Failed to generate blog content',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      const title = this.extractTitle(generatedContent, dto.topic);
-      let contentMarkdown = this.cleanContent(generatedContent, title);
-
-      // Sanitize content if it contains dangerous HTML (XSS protection)
+      let contentMarkdown = result.blog.content;
       if (contentMarkdown && this.htmlSanitizer.isDangerous(contentMarkdown)) {
         contentMarkdown = this.htmlSanitizer.sanitize(contentMarkdown, true);
       }
 
-      // Calculate reading time
+      const title = result.blog.title;
       const readingTime = calculateReadingTime(contentMarkdown);
+      const excerpt = result.blog.excerpt || this.generateExcerpt(contentMarkdown, title);
+      const contentHtml = this.htmlSanitizer.sanitize(markdownToHtml(contentMarkdown), true);
 
-      // Generate excerpt from first paragraph
-      const excerpt = this.generateExcerpt(contentMarkdown, title);
-
-      // Build base response
       const response: GenerateBlogResponse = {
         title,
         content_markdown: contentMarkdown,
+        content_html: contentHtml,
         excerpt,
         reading_time: readingTime,
+        toc: result.blog.metadata.toc,
+        faq: result.blog.metadata.faq,
+      };
+
+      const generatedSeo = result.blog.metadata.seo;
+      const slug = generatedSeo.slug || this.seoService.generateSlug(title);
+
+      const articleSchema: Record<string, any> = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: title,
+        description: generatedSeo.metaDescription || excerpt,
+      };
+      const faqSchema =
+        result.blog.metadata.faq.length > 0
+          ? {
+              '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: result.blog.metadata.faq.map((item) => ({
+                '@type': 'Question',
+                name: item.question,
+                acceptedAnswer: { '@type': 'Answer', text: item.answer },
+              })),
+            }
+          : undefined;
+
+      response.schema_jsonld = {
+        article: articleSchema,
+        ...(faqSchema ? { faqPage: faqSchema } : {}),
       };
 
       if (seoEnabled) {
-        if (contentMarkdown) {
-          contentMarkdown = await this.enhanceContentReadability(contentMarkdown);
-          // Re-sanitize after readability enhancement
-          if (this.htmlSanitizer.isDangerous(contentMarkdown)) {
-            contentMarkdown = this.htmlSanitizer.sanitize(contentMarkdown, true);
+        // Cover image (Unsplash) + internal link suggestions run in parallel
+        const [coverImage, internalLinks, readabilityScore] = await Promise.all([
+          this.seoService.findCoverImage(title, dto.topic),
+          this.seoService.suggestInternalLinks(contentMarkdown, dto.topic, dto.workspaceId),
+          this.seoService.analyzeReadability(contentMarkdown),
+        ]);
+
+        if (coverImage.url) {
+          response.cover_image_url = coverImage.url;
+          if (coverImage.credit) {
+            response.cover_image_credit = {
+              name: coverImage.credit.name,
+              photographer_url: coverImage.credit.photographerUrl,
+              photo_url: coverImage.credit.photoUrl,
+            };
           }
-          response.content_markdown = contentMarkdown;
-          // Recalculate reading time after enhancement
-          response.reading_time = calculateReadingTime(contentMarkdown);
         }
 
-        const seoMetadata = await this.seoService.generateSeoMetadata(
-          title,
-          contentMarkdown,
-          dto.topic,
-          dto.workspaceId,
-        );
-
-        // Convert markdown to HTML and sanitize
-        const contentHtml = markdownToHtml(contentMarkdown);
-        response.content_html = this.htmlSanitizer.sanitize(contentHtml, true);
-
-        // Map SEO metadata to new format
-        response.toc = seoMetadata.tableOfContents;
-        response.faq = seoMetadata.faq;
-        response.schema_jsonld = seoMetadata.jsonLdSchema;
-        response.cover_image_url = seoMetadata.coverImageUrl;
-        if (seoMetadata.coverImageCredit) {
-          response.cover_image_credit = {
-            name: seoMetadata.coverImageCredit.name,
-            photographer_url: seoMetadata.coverImageCredit.photographerUrl,
-            photo_url: seoMetadata.coverImageCredit.photoUrl,
-          };
-        }
-
-        // Keep legacy SEO format for backward compatibility
-        response.seo = seoMetadata;
-      } else {
-        // Even without SEO, provide HTML version
-        const contentHtml = markdownToHtml(contentMarkdown);
-        response.content_html = this.htmlSanitizer.sanitize(contentHtml, true);
+        // Legacy SEO shape for backward compatibility
+        response.seo = {
+          metaTitle: generatedSeo.metaTitle || title.substring(0, 60),
+          metaDescription: generatedSeo.metaDescription || excerpt,
+          titleAlternatives: [title],
+          h1Structure: [title],
+          h2Structure: result.blog.metadata.toc.filter((t) => t.level === 2).map((t) => t.title),
+          faq: result.blog.metadata.faq,
+          jsonLdSchema: response.schema_jsonld,
+          internalLinks,
+          slug,
+          canonicalUrl: `/blog/${slug}`,
+          tableOfContents: result.blog.metadata.toc,
+          coverImagePrompt: coverImage.prompt,
+          coverImageAltText: coverImage.altText,
+          coverImageUrl: coverImage.url,
+          coverImageCredit: coverImage.credit,
+          readabilityScore,
+          aiFootprintReduced: true,
+        };
       }
 
       return response;
@@ -226,85 +221,6 @@ export class BlogService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  private buildSystemPrompt(seoEnabled: boolean): string {
-    let systemPrompt =
-      'You are an expert blog writer. Write engaging, well-structured blog posts with clear headings, subheadings, and a compelling introduction and conclusion. Format the content in markdown.';
-
-    if (seoEnabled) {
-      systemPrompt +=
-        '\n\nSEO Requirements:\n' +
-        '- Use short paragraphs (2-3 sentences max)\n' +
-        '- Include bullet points and lists where appropriate\n' +
-        '- Avoid repetitive phrases and AI clichés\n' +
-        '- Use natural, conversational language\n' +
-        '- Include specific examples and case studies\n' +
-        '- Ensure proper H1/H2 hierarchy\n' +
-        '- Write in a way that reduces AI detection';
-    }
-
-    return systemPrompt;
-  }
-
-  private async enhanceContentReadability(content: string): Promise<string> {
-    if (!this.openai) {
-      return content;
-    }
-
-    try {
-      const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Improve content readability by: breaking long paragraphs into shorter ones (2-3 sentences), adding bullet points where appropriate, removing repetitive phrases, and making it more natural. Keep the same meaning and structure.',
-          },
-          {
-            role: 'user',
-            content: `Improve readability of this content:\n\n${content}`,
-          },
-        ],
-        temperature: 0.8,
-        max_tokens: 2000,
-      });
-
-      const improved = completion.choices[0]?.message?.content;
-      return improved || content;
-    } catch (error) {
-      console.error('Error enhancing readability:', error);
-      return content;
-    }
-  }
-
-  private buildPrompt(dto: GenerateBlogDto): string {
-    let prompt = `Write a comprehensive blog post about: ${dto.topic}\n\n`;
-
-    if (dto.additionalContext) {
-      prompt += `Additional context: ${dto.additionalContext}\n\n`;
-    }
-
-    if (dto.tone) {
-      prompt += `Tone: ${dto.tone}\n\n`;
-    }
-
-    if (dto.targetAudience) {
-      prompt += `Target audience: ${dto.targetAudience}\n\n`;
-    }
-
-    prompt +=
-      'The blog post should:\n' +
-      '- Have a compelling title\n' +
-      '- Include an engaging introduction\n' +
-      '- Have well-structured sections with clear headings\n' +
-      '- Be informative and valuable\n' +
-      '- Include a conclusion\n' +
-      '- Be formatted in markdown\n' +
-      '- Be approximately 800-1200 words\n\n' +
-      'Start with the title as an H1 heading, then write the content.';
-
-    return prompt;
   }
 
   private generateExcerpt(content: string, title: string, maxLength: number = 160): string {
@@ -330,38 +246,6 @@ export class BlogService {
     const truncated = plainText.substring(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return truncated.substring(0, lastSpace > 0 ? lastSpace : maxLength) + '...';
-  }
-
-  private extractTitle(content: string, fallbackTopic: string): string {
-    const titleMatch = content.match(/^#\s+(.+)$/m);
-    if (titleMatch && titleMatch[1]) {
-      return titleMatch[1].trim();
-    }
-
-    const firstLine = content.split('\n')[0]?.trim();
-    if (firstLine && firstLine.length > 0 && firstLine.length < 100) {
-      return firstLine.replace(/^#+\s*/, '');
-    }
-
-    return `Blog Post: ${fallbackTopic}`;
-  }
-
-  private cleanContent(content: string, title: string): string {
-    let cleaned = content.trim();
-
-    if (cleaned.startsWith('#')) {
-      const lines = cleaned.split('\n');
-      const firstLine = lines[0];
-      if (firstLine.includes(title)) {
-        cleaned = lines.slice(1).join('\n').trim();
-      }
-    }
-
-    if (!cleaned.startsWith('#')) {
-      cleaned = `# ${title}\n\n${cleaned}`;
-    }
-
-    return cleaned;
   }
 
   /**
@@ -566,30 +450,47 @@ export class BlogService {
     // Extract excerpt
     const excerpt = post.excerpt || (contentMarkdown ? this.generateExcerpt(contentMarkdown, post.title) : undefined);
 
-    // Extract TOC, FAQ, and schema from SEO data
+    // Extract TOC, FAQ, and schema — primarily from the revision's canonical JSON
+    // (which the AI pipeline populates), falling back to the stored SEO record.
     let toc: Array<{ id: string; title: string; level: number }> | undefined;
     let faq: Array<{ question: string; answer: string }> | undefined;
     let schemaJsonld: Record<string, any> | undefined;
 
+    if (rawContent && storedFormat === ContentFormat.JSON) {
+      try {
+        const parsed = JSON.parse(rawContent);
+        if (Array.isArray(parsed?.metadata?.toc) && parsed.metadata.toc.length > 0) {
+          toc = parsed.metadata.toc;
+        }
+        if (Array.isArray(parsed?.metadata?.faq) && parsed.metadata.faq.length > 0) {
+          faq = parsed.metadata.faq;
+        }
+      } catch {
+        // Not canonical JSON — fall through to the SEO record below.
+      }
+    }
+
     if (post.seo?.schemaJsonld) {
       try {
-        const schema = typeof post.seo.schemaJsonld === 'string' 
-          ? JSON.parse(post.seo.schemaJsonld) 
+        const schema = typeof post.seo.schemaJsonld === 'string'
+          ? JSON.parse(post.seo.schemaJsonld)
           : post.seo.schemaJsonld;
-        
-        // Extract FAQPage schema if exists
-        if (schema['@type'] === 'FAQPage' && schema.mainEntity) {
-          faq = schema.mainEntity.map((item: any) => ({
-            question: item.name || '',
-            answer: item.acceptedAnswer?.text || '',
-          }));
-        }
 
-        // Extract Article schema
-        if (schema['@type'] === 'Article') {
-          schemaJsonld = { article: schema };
-        } else if (schema['@type'] === 'FAQPage') {
-          schemaJsonld = { faqPage: schema };
+        // The worker stores Article + FAQPage together under @graph
+        const nodes: any[] = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
+
+        for (const node of nodes) {
+          if (node?.['@type'] === 'FAQPage' && Array.isArray(node.mainEntity)) {
+            if (!faq) {
+              faq = node.mainEntity.map((item: any) => ({
+                question: item.name || '',
+                answer: item.acceptedAnswer?.text || '',
+              }));
+            }
+            schemaJsonld = { ...(schemaJsonld || {}), faqPage: node };
+          } else if (node?.['@type'] === 'Article') {
+            schemaJsonld = { ...(schemaJsonld || {}), article: node };
+          }
         }
       } catch (e) {
         // Invalid JSON, skip

@@ -3,7 +3,6 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,26 +17,12 @@ export class ApiKeyGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const method = request.method;
-    const clientId = request.headers['x-client-id'];
-    const signature = request.headers['x-signature'];
-    const timestamp = request.headers['x-timestamp'];
-
-    // Check if this is a write operation (POST, PATCH, DELETE) using client secret/key (HMAC)
-    const isWriteOperation = ['POST', 'PATCH', 'DELETE'].includes(method);
-    const isHmacAuth = !!(clientId && signature && timestamp);
-
-    // Block write operations with client secret/key authentication
-    if (isWriteOperation && isHmacAuth) {
-      throw new ForbiddenException(
-        'Client Secret/Client ID authentication is read-only. POST, PATCH, and DELETE operations require full API key authentication.',
-      );
-    }
-
     const apiKey = this.extractApiKey(request);
 
     if (!apiKey) {
-      throw new UnauthorizedException('API key is required');
+      throw new UnauthorizedException(
+        'API key is required. Send it as "Authorization: Bearer bg_secret_..." or the X-API-Key header.',
+      );
     }
 
     // Hash the provided key to compare with stored hash
@@ -48,18 +33,12 @@ export class ApiKeyGuard implements CanActivate {
       relations: ['organization', 'project'],
     });
 
-    // Also try to find by client_id if keyHash doesn't match (for backward compatibility)
+    // A client id is a public identifier, not a credential — reject it clearly
+    // rather than letting it fall through to a generic "invalid API key".
     if (!keyRecord && apiKey.startsWith('bg_client_')) {
-      const keyRecordByClientId = await this.apiKeyRepository.findOne({
-        where: { clientId: apiKey },
-        relations: ['organization', 'project'],
-      });
-      if (keyRecordByClientId) {
-        // For client_id based auth, require HMAC signature
-        throw new UnauthorizedException(
-          'Client ID authentication requires HMAC signature. Use X-Client-Id, X-Signature, and X-Timestamp headers.',
-        );
-      }
+      throw new UnauthorizedException(
+        'This is a client ID, not an API key. Authenticate with your secret key (bg_secret_...).',
+      );
     }
 
     if (!keyRecord) {

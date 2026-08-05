@@ -41,6 +41,13 @@ export class HtmlSanitizerService {
       a: ['href', 'title', 'target'],
       img: ['src', 'alt', 'title', 'width', 'height'],
       table: ['class'],
+      // Heading ids are anchor targets for the generated table of contents
+      h1: ['id'],
+      h2: ['id'],
+      h3: ['id'],
+      h4: ['id'],
+      h5: ['id'],
+      h6: ['id'],
       th: ['scope'],
       td: ['colspan', 'rowspan'],
     };

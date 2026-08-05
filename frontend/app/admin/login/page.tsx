@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Lock, ArrowRight } from 'lucide-react';
-import Image from 'next/image';
+import { Shield, Lock, Mail, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { login } from '@/lib/api';
 import { auth } from '@/lib/auth';
@@ -32,7 +30,7 @@ export default function AdminLoginPage() {
     try {
       const response = await login(formData.email, formData.password);
       const user = auth.getUser();
-      
+
       // Check if user is admin
       if (user?.role !== 'admin') {
         auth.logout();
@@ -47,7 +45,7 @@ export default function AdminLoginPage() {
     } catch (err) {
       console.error('Login error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu';
-      
+
       // Daha açıklayıcı hata mesajları
       if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('Şifre veya e-posta')) {
         setError('E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol edin. Admin kullanıcı oluşturmak için backend\'de "npm run create-admin" komutunu çalıştırın.');
@@ -66,62 +64,35 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a1a1a] via-[#0f0f0f] to-[#1a1a1a] flex items-center justify-center px-4 sm:px-8 py-8 sm:py-16">
-      <div className="max-w-md w-full">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-[#1a1a1a] rounded-2xl sm:rounded-[40px] p-6 sm:p-8 md:p-12 shadow-2xl border border-[#333333]"
-        >
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-[#3B82F6]/20 rounded-xl sm:rounded-2xl mb-4 sm:mb-6">
-              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-[#3B82F6]" />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6">
+      <div className="w-full max-w-md">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-elevated sm:p-8">
+          <div className="mb-8 text-center">
+            <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
+              <Shield className="h-6 w-6 text-accent-foreground" />
             </div>
-            <h1
-              className="text-2xl sm:text-[32px] font-normal leading-tight text-white mb-2 sm:mb-3"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
-              Admin Girişi
-            </h1>
-            <p
-              className="text-sm sm:text-base text-[#ebebeb]"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin Girişi</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               Yönetici paneline erişim için giriş yapın
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl">
-                <p
-                  className="text-sm text-red-400"
-                  style={{
-                    fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                  }}
-                >
-                  {error}
-                </p>
+              <div className="rounded-lg border border-destructive/30 bg-[var(--destructive-muted)] p-3">
+                <div className="flex items-start gap-2 text-destructive">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <p className="text-sm leading-relaxed">{error}</p>
+                </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-white"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground">
                 E-posta
               </label>
               <div className="relative">
-                <Shield className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#ebebeb]" />
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
@@ -130,23 +101,17 @@ export default function AdminLoginPage() {
                   onChange={handleChange}
                   placeholder="admin@example.com"
                   required
-                  className="pl-10 sm:pl-12 bg-[#0f0f0f] border-[#333333] text-white placeholder:text-[#ebebeb] focus-visible:ring-[#3B82F6] h-11 sm:h-12 text-sm sm:text-base"
+                  className="h-11 bg-card pl-9"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-white"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
                 Şifre
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#ebebeb]" />
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
@@ -155,25 +120,18 @@ export default function AdminLoginPage() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
-                  className="pl-10 sm:pl-12 bg-[#0f0f0f] border-[#333333] text-white placeholder:text-[#ebebeb] focus-visible:ring-[#3B82F6] h-11 sm:h-12 text-sm sm:text-base"
+                  className="h-11 bg-card pl-9"
                 />
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full py-3 sm:py-[15px] hover:rounded-2xl transition-all duration-200 h-11 sm:h-12 text-sm sm:text-base font-semibold"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
+            <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-lg">
               {isSubmitting ? (
                 'Giriş yapılıyor...'
               ) : (
                 <>
                   Admin Girişi
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2" />
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </Button>
@@ -182,17 +140,14 @@ export default function AdminLoginPage() {
           <div className="mt-8 text-center">
             <Link
               href="/"
-              className="text-sm text-[#ebebeb] hover:text-white transition-colors inline-flex items-center gap-2"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              ← Ana Sayfaya Dön
+              <ArrowLeft className="h-4 w-4" />
+              Ana Sayfaya Dön
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
-

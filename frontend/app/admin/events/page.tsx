@@ -1,21 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
-  MousePointerClick,
-  Search,
-  Calendar,
-  User,
-  Filter,
-  Loader2,
   AlertCircle,
   BarChart3,
-  TrendingUp,
   Eye,
-  FileText,
+  MousePointerClick,
+  Search,
 } from 'lucide-react';
-import { AdminTableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 type EventTracking = {
   id: string;
@@ -108,125 +117,77 @@ export default function AdminEventsPage() {
     return (
       <div className="space-y-6">
         <div className="mb-6">
-          <div className="h-8 w-48 bg-[#333333] animate-pulse rounded mb-2" />
-          <div className="h-4 w-96 bg-[#333333] animate-pulse rounded" />
+          <Skeleton className="mb-2 h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
         </div>
-        <AdminTableSkeleton rows={10} />
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          <div className="space-y-4">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1
-          className="text-lg font-medium text-white mb-1"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          Event Tracking
-        </h1>
-        <p
-          className="text-xs text-[#ebebeb]"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          Kullanıcı etkileşimlerini ve eventleri takip edin
-        </p>
-      </motion.div>
+      <PageHeader
+        title="Event Tracking"
+        description="Kullanıcı etkileşimlerini ve eventleri takip edin"
+      />
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Hata</p>
+            <p className="mt-1 text-xs">{error}</p>
           </div>
         </div>
       )}
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#3B82F6] rounded-lg flex items-center justify-center">
-                <MousePointerClick className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.totalEvents || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Toplam Event</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.eventsByType?.length || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Event Tipleri</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#F59E0B] rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.topPages?.length || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Popüler Sayfalar</p>
-              </div>
-            </div>
-          </motion.div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StatCard
+            label="Toplam Event"
+            value={stats?.totalEvents || 0}
+            icon={<MousePointerClick />}
+          />
+          <StatCard
+            label="Event Tipleri"
+            value={stats?.eventsByType?.length || 0}
+            icon={<BarChart3 />}
+          />
+          <StatCard
+            label="Popüler Sayfalar"
+            value={stats?.topPages?.length || 0}
+            icon={<Eye />}
+          />
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ebebeb]" />
-            <input
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               type="text"
               placeholder="Ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none"
+              className="pl-9"
             />
           </div>
 
           <select
             value={eventTypeFilter}
             onChange={(e) => setEventTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            aria-label="Event tipi filtresi"
+            className={SELECT_CLASS}
           >
             <option value="all">Tüm Event Tipleri</option>
             <option value="page_view">Sayfa Görüntüleme</option>
@@ -242,7 +203,8 @@ export default function AdminEventsPage() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            className={SELECT_CLASS}
+            aria-label="Başlangıç Tarihi"
             placeholder="Başlangıç Tarihi"
           />
 
@@ -250,62 +212,50 @@ export default function AdminEventsPage() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            className={SELECT_CLASS}
+            aria-label="Bitiş Tarihi"
             placeholder="Bitiş Tarihi"
           />
         </div>
       </div>
 
       {/* Events Table */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-[#333333] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#0f0f0f] border-b border-[#333333]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Event</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Tip</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Sayfa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Kullanıcı</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Tarih</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#333333]">
-              {filteredEvents.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-[#ebebeb]">
-                    Henüz event kaydı bulunmuyor
-                  </td>
-                </tr>
-              ) : (
-                filteredEvents.map((event) => (
-                  <tr key={event.id} className="hover:bg-[#0f0f0f] transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-white font-medium">{event.eventName}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-[#3B82F6]/20 text-[#3B82F6] text-xs rounded">
-                        {event.eventType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">{event.page || '-'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">{event.user?.email || 'Misafir'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">
-                        {new Date(event.createdAt).toLocaleString('tr-TR')}
-                      </p>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {filteredEvents.length === 0 ? (
+        <EmptyState
+          icon={<MousePointerClick />}
+          title="Henüz event kaydı bulunmuyor"
+          description="Seçtiğiniz filtrelere uygun bir event kaydı yok."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Event</TableHead>
+              <TableHead>Tip</TableHead>
+              <TableHead>Sayfa</TableHead>
+              <TableHead>Kullanıcı</TableHead>
+              <TableHead>Tarih</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredEvents.map((event) => (
+              <TableRow key={event.id}>
+                <TableCell className="font-medium">{event.eventName}</TableCell>
+                <TableCell>
+                  <Badge variant="info">{event.eventType}</Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{event.page || '-'}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {event.user?.email || 'Misafir'}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {new Date(event.createdAt).toLocaleString('tr-TR')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }
-

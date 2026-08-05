@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
 import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
@@ -17,6 +24,7 @@ import { PostsService } from '../posts/posts.service';
 import { convertContentFormat, parseFormat, markdownToJson } from '../common/utils/content-format.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import { getPublishedRevision } from '../common/utils/revision.util';
+import { decodeCursor, encodeCursor } from '../common/utils/cursor.util';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -51,22 +59,52 @@ export class ApiService {
     idempotencyKey?: string,
   ) {
     try {
-      // Check idempotency if key provided
+      // Check idempotency if key provided. The row is reserved up-front so a
+      // duplicate request cannot do the work twice, and a reused key with a
+      // different payload is rejected instead of failing on the unique index later.
+      const requestHash = idempotencyKey ? this.hashRequest(dto) : null;
       if (idempotencyKey) {
-        const requestHash = this.hashRequest(dto);
         const existingKey = await this.idempotencyKeysRepository.findOne({
           where: {
             organizationId: organization.id,
             projectId: project.id,
             key: idempotencyKey,
-            expiresAt: MoreThan(new Date()),
           },
         });
 
-        if (existingKey && existingKey.requestHash === requestHash) {
-          // Return cached response
-          this.logger.log(`Idempotency key hit: ${idempotencyKey}`);
-          return existingKey.response.body;
+        if (existingKey) {
+          const expired = existingKey.expiresAt <= new Date();
+
+          if (!expired && existingKey.requestHash !== requestHash) {
+            throw new ConflictException(
+              'This Idempotency-Key was already used with a different request body.',
+            );
+          }
+
+          if (!expired) {
+            this.logger.log(`Idempotency key hit: ${idempotencyKey}`);
+            return existingKey.response.body;
+          }
+
+          // Expired: free the key so it can be reserved again below.
+          await this.idempotencyKeysRepository.delete({ id: existingKey.id });
+        }
+
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        try {
+          await this.idempotencyKeysRepository.insert({
+            organizationId: organization.id,
+            projectId: project.id,
+            key: idempotencyKey,
+            requestHash: requestHash as string,
+            response: { statusCode: 202, body: { status: 'processing' } } as any,
+            expiresAt,
+          });
+        } catch {
+          // Lost the race against a concurrent identical request.
+          throw new ConflictException('A request with this Idempotency-Key is already in progress.');
         }
       }
 
@@ -150,6 +188,8 @@ export class ApiService {
         model: dto.model || 'gpt-4.1-mini',
         additionalContext: dto.additionalContext,
         targetAudience: dto.targetAudience,
+        keywords: dto.keywords,
+        outline: dto.outline,
         // Always generate canonical JSON; we convert to other formats for clients
         format: ContentFormat.JSON,
       });
@@ -172,27 +212,22 @@ export class ApiService {
         status: 'queued' as const,
       };
 
-      // Store idempotency key if provided
+      // Record the real response against the reserved key so retries replay it.
       if (idempotencyKey) {
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours
-
-        const idempotencyRecord = this.idempotencyKeysRepository.create({
-          organizationId: organization.id,
-          projectId: project.id,
-          key: idempotencyKey,
-          requestHash: this.hashRequest(dto),
-          response: {
-            statusCode: 200,
-            body: response,
-          },
-          expiresAt,
-        });
-        await this.idempotencyKeysRepository.save(idempotencyRecord);
+        await this.idempotencyKeysRepository.update(
+          { organizationId: organization.id, projectId: project.id, key: idempotencyKey },
+          { response: { statusCode: 200, body: response } as any },
+        );
       }
 
       return response;
     } catch (error) {
+      // Release the reservation on failure so the caller can retry the same key.
+      if (idempotencyKey && !(error instanceof ConflictException)) {
+        await this.idempotencyKeysRepository
+          .delete({ organizationId: organization.id, projectId: project.id, key: idempotencyKey })
+          .catch(() => undefined);
+      }
       this.logger.error('Error generating post via API', error);
       throw error;
     }
@@ -360,6 +395,8 @@ export class ApiService {
     cursor?: string,
   ) {
     try {
+      const pageSize = this.clampLimit(limit);
+
       const queryBuilder = this.postsRepository
         .createQueryBuilder('post')
         .leftJoinAndSelect('post.author', 'author')
@@ -367,30 +404,31 @@ export class ApiService {
         .where('post.organizationId = :organizationId', { organizationId: organization.id })
         .andWhere('post.projectId = :projectId', { projectId: project.id })
         .orderBy('post.createdAt', 'DESC')
-        .take(Math.min(limit, 100) + 1); // Fetch one extra to check if there's more
+        .addOrderBy('post.id', 'DESC')
+        .take(pageSize + 1); // Fetch one extra to detect a next page
 
       if (status) {
         queryBuilder.andWhere('post.status = :status', { status });
       }
 
       if (cursor) {
-        // Decode cursor (base64 encoded timestamp)
-        try {
-          const cursorDate = new Date(Buffer.from(cursor, 'base64').toString());
-          queryBuilder.andWhere('post.createdAt < :cursor', { cursor: cursorDate });
-        } catch (e) {
-          throw new BadRequestException('Invalid cursor format');
+        const decoded = decodeCursor(cursor);
+        if (!decoded) {
+          throw new BadRequestException('Invalid cursor');
         }
+        // (createdAt, id) composite keeps rows that share a timestamp from being skipped.
+        queryBuilder.andWhere(
+          '(post.createdAt < :cursorTimestamp OR (post.createdAt = :cursorTimestamp AND post.id < :cursorId))',
+          { cursorTimestamp: new Date(decoded.timestamp), cursorId: decoded.id },
+        );
       }
 
       const posts = await queryBuilder.getMany();
-      const hasMore = posts.length > limit;
-      const resultPosts = hasMore ? posts.slice(0, limit) : posts;
+      const hasMore = posts.length > pageSize;
+      const resultPosts = hasMore ? posts.slice(0, pageSize) : posts;
 
-      // Generate next cursor
-      const nextCursor = hasMore && resultPosts.length > 0
-        ? Buffer.from(resultPosts[resultPosts.length - 1].createdAt.toISOString()).toString('base64')
-        : null;
+      const lastPost = resultPosts[resultPosts.length - 1];
+      const nextCursor = hasMore && lastPost ? encodeCursor(lastPost.createdAt, lastPost.id) : null;
 
       return {
         posts: resultPosts.map((post) => ({
@@ -404,12 +442,7 @@ export class ApiService {
           publishedAt: post.publishedAt,
           createdAt: post.createdAt,
           updatedAt: post.updatedAt,
-          author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+          author: post.author ? { name: post.author.name } : null,
           tags: post.tags || [],
         })),
         cursor: nextCursor,
@@ -421,16 +454,16 @@ export class ApiService {
     }
   }
 
+  /** Page size is clamped so `hasMore`/cursor accounting can never disagree with the query. */
+  private clampLimit(limit: number, max = 100): number {
+    if (!Number.isFinite(limit) || limit < 1) return 50;
+    return Math.min(Math.floor(limit), max);
+  }
+
   async getPublicPostsByProjectSlug(projectSlug: string, limit: number = 50, cursor?: string) {
     try {
-      const project = await this.projectsRepository.findOne({
-        where: { slug: projectSlug },
-        relations: ['organization'],
-      });
-
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
+      const project = await this.resolvePublicProject(projectSlug);
+      const pageSize = this.clampLimit(limit);
 
       const queryBuilder = this.postsRepository
         .createQueryBuilder('post')
@@ -440,25 +473,27 @@ export class ApiService {
         .andWhere('post.projectId = :projectId', { projectId: project.id })
         .andWhere('post.status = :status', { status: PostStatus.PUBLISHED })
         .orderBy('post.publishedAt', 'DESC')
-        .take(Math.min(limit, 100) + 1);
+        .addOrderBy('post.id', 'DESC')
+        .take(pageSize + 1);
 
       if (cursor) {
-        try {
-          const cursorDate = new Date(Buffer.from(cursor, 'base64').toString());
-          queryBuilder.andWhere('post.publishedAt < :cursor', { cursor: cursorDate });
-        } catch (e) {
-          throw new BadRequestException('Invalid cursor format');
+        const decoded = decodeCursor(cursor);
+        if (!decoded) {
+          throw new BadRequestException('Invalid cursor');
         }
+        queryBuilder.andWhere(
+          '(post.publishedAt < :cursorTimestamp OR (post.publishedAt = :cursorTimestamp AND post.id < :cursorId))',
+          { cursorTimestamp: new Date(decoded.timestamp), cursorId: decoded.id },
+        );
       }
 
       const posts = await queryBuilder.getMany();
-      const hasMore = posts.length > limit;
-      const resultPosts = hasMore ? posts.slice(0, limit) : posts;
+      const hasMore = posts.length > pageSize;
+      const resultPosts = hasMore ? posts.slice(0, pageSize) : posts;
 
-      const lastPost = resultPosts.length > 0 ? resultPosts[resultPosts.length - 1] : null;
-      const nextCursor = hasMore && lastPost && lastPost.publishedAt
-        ? Buffer.from(lastPost.publishedAt.toISOString()).toString('base64')
-        : null;
+      const lastPost = resultPosts[resultPosts.length - 1];
+      const nextCursor =
+        hasMore && lastPost?.publishedAt ? encodeCursor(lastPost.publishedAt, lastPost.id) : null;
 
       return {
         posts: resultPosts.map((post) => ({
@@ -469,12 +504,8 @@ export class ApiService {
           language: post.language,
           coverImageUrl: post.coverImageUrl,
           publishedAt: post.publishedAt,
-          author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+          // Public surface: never expose the author's account email.
+          author: post.author ? { name: post.author.name } : null,
           tags: post.tags || [],
         })),
         cursor: nextCursor,
@@ -486,15 +517,30 @@ export class ApiService {
     }
   }
 
+  /**
+   * Project slugs are unique per organization, not globally. Resolve strictly and
+   * refuse ambiguous slugs rather than serving an arbitrary organization's content.
+   */
+  private async resolvePublicProject(projectSlug: string): Promise<Project> {
+    const projects = await this.projectsRepository.find({
+      where: { slug: projectSlug, active: true },
+      take: 2,
+    });
+
+    if (projects.length === 0) {
+      throw new NotFoundException('Project not found');
+    }
+    if (projects.length > 1) {
+      this.logger.error(`Ambiguous public project slug: ${projectSlug}`);
+      throw new NotFoundException('Project not found');
+    }
+
+    return projects[0];
+  }
+
   async getPublicPostByProjectSlug(projectSlug: string, slug: string, format?: string) {
     try {
-      const project = await this.projectsRepository.findOne({
-        where: { slug: projectSlug },
-      });
-
-      if (!project) {
-        throw new NotFoundException('Project not found');
-      }
+      const project = await this.resolvePublicProject(projectSlug);
 
       const post = await this.postsRepository.findOne({
         where: {
@@ -525,12 +571,7 @@ export class ApiService {
           coverImageUrl: post.coverImageUrl,
           coverImageCreditJson: post.coverImageCreditJson,
           publishedAt: post.publishedAt,
-          author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+          author: post.author ? { name: post.author.name } : null,
           tags: post.tags || [],
           seo: post.seo || null,
         };
@@ -589,12 +630,7 @@ export class ApiService {
         coverImageUrl: post.coverImageUrl,
         coverImageCreditJson: post.coverImageCreditJson,
         publishedAt: post.publishedAt,
-        author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+        author: post.author ? { name: post.author.name } : null,
         tags: post.tags || [],
         seo: post.seo || null,
       };
@@ -606,6 +642,10 @@ export class ApiService {
 
   async publish(organization: Organization, project: Project, dto: PublishApiDto) {
     try {
+      if (!dto.postId) {
+        throw new BadRequestException('postId is required');
+      }
+
       const post = await this.postsRepository.findOne({
         where: {
           id: dto.postId,
@@ -707,12 +747,7 @@ export class ApiService {
         publishedAt: post.publishedAt,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
-        author: post.author
-          ? {
-              name: post.author.name,
-              email: post.author.email,
-            }
-          : null,
+        author: post.author ? { name: post.author.name } : null,
         tags: post.tags || [],
       }));
     } catch (error) {
@@ -755,12 +790,7 @@ export class ApiService {
           publishedAt: post.publishedAt,
           createdAt: post.createdAt,
           updatedAt: post.updatedAt,
-          author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+          author: post.author ? { name: post.author.name } : null,
           tags: post.tags || [],
           seo: post.seo || null,
         };
@@ -821,12 +851,7 @@ export class ApiService {
         publishedAt: post.publishedAt,
         createdAt: post.createdAt,
         updatedAt: post.updatedAt,
-        author: post.author
-          ? {
-              name: post.author.name,
-              email: post.author.email,
-            }
-          : null,
+        author: post.author ? { name: post.author.name } : null,
         tags: post.tags || [],
         seo: post.seo || null,
       };
@@ -836,35 +861,60 @@ export class ApiService {
     }
   }
 
-  async getPublishedPosts(organization: Organization, project: Project, limit: number = 50) {
+  async getPublishedPosts(
+    organization: Organization,
+    project: Project,
+    limit: number = 50,
+    cursor?: string,
+  ) {
     try {
-      const posts = await this.postsRepository.find({
-        where: {
-          organizationId: organization.id,
-          projectId: project.id,
-          status: PostStatus.PUBLISHED,
-        },
-        relations: ['author', 'tags'],
-        order: { publishedAt: 'DESC' },
-        take: Math.min(limit, 100),
-      });
+      const pageSize = this.clampLimit(limit);
 
-      return posts.map((post) => ({
-        id: post.id,
-        title: post.title,
-        slug: post.slug,
-        excerpt: post.excerpt,
-        language: post.language,
-        coverImageUrl: post.coverImageUrl,
-        publishedAt: post.publishedAt,
-        author: post.author
-          ? {
-              name: post.author.name,
-              email: post.author.email,
-            }
-          : null,
-        tags: post.tags || [],
-      }));
+      const queryBuilder = this.postsRepository
+        .createQueryBuilder('post')
+        .leftJoinAndSelect('post.author', 'author')
+        .leftJoinAndSelect('post.tags', 'tags')
+        .where('post.organizationId = :organizationId', { organizationId: organization.id })
+        .andWhere('post.projectId = :projectId', { projectId: project.id })
+        .andWhere('post.status = :status', { status: PostStatus.PUBLISHED })
+        .orderBy('post.publishedAt', 'DESC')
+        .addOrderBy('post.id', 'DESC')
+        .take(pageSize + 1);
+
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (!decoded) {
+          throw new BadRequestException('Invalid cursor');
+        }
+        queryBuilder.andWhere(
+          '(post.publishedAt < :cursorTimestamp OR (post.publishedAt = :cursorTimestamp AND post.id < :cursorId))',
+          { cursorTimestamp: new Date(decoded.timestamp), cursorId: decoded.id },
+        );
+      }
+
+      const posts = await queryBuilder.getMany();
+      const hasMore = posts.length > pageSize;
+      const resultPosts = hasMore ? posts.slice(0, pageSize) : posts;
+
+      const lastPost = resultPosts[resultPosts.length - 1];
+      const nextCursor =
+        hasMore && lastPost?.publishedAt ? encodeCursor(lastPost.publishedAt, lastPost.id) : null;
+
+      return {
+        posts: resultPosts.map((post) => ({
+          id: post.id,
+          title: post.title,
+          slug: post.slug,
+          excerpt: post.excerpt,
+          language: post.language,
+          coverImageUrl: post.coverImageUrl,
+          publishedAt: post.publishedAt,
+          author: post.author ? { name: post.author.name } : null,
+          tags: post.tags || [],
+        })),
+        cursor: nextCursor,
+        hasMore,
+      };
     } catch (error) {
       this.logger.error('Error getting published posts via API', error);
       throw error;
@@ -903,12 +953,7 @@ export class ApiService {
           coverImageUrl: post.coverImageUrl,
           coverImageCreditJson: post.coverImageCreditJson,
           publishedAt: post.publishedAt,
-          author: post.author
-            ? {
-                name: post.author.name,
-                email: post.author.email,
-              }
-            : null,
+          author: post.author ? { name: post.author.name } : null,
           tags: post.tags || [],
           seo: post.seo || null,
         };
@@ -966,12 +1011,7 @@ export class ApiService {
         coverImageUrl: post.coverImageUrl,
         coverImageCreditJson: post.coverImageCreditJson,
         publishedAt: post.publishedAt,
-        author: post.author
-          ? {
-              name: post.author.name,
-              email: post.author.email,
-            }
-          : null,
+        author: post.author ? { name: post.author.name } : null,
         tags: post.tags || [],
         seo: post.seo || null,
       };

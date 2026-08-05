@@ -5,6 +5,7 @@ import { Webhook, WebhookEvent } from '../entities/webhook.entity';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import * as http from 'http';
+import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
 
 @Injectable()
 export class WebhookService {
@@ -68,12 +69,19 @@ export class WebhookService {
     const signature = this.generateSignature(body, webhook.secret);
 
     const url = new URL(webhook.url);
-    const isHttps = url.protocol === 'https:';
-    const client = isHttps ? https : http;
+
+    // Re-validate at delivery time: a hostname that was public at registration can be
+    // re-pointed at an internal address later (DNS rebinding).
+    if (url.protocol !== 'https:' || isPrivateHost(url.hostname)) {
+      this.logger.warn(`Refusing to deliver webhook ${webhook.id} to non-public URL: ${url.origin}`);
+      throw new Error('Webhook URL is not a public https endpoint');
+    }
+
+    const client = https;
 
     const options = {
       hostname: url.hostname,
-      port: url.port || (isHttps ? 443 : 80),
+      port: url.port || 443,
       path: url.pathname + url.search,
       method: 'POST',
       headers: {

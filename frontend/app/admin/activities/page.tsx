@@ -1,9 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Activity, Search, Filter, Calendar, User, FileText, Shield, Settings, Trash2, Edit, Eye, EyeOff, LogIn, LogOut, UserPlus, Clock } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  CalendarDays,
+  Clock,
+  Edit,
+  Eye,
+  EyeOff,
+  FileText,
+  LogIn,
+  LogOut,
+  Search,
+  Settings,
+  Shield,
+  Trash2,
+  User,
+  UserPlus,
+  XCircle,
+} from 'lucide-react';
 import { getAdminActivityLogs, type ActivityLog } from '@/lib/api';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/ui/empty-state';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export default function AdminActivitiesPage() {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
@@ -21,14 +47,14 @@ export default function AdminActivitiesPage() {
   const loadActivities = async () => {
     try {
       setLoading(true);
-      
+
       // Backend API'den logları çek
       const logs = await getAdminActivityLogs({
         type: typeFilter !== 'all' ? typeFilter : undefined,
         severity: severityFilter !== 'all' ? severityFilter : undefined,
         limit: 100,
       });
-      
+
       // API'den gelen veriyi frontend formatına çevir
       const formattedLogs: ActivityLog[] = logs.map((log) => ({
         id: log.id,
@@ -46,7 +72,7 @@ export default function AdminActivitiesPage() {
         timestamp: log.timestamp || log.createdAt || new Date().toISOString(),
         severity: log.severity,
       }));
-      
+
       setActivities(formattedLogs);
     } catch (error) {
       console.error('Failed to load activities:', error);
@@ -82,14 +108,14 @@ export default function AdminActivitiesPage() {
   };
 
   const filteredActivities = activities.filter((activity) => {
-    const matchesSearch = 
+    const matchesSearch =
       activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
       activity.user?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       activity.user?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       activity.target?.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === 'all' || activity.type === typeFilter;
     const matchesSeverity = severityFilter === 'all' || activity.severity === severityFilter;
-    
+
     let matchesDate = true;
     if (dateFilter !== 'all') {
       if (!activity.timestamp) {
@@ -108,35 +134,35 @@ export default function AdminActivitiesPage() {
         }
       }
     }
-    
+
     return matchesSearch && matchesType && matchesSeverity && matchesDate;
   });
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityVariant = (severity: string): BadgeProps['variant'] => {
     switch (severity) {
       case 'success':
-        return 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/50';
+        return 'success';
       case 'warning':
-        return 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/50';
+        return 'warning';
       case 'error':
-        return 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/50';
+        return 'destructive';
       default:
-        return 'bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/50';
+        return 'info';
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeIconClass = (type: string) => {
     switch (type) {
       case 'user':
-        return 'bg-[#3B82F6]/20 text-[#3B82F6]';
+        return 'bg-accent text-accent-foreground';
       case 'blog':
-        return 'bg-[#10B981]/20 text-[#10B981]';
+        return 'bg-success-muted text-success';
       case 'auth':
-        return 'bg-[#F59E0B]/20 text-[#F59E0B]';
+        return 'bg-warning-muted text-warning';
       case 'system':
-        return 'bg-[#8B5CF6]/20 text-[#8B5CF6]';
+        return 'bg-info-muted text-info';
       default:
-        return 'bg-[#666666]/20 text-[#ebebeb]';
+        return 'bg-secondary text-muted-foreground';
     }
   };
 
@@ -153,86 +179,32 @@ export default function AdminActivitiesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1
-          className="text-lg font-medium text-white mb-1"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          Aktivite Logları
-        </h1>
-        <p
-          className="text-xs text-[#ebebeb]"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          Sistem genelindeki tüm aktiviteleri ve log kayıtlarını görüntüleyin
-        </p>
-      </motion.div>
+      <PageHeader
+        title="Aktivite Logları"
+        description="Sistem genelindeki tüm aktiviteleri ve log kayıtlarını görüntüleyin"
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Toplam Aktivite', value: stats.total, color: 'bg-[#3B82F6]' },
-          { label: 'Bugün', value: stats.today, color: 'bg-[#10B981]' },
-          { label: 'Hatalar', value: stats.errors, color: 'bg-[#EF4444]' },
-          { label: 'Uyarılar', value: stats.warnings, color: 'bg-[#F59E0B]' },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]"
-          >
-            <p
-              className="text-xs text-[#ebebeb] mb-1.5"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
-              {stat.label}
-            </p>
-            <p
-              className="text-2xl font-semibold text-white"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
-              {stat.value}
-            </p>
-          </motion.div>
-        ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <StatCard label="Toplam Aktivite" value={stats.total} icon={<Activity />} />
+        <StatCard label="Bugün" value={stats.today} icon={<CalendarDays />} />
+        <StatCard label="Hatalar" value={stats.errors} icon={<XCircle />} />
+        <StatCard label="Uyarılar" value={stats.warnings} icon={<AlertTriangle />} />
       </div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ebebeb]" />
-              <input
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 type="text"
                 placeholder="Aktivite, kullanıcı veya hedef ile ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none transition-all"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
+                className="pl-9"
               />
             </div>
           </div>
@@ -242,10 +214,8 @@ export default function AdminActivitiesPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none transition-all"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
+              aria-label="Tip filtresi"
+              className={SELECT_CLASS}
             >
               <option value="all">Tüm Tipler</option>
               <option value="user">Kullanıcı</option>
@@ -260,10 +230,8 @@ export default function AdminActivitiesPage() {
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value as any)}
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none transition-all"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
+              aria-label="Seviye filtresi"
+              className={SELECT_CLASS}
             >
               <option value="all">Tüm Seviyeler</option>
               <option value="info">Bilgi</option>
@@ -275,150 +243,104 @@ export default function AdminActivitiesPage() {
         </div>
 
         {/* Date Filter */}
-        <div className="mt-4 flex items-center gap-4">
-          <span
-            className="text-sm text-[#ebebeb]"
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            Tarih:
-          </span>
-          <div className="flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">Tarih:</span>
+          <div className="flex flex-wrap items-center gap-2">
             {(['all', 'today', 'week', 'month'] as const).map((period) => (
-              <button
+              <Button
                 key={period}
+                size="sm"
+                variant={dateFilter === period ? 'default' : 'outline'}
                 onClick={() => setDateFilter(period)}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-                  dateFilter === period
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'bg-[#0f0f0f] text-[#ebebeb] hover:text-white hover:bg-[#252525]'
-                }`}
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
               >
                 {period === 'all' && 'Tümü'}
                 {period === 'today' && 'Bugün'}
                 {period === 'week' && 'Bu Hafta'}
                 {period === 'month' && 'Bu Ay'}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Activities List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="space-y-3"
-      >
+      <div className="space-y-3">
         {loading ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-8 border border-[#333333] text-center text-sm text-[#ebebeb]">
+          <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-card">
             Yükleniyor...
           </div>
         ) : filteredActivities.length === 0 ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-8 border border-[#333333] text-center text-sm text-[#ebebeb]">
-            Aktivite bulunamadı
-          </div>
+          <EmptyState
+            icon={<Activity />}
+            title="Aktivite bulunamadı"
+            description="Seçtiğiniz filtrelere uygun bir log kaydı yok."
+          />
         ) : (
-          filteredActivities.map((activity, index) => {
+          filteredActivities.map((activity) => {
             const TypeIcon = getActivityIcon(activity.type);
             const ActionIcon = getActionIcon(activity.action);
-            
+
             return (
-              <motion.div
+              <div
                 key={activity.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333] hover:border-[#3B82F6]/50 transition-colors"
+                className="rounded-xl border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover"
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getTypeColor(activity.type)}`}>
-                    <TypeIcon className="w-5 h-5" />
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${getTypeIconClass(activity.type)}`}
+                  >
+                    <TypeIcon className="h-5 w-5" />
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <ActionIcon className="w-4 h-4 text-[#ebebeb]" />
-                          <p
-                            className="text-white font-medium text-sm"
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
-                          >
-                            {activity.action}
-                          </p>
-                          <span className={`px-2 py-0.5 rounded text-xs border ${getSeverityColor(activity.severity)}`}>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <ActionIcon className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                          <Badge variant={getSeverityVariant(activity.severity)}>
                             {activity.severity}
-                          </span>
+                          </Badge>
                         </div>
-                        
+
                         {activity.user && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <User className="w-3 h-3 text-[#ebebeb]" />
-                            <span
-                              className="text-xs text-[#ebebeb]"
-                              style={{
-                                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                              }}
-                            >
+                          <div className="mb-1 flex items-center gap-2">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
                               {activity.user.name} ({activity.user.email})
                             </span>
                           </div>
                         )}
-                        
+
                         {activity.target && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <FileText className="w-3 h-3 text-[#ebebeb]" />
-                            <span
-                              className="text-xs text-[#ebebeb]"
-                              style={{
-                                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                              }}
-                            >
+                          <div className="mb-1 flex items-center gap-2">
+                            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
                               {activity.target.type}: {activity.target.name}
                             </span>
                           </div>
                         )}
-                        
+
                         {activity.details && (
-                          <div className="mt-2 p-2 bg-[#0f0f0f] rounded-lg">
-                            <pre
-                              className="text-xs text-[#ebebeb] font-mono"
-                              style={{
-                                fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
-                              }}
-                            >
+                          <div className="mt-2 overflow-x-auto rounded-lg border border-border bg-secondary p-3">
+                            <pre className="font-mono text-xs text-muted-foreground">
                               {JSON.stringify(activity.details, null, 2)}
                             </pre>
                           </div>
                         )}
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 text-xs text-[#ebebeb] mb-2">
-                          <Clock className="w-4 h-4" />
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
-                          >
-                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString('tr-TR') : 'N/A'}
+
+                      <div className="shrink-0 sm:text-right">
+                        <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:justify-end">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
+                            {activity.timestamp
+                              ? new Date(activity.timestamp).toLocaleString('tr-TR')
+                              : 'N/A'}
                           </span>
                         </div>
                         {activity.ipAddress && (
-                          <p
-                            className="text-xs text-[#ebebeb] font-mono"
-                            style={{
-                              fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
-                            }}
-                          >
+                          <p className="font-mono text-xs text-muted-foreground">
                             IP: {activity.ipAddress}
                           </p>
                         )}
@@ -426,12 +348,11 @@ export default function AdminActivitiesPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
-

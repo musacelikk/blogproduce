@@ -47,6 +47,45 @@ export class PiiSanitizationInterceptor implements NestInterceptor {
   }
 
   /**
+   * Credential-bearing keys — matched as substrings, case-insensitively, so
+   * newPassword/currentPassword/clientSecret/refresh_token are all covered.
+   */
+  private static readonly SECRET_PATTERNS = [
+    'password',
+    'token',
+    'secret',
+    'apikey',
+    'api_key',
+    'authorization',
+    'credential',
+    'signature',
+  ];
+
+  /** Free-text keys that may contain user content/PII but are not credentials. */
+  private static readonly PII_PATTERNS = [
+    'topic',
+    'additionalcontext',
+    'prompt',
+    'content',
+    'input',
+    'message',
+    'text',
+    'description',
+    'email',
+    'phone',
+  ];
+
+  private static isSecretKey(key: string): boolean {
+    const normalized = key.toLowerCase();
+    return PiiSanitizationInterceptor.SECRET_PATTERNS.some((p) => normalized.includes(p));
+  }
+
+  private static isPiiKey(key: string): boolean {
+    const normalized = key.toLowerCase();
+    return PiiSanitizationInterceptor.PII_PATTERNS.some((p) => normalized.includes(p));
+  }
+
+  /**
    * Sanitize request body - remove sensitive fields
    */
   private sanitizeBody(body: any): any {
@@ -56,32 +95,18 @@ export class PiiSanitizationInterceptor implements NestInterceptor {
 
     const sanitized = { ...body };
 
-    // Fields to sanitize (replace with [REDACTED])
-    const sensitiveFields = [
-      'topic',
-      'additionalContext',
-      'prompt',
-      'content',
-      'input',
-      'message',
-      'text',
-      'description',
-      'password',
-      'token',
-      'apiKey',
-      'secret',
-      'authorization',
-    ];
+    for (const key in sanitized) {
+      if (typeof sanitized[key] !== 'string' || sanitized[key].length === 0) {
+        continue;
+      }
 
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        if (typeof sanitized[field] === 'string' && sanitized[field].length > 0) {
-          // Show first 20 chars and indicate it's redacted
-          const preview = sanitized[field].substring(0, 20);
-          sanitized[field] = `${preview}... [REDACTED - ${sanitized[field].length} chars]`;
-        } else {
-          sanitized[field] = '[REDACTED]';
-        }
+      if (PiiSanitizationInterceptor.isSecretKey(key)) {
+        // Credentials are never previewed — even a "first 20 chars" preview leaks
+        // short passwords in full.
+        sanitized[key] = '[REDACTED]';
+      } else if (PiiSanitizationInterceptor.isPiiKey(key)) {
+        // Content fields are truncated so logs stay useful for debugging.
+        sanitized[key] = `[REDACTED - ${sanitized[key].length} chars]`;
       }
     }
 

@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, FileText, Zap, Clock, AlertCircle, ArrowRight, TrendingUp } from 'lucide-react';
+import { Sparkles, FileText, Zap, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { StatsCardSkeleton, BlogListSkeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getPosts, getCurrentUsage, type Post } from '@/lib/api';
 
 const statusLabel: Record<string, string> = {
@@ -13,16 +19,18 @@ const statusLabel: Record<string, string> = {
   review: 'İncelemede', scheduled: 'Zamanlanmış', archived: 'Arşivlendi',
 };
 
-const statusStyle: Record<string, { bg: string; color: string }> = {
-  queued:     { bg: '#fef9c3', color: '#854d0e' },
-  generating: { bg: '#203eec12', color: '#203eec' },
-  generated:  { bg: '#dcfce7', color: '#166534' },
-  published:  { bg: '#dcfce7', color: '#166534' },
-  failed:     { bg: '#fee2e2', color: '#991b1b' },
-  draft:      { bg: 'var(--card)', color: 'var(--muted-foreground)' },
-  review:     { bg: '#fff7ed', color: '#9a3412' },
-  scheduled:  { bg: '#f3e8ff', color: '#6b21a8' },
-  archived:   { bg: 'var(--card)', color: 'var(--muted-foreground)' },
+type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'destructive' | 'info' | 'outline';
+
+const statusVariant: Record<string, BadgeVariant> = {
+  queued: 'warning',
+  generating: 'info',
+  generated: 'success',
+  published: 'success',
+  failed: 'destructive',
+  draft: 'outline',
+  review: 'warning',
+  scheduled: 'info',
+  archived: 'outline',
 };
 
 function formatRelativeTime(date: string) {
@@ -42,8 +50,8 @@ function formatDate(date: string) {
 }
 
 const card = {
-  hidden:  { opacity: 0, y: 16 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 0.45, delay: i * 0.08, ease: [0.25, 0.46, 0.45, 0.94] as const } }),
+  hidden:  { opacity: 0, y: 12 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] as const } }),
 };
 
 export default function DashboardPage() {
@@ -86,44 +94,62 @@ export default function DashboardPage() {
       value: totalPosts.toString(),
       sub: `${thisMonthPosts} bu ay`,
       icon: FileText,
-      gradient: 'linear-gradient(135deg,#203eec,#00b4d8)',
     },
     {
       label: 'Bu Ay Üretilen',
       value: thisMonthPosts.toString(),
       sub: 'Aylık üretim',
       icon: Sparkles,
-      gradient: 'linear-gradient(135deg,#10b981,#059669)',
     },
     {
       label: 'Token Kullanımı',
       value: totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}K` : totalTokens.toString(),
       sub: usage ? `${Number(usage.tokensIn || 0).toLocaleString('tr-TR')} in / ${Number(usage.tokensOut || 0).toLocaleString('tr-TR')} out` : 'Henüz kullanım yok',
       icon: Zap,
-      gradient: 'linear-gradient(135deg,#f59e0b,#d97706)',
     },
     {
       label: 'Son Blog',
       value: latestPost ? formatRelativeTime(latestPost.createdAt) : '—',
       sub: latestPost ? latestPost.title.substring(0, 28) + '…' : 'Blog üretmeye başlayın',
       icon: Clock,
-      gradient: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="space-y-5">
-        <div className="h-7 w-56 rounded-xl animate-pulse" style={{ background: 'var(--card)' }} />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <StatsCardSkeleton key={i} />)}
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-80" />
         </div>
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-            <div className="h-5 w-32 rounded-lg animate-pulse" style={{ background: 'var(--border)' }} />
-            <div className="h-4 w-16 rounded-lg animate-pulse" style={{ background: 'var(--border)' }} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+              <Skeleton className="mb-2 h-7 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))}
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border p-5">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-16" />
           </div>
-          <BlogListSkeleton />
+          <div className="divide-y divide-border">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between px-5 py-4">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -131,10 +157,10 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="p-5 rounded-2xl flex items-start gap-3 text-sm" style={{ background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b' }}>
-        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-5 text-sm text-destructive">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          <p className="font-semibold mb-1">Veri yüklenemedi</p>
+          <p className="mb-1 font-semibold">Veri yüklenemedi</p>
           <p>{error}</p>
           <button onClick={loadData} className="mt-2 text-xs font-semibold underline">Tekrar Dene</button>
         </div>
@@ -143,148 +169,108 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Welcome Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="rounded-2xl p-5 relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-      >
-        <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-[0.15] blur-2xl" style={{ background: '#fff' }} />
-        <div className="absolute right-10 bottom-0 w-20 h-20 rounded-full opacity-[0.10] blur-xl" style={{ background: '#fff' }} />
-        <div className="relative">
-          <p className="text-white/70 text-xs font-medium uppercase tracking-widest mb-1">Hoş Geldiniz</p>
-          <h1 className="text-xl font-bold text-white tracking-tight mb-1">Dashboard</h1>
-          <p className="text-white/75 text-sm">Blog içeriklerinizi üretin, yönetin ve yayınlayın.</p>
-        </div>
-      </motion.div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Dashboard"
+        description="Blog içeriklerinizi üretin, yönetin ve yayınlayın."
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/generate">
+              <Sparkles />
+              Yeni Blog Üret
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s, i) => {
           const Icon = s.icon;
           return (
-            <motion.div
-              key={s.label}
-              custom={i}
-              initial="hidden"
-              animate="visible"
-              variants={card}
-              className="relative overflow-hidden rounded-2xl p-5 group"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              {/* Subtle gradient orb */}
-              <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-[0.07] blur-xl"
-                   style={{ background: s.gradient }} />
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                     style={{ background: s.gradient }}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <TrendingUp className="w-4 h-4 opacity-30" style={{ color: 'var(--muted-foreground)' }} />
-              </div>
-              <p className="text-2xl font-bold text-foreground tracking-tight mb-0.5">{s.value}</p>
-              <p className="text-xs font-medium text-muted-foreground mb-1">{s.label}</p>
-              <p className="text-[10px] text-muted-foreground opacity-70 truncate">{s.sub}</p>
+            <motion.div key={s.label} custom={i} initial="hidden" animate="visible" variants={card}>
+              <StatCard label={s.label} value={s.value} hint={s.sub} icon={<Icon />} />
             </motion.div>
           );
         })}
       </div>
 
       {/* Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.34 }}
-        className="rounded-2xl p-5"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        <h2 className="text-sm font-semibold text-foreground mb-4">Hızlı İşlemler</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/dashboard/generate"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-          >
-            <Sparkles className="w-4 h-4" />
-            Yeni Blog Üret
-          </Link>
-          <Link
-            href="/dashboard/blogs"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all hover:border-[#203eec] hover:text-[#203eec]"
-            style={{ border: '1px solid var(--border)', color: 'var(--foreground)', background: 'var(--background)' }}
-          >
-            <FileText className="w-4 h-4" />
-            Bloglarımı Görüntüle
-          </Link>
-        </div>
-      </motion.div>
+      <Card className="shadow-card">
+        <CardHeader className="p-5 pb-0">
+          <CardTitle className="text-base">Hızlı İşlemler</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">
+          <div className="flex flex-wrap gap-3">
+            <Button asChild>
+              <Link href="/dashboard/generate">
+                <Sparkles />
+                Yeni Blog Üret
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/blogs">
+                <FileText />
+                Bloglarımı Görüntüle
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Blogs */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.44 }}
-        className="rounded-2xl overflow-hidden"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-          <h2 className="text-sm font-semibold text-foreground">Son Bloglarım</h2>
-          <Link href="/dashboard/blogs" className="text-xs font-semibold transition-colors hover:opacity-80" style={{ color: '#203eec' }}>
-            Tümünü Gör →
+      <Card className="overflow-hidden shadow-card">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Son Bloglarım</h2>
+          <Link
+            href="/dashboard/blogs"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-accent-foreground transition-colors hover:underline"
+          >
+            Tümünü Gör
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
         {recentPosts.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                 style={{ background: 'linear-gradient(135deg,#203eec12,#00d4ff12)', border: '1px solid #203eec20' }}>
-              <FileText className="w-6 h-6" style={{ color: '#203eec' }} />
-            </div>
-            <p className="text-sm font-medium text-foreground mb-1.5">Henüz blog oluşturulmamış</p>
-            <p className="text-xs text-muted-foreground mb-5">İlk blogunu oluşturmak için aşağıya tıkla</p>
-            <Link
-              href="/dashboard/generate"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-            >
-              <Sparkles className="w-4 h-4" /> Yeni Blog Üret
-            </Link>
-          </div>
-        ) : (
-          <div>
-            {recentPosts.map((post, i) => {
-              const sStyle = statusStyle[post.status] ?? statusStyle.draft;
-              return (
-                <Link
-                  key={post.id}
-                  href={`/dashboard/blogs/${post.id}`}
-                  className="flex items-center justify-between px-5 py-3.5 transition-colors group"
-                  style={{ borderBottom: i < recentPosts.length - 1 ? '1px solid var(--border)' : 'none' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--background)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >
-                  <div className="flex-1 min-w-0 mr-4">
-                    <p className="text-sm font-medium text-foreground group-hover:text-[#203eec] transition-colors truncate mb-1">
-                      {post.title}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">{formatDate(post.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold"
-                          style={{ background: sStyle.bg, color: sStyle.color }}>
-                      {statusLabel[post.status] ?? post.status}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+          <EmptyState
+            className="rounded-none border-0"
+            icon={<FileText />}
+            title="Henüz blog oluşturulmamış"
+            description="İlk blogunu oluşturmak için aşağıya tıkla"
+            action={
+              <Button asChild>
+                <Link href="/dashboard/generate">
+                  <Sparkles />
+                  Yeni Blog Üret
                 </Link>
-              );
-            })}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="divide-y divide-border">
+            {recentPosts.map((post) => (
+              <Link
+                key={post.id}
+                href={`/dashboard/blogs/${post.id}`}
+                className="group flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-secondary"
+              >
+                <div className="mr-4 min-w-0 flex-1">
+                  <p className="mb-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-accent-foreground">
+                    {post.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Badge variant={statusVariant[post.status] ?? 'outline'}>
+                    {statusLabel[post.status] ?? post.status}
+                  </Badge>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </div>
+              </Link>
+            ))}
           </div>
         )}
-      </motion.div>
+      </Card>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { FolderPlus, Folder, Edit, Trash2, Plus, Loader2, AlertCircle, Check, X, FileText, Palette, HelpCircle, Hash, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { CardSkeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton, CardSkeleton } from '@/components/ui/skeleton';
 import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, type Workspace } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -43,7 +45,7 @@ export default function WorkspacesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Workspace adı gereklidir');
       return;
@@ -53,8 +55,8 @@ export default function WorkspacesPage() {
       setIsCreating(true);
       setError(null);
       const newWorkspace = await createWorkspace(
-        formData.name, 
-        formData.description || undefined, 
+        formData.name,
+        formData.description || undefined,
         formData.color || undefined,
         formData.siteUrl || undefined
       );
@@ -70,7 +72,7 @@ export default function WorkspacesPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!editingWorkspace || !formData.name.trim()) {
       setError('Workspace adı gereklidir');
       return;
@@ -129,7 +131,7 @@ export default function WorkspacesPage() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Workspace silinirken bir hata oluştu';
       setError(errorMessage);
-      
+
       // If error mentions posts, show force delete option
       if (errorMessage.includes('blog')) {
         setShowDeleteConfirm(workspaceId);
@@ -193,17 +195,12 @@ export default function WorkspacesPage() {
   if (isLoading) {
     return (
       <div className="space-y-5">
-        <div className="mb-6">
-          <div className="h-8 w-64 bg-[var(--border)] animate-pulse rounded mb-2" />
-          <div className="h-4 w-96 bg-[var(--border)] animate-pulse rounded" />
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
         </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="h-4 w-32 bg-blue-200/50 animate-pulse rounded mb-2" />
-          <div className="h-3 w-full bg-blue-200/50 animate-pulse rounded" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <CardSkeleton key={i} />
           ))}
@@ -214,70 +211,40 @@ export default function WorkspacesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <Folder className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Workspace&apos;ler</h1>
-            <p className="text-sm text-muted-foreground">İçeriklerinizi projelere göre düzenleyin</p>
-          </div>
-        </div>
-        <div className="flex-shrink-0 flex items-center gap-2">
-          <Button
-            onClick={() => setShowInfoCard(!showInfoCard)}
-            variant="outline"
-            size="sm"
-            className="rounded-full px-3 py-2.5 border-[var(--border)] hover:bg-[var(--secondary)] hover:border-[#203eec] transition-all duration-200"
-            title="Workspace Nedir?"
-          >
-            <HelpCircle className="w-4 h-4 text-muted-foreground" />
-          </Button>
-          <Button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Yeni Workspace
-          </Button>
-        </div>
-      </motion.div>
+      <PageHeader
+        title="Workspace&apos;ler"
+        description="İçeriklerinizi projelere göre düzenleyin"
+        actions={
+          <>
+            <Button
+              onClick={() => setShowInfoCard(!showInfoCard)}
+              variant="outline"
+              size="icon"
+              title="Workspace Nedir?"
+              aria-label="Workspace Nedir?"
+            >
+              <HelpCircle className="text-muted-foreground" />
+            </Button>
+            <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+              <Plus />
+              Yeni Workspace
+            </Button>
+          </>
+        }
+      />
 
       {/* Info Card - Collapsible */}
       {showInfoCard && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-blue-50 border border-blue-200 rounded-xl p-4 overflow-hidden"
-        >
+        <div className="overflow-hidden rounded-xl border border-border bg-info-muted p-4">
           <div className="flex items-start gap-3">
-            <Folder className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <Folder className="mt-0.5 h-5 w-5 shrink-0 text-info" />
             <div className="flex-1">
-              <h3
-                className="text-sm font-medium text-blue-900 mb-1"
-                style={{
-                }}
-              >
+              <h3 className="mb-1 text-sm font-medium text-info">
                 Workspace Nedir?
               </h3>
-              <p
-                className="text-xs text-blue-700"
-                style={{
-                }}
-              >
-                Workspace, bloglarınızı organize etmek için kullandığınız bir çalışma alanıdır. 
-                Örneğin: &quot;Kişisel Blog&quot;, &quot;Şirket Blogu&quot;, &quot;Proje Blogu&quot; gibi farklı workspace&apos;ler oluşturabilirsiniz. 
+              <p className="text-xs text-info">
+                Workspace, bloglarınızı organize etmek için kullandığınız bir çalışma alanıdır.
+                Örneğin: &quot;Kişisel Blog&quot;, &quot;Şirket Blogu&quot;, &quot;Proje Blogu&quot; gibi farklı workspace&apos;ler oluşturabilirsiniz.
                 Her workspace&apos;te ayrı bloglar tutabilir ve içeriklerinizi kategorize edebilirsiniz.
               </p>
             </div>
@@ -285,32 +252,23 @@ export default function WorkspacesPage() {
               variant="ghost"
               size="sm"
               onClick={() => setShowInfoCard(false)}
-              className="h-6 w-6 p-0 flex-shrink-0"
+              className="h-6 w-6 shrink-0 p-0"
+              aria-label="Kapat"
             >
-              <X className="w-3.5 h-3.5 text-blue-600" />
+              <X className="h-3.5 w-3.5 text-info" />
             </Button>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Create Form */}
       {showCreateForm && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2
-              className="text-lg font-medium text-foreground"
-              style={{
-              }}
-            >
+        <Card className="p-5 shadow-card">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-medium text-foreground">
               Yeni Workspace Oluştur
             </h2>
-              <Button
+            <Button
               variant="ghost"
               size="sm"
               onClick={() => {
@@ -319,36 +277,26 @@ export default function WorkspacesPage() {
                 setError(null);
               }}
               className="h-8 w-8 p-0"
+              aria-label="Kapat"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
           <form onSubmit={handleCreate} className="space-y-3">
             <div>
-              <label
-                htmlFor="name"
-                className="text-sm font-medium text-foreground mb-2 block"
-                style={{
-                }}
-              >
-                Workspace Adı <span className="text-red-500">*</span>
+              <label htmlFor="name" className="mb-2 block text-sm font-medium text-foreground">
+                Workspace Adı <span className="text-destructive">*</span>
               </label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Örn: Kişisel Blog, Şirket Blogu"
-                className="border-[var(--border)] focus:border-[#203eec]"
                 required
               />
             </div>
             <div>
-              <label
-                htmlFor="description"
-                className="text-sm font-medium text-foreground mb-2 block"
-                style={{
-                }}
-              >
+              <label htmlFor="description" className="mb-2 block text-sm font-medium text-foreground">
                 Açıklama (Opsiyonel)
               </label>
               <Textarea
@@ -357,16 +305,11 @@ export default function WorkspacesPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Bu workspace hakkında kısa bir açıklama..."
                 rows={3}
-                className="border-[var(--border)] focus:border-[#203eec]"
+                className="resize-none"
               />
             </div>
             <div>
-              <label
-                htmlFor="siteUrl"
-                className="text-sm font-medium text-foreground mb-2 block"
-                style={{
-                }}
-              >
+              <label htmlFor="siteUrl" className="mb-2 block text-sm font-medium text-foreground">
                 Site URL (Opsiyonel)
               </label>
               <Input
@@ -375,18 +318,13 @@ export default function WorkspacesPage() {
                 value={formData.siteUrl}
                 onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
                 placeholder="https://example.com"
-                className="border-[var(--border)] focus:border-[#203eec]"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="mt-1 text-xs text-muted-foreground">
                 SEO için kullanılacak site URL&apos;si (opsiyonel)
               </p>
             </div>
             <div>
-              <label
-                className="text-sm font-medium text-foreground mb-2 block"
-                style={{
-                }}
-              >
+              <label className="mb-2 block text-sm font-medium text-foreground">
                 Renk (Opsiyonel)
               </label>
               <div className="flex items-center gap-2">
@@ -395,9 +333,9 @@ export default function WorkspacesPage() {
                     key={color.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, color: color.value })}
-                    className={`w-6 h-6 rounded-lg ${color.class} border-2 transition-all ${
+                    className={`h-6 w-6 rounded-lg border-2 transition-all ${color.class} ${
                       formData.color === color.value
-                        ? 'border-[#203eec] scale-110 shadow-lg ring-2 ring-[#203eec]/30'
+                        ? 'scale-110 border-primary shadow-card-hover ring-2 ring-primary/30'
                         : 'border-transparent hover:scale-105'
                     }`}
                     title={color.label}
@@ -406,19 +344,15 @@ export default function WorkspacesPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                type="submit"
-                disabled={isCreating}
-                className="bg-[#203eec] hover:bg-[#1a32cc] text-white"
-              >
+              <Button type="submit" disabled={isCreating}>
                 {isCreating ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="animate-spin" />
                     Oluşturuluyor...
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
+                    <Check />
                     Oluştur
                   </>
                 )}
@@ -431,227 +365,176 @@ export default function WorkspacesPage() {
                   setFormData({ name: '', description: '', color: '', siteUrl: '' });
                   setError(null);
                 }}
-                className="border-[var(--border)] hover:border-[#203eec]"
               >
                 İptal
               </Button>
             </div>
           </form>
-        </motion.div>
+        </Card>
       )}
 
       {/* Edit Form */}
       {editingWorkspace && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-          className="relative bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-xl p-6 border-2 border-[var(--border)] shadow-xl backdrop-blur-sm overflow-hidden"
-        >
-          {/* Decorative background elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-200/20 to-orange-200/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 ${formData.color ? workspaceColors.find(c => c.value === formData.color)?.class || generateAvatarColor(editingWorkspace) : generateAvatarColor(editingWorkspace)} rounded-xl flex items-center justify-center shadow-lg`}>
-                  <span
-                    className="text-xl font-bold text-white"
-                    style={{
-                    }}
-                  >
-                    {getInitials(formData.name || editingWorkspace.name)}
-                  </span>
-                </div>
-                <div>
-                  <h2
-                    className="text-xl font-semibold text-foreground"
-                    style={{
-                    }}
-                  >
-                    Workspace Düzenle
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Ayarlarınızı güncelleyin</p>
-                </div>
+        <Card className="p-6 shadow-elevated">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-card ${formData.color ? workspaceColors.find(c => c.value === formData.color)?.class || generateAvatarColor(editingWorkspace) : generateAvatarColor(editingWorkspace)}`}>
+                <span className="text-xl font-bold text-primary-foreground">
+                  {getInitials(formData.name || editingWorkspace.name)}
+                </span>
               </div>
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Workspace Düzenle
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Ayarlarınızı güncelleyin</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditingWorkspace(null);
+                setFormData({ name: '', description: '', color: '', siteUrl: '' });
+                setError(null);
+              }}
+              className="h-8 w-8 p-0"
+              aria-label="Kapat"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <form onSubmit={handleUpdate} className="space-y-5">
+            <div>
+              <label
+                htmlFor="edit-name"
+                className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"
+              >
+                <Folder className="h-4 w-4 text-primary" />
+                Workspace Adı <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Örn: Kişisel Blog, Şirket Blogu"
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-description"
+                className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"
+              >
+                <FileText className="h-4 w-4 text-primary" />
+                Açıklama (Opsiyonel)
+              </label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Bu workspace hakkında kısa bir açıklama..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-siteUrl"
+                className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground"
+              >
+                <FileText className="h-4 w-4 text-primary" />
+                Site URL (Opsiyonel)
+              </label>
+              <Input
+                id="edit-siteUrl"
+                type="url"
+                value={formData.siteUrl}
+                onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
+                placeholder="https://example.com"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                SEO için kullanılacak site URL&apos;si (opsiyonel)
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Palette className="h-4 w-4 text-primary" />
+                Renk Seç
+              </label>
+              <div className="mb-4 flex items-center justify-start gap-2">
+                {workspaceColors.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, color: color.value })}
+                    className={`relative h-6 w-6 rounded-lg border-2 shadow-card transition-all ${color.class} ${
+                      formData.color === color.value
+                        ? 'scale-110 border-primary shadow-card-hover ring-2 ring-primary/30'
+                        : 'border-transparent hover:shadow-card-hover'
+                    }`}
+                    title={color.label}
+                  >
+                    {formData.color === color.value && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              {formData.color && (
+                <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                  <span>Seçili renk:</span>
+                  <span className="font-medium text-foreground">
+                    {workspaceColors.find(c => c.value === formData.color)?.label}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="submit" disabled={isUpdating} className="flex-1">
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Güncelleniyor...
+                  </>
+                ) : (
+                  <>
+                    <Check />
+                    Değişiklikleri Kaydet
+                  </>
+                )}
+              </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setEditingWorkspace(null);
                   setFormData({ name: '', description: '', color: '', siteUrl: '' });
                   setError(null);
                 }}
-                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 transition-colors"
               >
-                <X className="w-4 h-4" />
+                İptal
               </Button>
             </div>
-
-            <form onSubmit={handleUpdate} className="space-y-5">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
-                <label
-                  htmlFor="edit-name"
-                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
-                  style={{
-                  }}
-                >
-                  <Folder className="w-4 h-4 text-[#203eec]" />
-                  Workspace Adı <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Örn: Kişisel Blog, Şirket Blogu"
-                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
-                  required
-                />
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
-                <label
-                  htmlFor="edit-description"
-                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
-                  style={{
-                  }}
-                >
-                  <FileText className="w-4 h-4 text-[#203eec]" />
-                  Açıklama (Opsiyonel)
-                </label>
-                <Textarea
-                  id="edit-description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Bu workspace hakkında kısa bir açıklama..."
-                  rows={3}
-                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white resize-none"
-                />
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
-                <label
-                  htmlFor="edit-siteUrl"
-                  className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2"
-                  style={{
-                  }}
-                >
-                  <FileText className="w-4 h-4 text-[#203eec]" />
-                  Site URL (Opsiyonel)
-                </label>
-                <Input
-                  id="edit-siteUrl"
-                  type="url"
-                  value={formData.siteUrl}
-                  onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })}
-                  placeholder="https://example.com"
-                  className="border-[var(--border)] focus:border-[#203eec] focus:ring-2 focus:ring-[#203eec]/20 bg-white"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  SEO için kullanılacak site URL&apos;si (opsiyonel)
-                </p>
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
-                <label
-                  className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"
-                  style={{
-                  }}
-                >
-                  <Palette className="w-4 h-4 text-[#203eec]" />
-                  Renk Seç
-                </label>
-                <div className="flex items-center gap-2 mb-4 justify-start">
-                  {workspaceColors.map((color) => (
-                    <motion.button
-                      key={color.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color: color.value })}
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.9 }}
-                      className={`relative w-6 h-6 rounded-lg ${color.class} border-2 transition-all shadow-sm ${
-                        formData.color === color.value
-                          ? 'border-[#203eec] scale-110 shadow-md ring-2 ring-[#203eec]/30'
-                          : 'border-transparent hover:shadow-md'
-                      }`}
-                      title={color.label}
-                    >
-                      {formData.color === color.value && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute inset-0 flex items-center justify-center"
-                        >
-                          <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />
-                        </motion.div>
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-                {formData.color && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-muted-foreground mt-2 flex items-center gap-1"
-                  >
-                    <span>Seçili renk:</span>
-                    <span className="font-medium text-foreground">
-                      {workspaceColors.find(c => c.value === formData.color)?.label}
-                    </span>
-                  </motion.p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <Button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="flex-1 bg-gradient-to-r from-[#203eec] to-[#1a32cc] hover:from-[#1a32cc] hover:to-[#1d4ed8] text-white shadow-lg hover:shadow-xl transition-all"
-                >
-                  {isUpdating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Güncelleniyor...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Değişiklikleri Kaydet
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setEditingWorkspace(null);
-                    setFormData({ name: '', description: '', color: '', siteUrl: '' });
-                    setError(null);
-                  }}
-                  className="border-[var(--border)] hover:border-[#666666] hover:bg-[var(--secondary)] transition-colors"
-                >
-                  İptal
-                </Button>
-              </div>
-            </form>
-          </div>
-        </motion.div>
+          </form>
+        </Card>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-medium">Hata</p>
             <p>{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadWorkspaces}
-              className="mt-2 border-red-200 text-red-600 hover:bg-red-100"
-            >
+            <Button variant="outline" size="sm" onClick={loadWorkspaces} className="mt-2">
               Tekrar Dene
             </Button>
           </div>
@@ -660,51 +543,29 @@ export default function WorkspacesPage() {
 
       {/* Workspaces Grid */}
       {workspaces.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl p-10 border border-[var(--border)] text-center"
-        >
-          <Folder className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h3
-            className="text-lg font-medium text-foreground mb-2"
-            style={{
-            }}
-          >
-            Henüz workspace oluşturulmamış
-          </h3>
-          <p
-            className="text-sm text-muted-foreground mb-4"
-            style={{
-            }}
-          >
-            İlk workspace&apos;inizi oluşturarak blog üretmeye başlayın
-          </p>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-[#203eec] hover:bg-[#1a32cc] text-white"
-          >
-            <FolderPlus className="w-4 h-4 mr-2" />
-            İlk Workspace&apos;i Oluştur
-          </Button>
-        </motion.div>
+        <EmptyState
+          icon={<Folder />}
+          title="Henüz workspace oluşturulmamış"
+          description="İlk workspace&apos;inizi oluşturarak blog üretmeye başlayın"
+          action={
+            <Button onClick={() => setShowCreateForm(true)}>
+              <FolderPlus />
+              İlk Workspace&apos;i Oluştur
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {workspaces.map((workspace, index) => {
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {workspaces.map((workspace) => {
             const initials = getInitials(workspace.name);
             const avatarColor = generateAvatarColor(workspace);
-            
+
             return (
-            <motion.div
+            <Card
               key={workspace.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="rounded-2xl p-5 hover:shadow-lg hover:border-[#203eec] transition-all group relative"
-              style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+              className="group relative p-5 shadow-card transition-shadow hover:shadow-card-hover"
             >
-              <div className="absolute top-3 right-3 z-10">
+              <div className="absolute right-3 top-3 z-10">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -712,47 +573,36 @@ export default function WorkspacesPage() {
                     e.stopPropagation();
                     handleEdit(workspace);
                   }}
-                  className="h-7 w-7 p-0 hover:bg-[var(--secondary)] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-7 w-7 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                   title="Düzenle"
+                  aria-label="Düzenle"
                 >
-                  <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                  <Edit className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </div>
-              
-              <div 
-                className="flex flex-col items-center text-center mb-4 cursor-pointer"
+
+              <div
+                className="mb-4 flex cursor-pointer flex-col items-center text-center"
                 onClick={() => router.push(`/dashboard/blogs?workspaceId=${workspace.id}`)}
               >
-                <div className={`w-20 h-20 ${avatarColor} rounded-full flex items-center justify-center mb-3 shadow-md group-hover:scale-105 transition-transform`}>
-                  <span
-                    className="text-2xl font-bold text-white"
-                    style={{
-                    }}
-                  >
+                <div className={`mb-3 flex h-20 w-20 items-center justify-center rounded-full shadow-card transition-transform group-hover:scale-105 ${avatarColor}`}>
+                  <span className="text-2xl font-bold text-primary-foreground">
                     {initials}
                   </span>
                 </div>
-                <h3
-                  className="text-lg font-semibold text-foreground mb-1"
-                  style={{
-                  }}
-                >
+                <h3 className="mb-1 text-lg font-semibold text-foreground">
                   {workspace.name}
                 </h3>
                 {workspace.description && (
-                  <p
-                    className="text-sm text-muted-foreground line-clamp-2"
-                    style={{
-                    }}
-                  >
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
                     {workspace.description}
                   </p>
                 )}
               </div>
-              
-              <div className="space-y-1 mb-4">
+
+              <div className="mb-4 space-y-1">
                 <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                  <Hash className="w-3 h-3" />
+                  <Hash className="h-3 w-3" />
                   <span className="font-mono">{workspace.id}</span>
                   <Button
                     variant="ghost"
@@ -761,10 +611,11 @@ export default function WorkspacesPage() {
                       e.stopPropagation();
                       navigator.clipboard.writeText(workspace.id);
                     }}
-                    className="h-4 w-4 p-0 hover:bg-[var(--secondary)]"
+                    className="h-4 w-4 p-0"
                     title="ID'yi kopyala"
+                    aria-label="ID'yi kopyala"
                   >
-                    <Copy className="w-3 h-3 text-muted-foreground" />
+                    <Copy className="h-3 w-3 text-muted-foreground" />
                   </Button>
                 </div>
                 <div className="flex items-center justify-center text-xs text-muted-foreground">
@@ -778,39 +629,39 @@ export default function WorkspacesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => router.push(`/dashboard/generate?workspaceId=${workspace.id}`)}
-                    className="flex-1 border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
+                    className="flex-1 text-xs"
                   >
-                    <Plus className="w-3 h-3 mr-1" />
+                    <Plus className="h-3 w-3" />
                     Blog Üret
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => router.push(`/dashboard/blogs?workspaceId=${workspace.id}`)}
-                    className="flex-1 border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] hover:bg-[#203eec]/5 text-xs"
+                    className="flex-1 text-xs"
                   >
                     Blogları Gör
                   </Button>
                 </div>
                 {showDeleteConfirm === workspace.id ? (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
-                    <p className="text-xs text-red-700 font-medium">Workspace&apos;te bloglar var!</p>
+                  <div className="space-y-2 rounded-lg border border-border bg-[var(--destructive-muted)] p-3">
+                    <p className="text-xs font-medium text-destructive">Workspace&apos;te bloglar var!</p>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleForceDelete(workspace.id)}
                         disabled={deletingWorkspaceId === workspace.id}
-                        className="flex-1 border-red-300 text-red-700 hover:bg-red-100 text-xs"
+                        className="flex-1 text-xs text-destructive"
                       >
                         {deletingWorkspaceId === workspace.id ? (
                           <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                             Siliniyor...
                           </>
                         ) : (
                           <>
-                            <Trash2 className="w-3 h-3 mr-1" />
+                            <Trash2 className="h-3 w-3" />
                             Zorla Sil
                           </>
                         )}
@@ -819,7 +670,7 @@ export default function WorkspacesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowDeleteConfirm(null)}
-                        className="border-[var(--border)] text-xs"
+                        className="text-xs"
                       >
                         İptal
                       </Button>
@@ -831,23 +682,23 @@ export default function WorkspacesPage() {
                     size="sm"
                     onClick={() => handleDelete(workspace.id)}
                     disabled={deletingWorkspaceId === workspace.id}
-                    className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-xs"
+                    className="w-full text-xs text-destructive"
                   >
                     {deletingWorkspaceId === workspace.id ? (
                       <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" />
                         Siliniyor...
                       </>
                     ) : (
                       <>
-                        <Trash2 className="w-3 h-3 mr-1" />
+                        <Trash2 className="h-3 w-3" />
                         Workspace&apos;i Sil
                       </>
                     )}
                   </Button>
                 )}
               </div>
-            </motion.div>
+            </Card>
             );
           })}
         </div>
@@ -855,4 +706,3 @@ export default function WorkspacesPage() {
     </div>
   );
 }
-

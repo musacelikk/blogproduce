@@ -24,8 +24,10 @@ export function GradientBar() {
 
   return (
     <div
-      className="bottom-gradient-bar transition-opacity duration-500"
-      style={{ opacity: isVisible ? 1 : 0 }}
+      aria-hidden
+      className={`bottom-gradient-bar transition-opacity duration-500 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
     />
   )
 }

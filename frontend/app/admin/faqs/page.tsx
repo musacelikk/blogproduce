@@ -1,11 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Save, X, HelpCircle, Loader2, AlertCircle } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  HelpCircle,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
 import {
   getAdminFAQs,
-  getAdminFAQById,
   createAdminFAQ,
   updateAdminFAQ,
   deleteAdminFAQ,
@@ -54,8 +77,8 @@ export default function AdminFAQsPage() {
     }
   };
 
-  const filteredFAQs = selectedType === 'all' 
-    ? faqs 
+  const filteredFAQs = selectedType === 'all'
+    ? faqs
     : faqs.filter(faq => faq.type === selectedType);
 
   const handleOpenModal = (faq?: FAQ) => {
@@ -140,229 +163,214 @@ export default function AdminFAQsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 mx-auto mb-3 text-[#3B82F6] animate-spin" />
-          <p className="text-xs text-[#ebebeb]">Yükleniyor...</p>
+          <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1
-            className="text-2xl md:text-3xl font-normal text-white mb-2"
-            style={{
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-            }}
-          >
-            SSS Yönetimi
-          </h1>
-          <p className="text-sm text-[#ebebeb]">
-            Ana sayfa ve SSS sayfası için sık sorulan soruları yönetin
-          </p>
-        </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg transition-colors text-sm font-medium"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          Yeni SSS
-        </button>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        title="SSS Yönetimi"
+        description="Ana sayfa ve SSS sayfası için sık sorulan soruları yönetin"
+        actions={
+          <Button onClick={() => handleOpenModal()}>
+            <Plus className="h-4 w-4" />
+            Yeni SSS
+          </Button>
+        }
+      />
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div>
-            <p className="text-sm text-red-400 font-medium">Hata</p>
-            <p className="text-sm text-red-300 mt-1">{error}</p>
+            <p className="text-sm font-medium text-destructive">Hata</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{error}</p>
           </div>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex gap-2">
-        <button
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={selectedType === 'all' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setSelectedType('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedType === 'all'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-[#1a1a1a] text-[#ebebeb] hover:text-white border border-[#333333]'
-          }`}
         >
           Tümü ({faqs.length})
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={selectedType === 'homepage' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setSelectedType('homepage')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedType === 'homepage'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-[#1a1a1a] text-[#ebebeb] hover:text-white border border-[#333333]'
-          }`}
         >
           Ana Sayfa ({faqs.filter(f => f.type === 'homepage').length})
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={selectedType === 'page' ? 'default' : 'outline'}
+          size="sm"
           onClick={() => setSelectedType('page')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            selectedType === 'page'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-[#1a1a1a] text-[#ebebeb] hover:text-white border border-[#333333]'
-          }`}
         >
           SSS Sayfası ({faqs.filter(f => f.type === 'page').length})
-        </button>
+        </Button>
       </div>
 
       {/* FAQ List */}
       {filteredFAQs.length === 0 ? (
-        <div className="text-center py-12 bg-[#1a1a1a] rounded-lg border border-[#333333]">
-          <HelpCircle className="w-12 h-12 mx-auto mb-4 text-[#ebebeb]" />
-          <p className="text-[#ebebeb] mb-2">Henüz SSS eklenmemiş</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="text-[#3B82F6] hover:text-[#2563EB] text-sm font-medium"
-          >
-            İlk SSS&apos;yi ekleyin
-          </button>
-        </div>
+        <EmptyState
+          icon={<HelpCircle />}
+          title="Henüz SSS eklenmemiş"
+          description="Ana sayfada ve SSS sayfasında görünecek ilk soruyu ekleyin."
+          action={
+            <Button onClick={() => handleOpenModal()}>
+              <Plus className="h-4 w-4" />
+              İlk SSS&apos;yi ekleyin
+            </Button>
+          }
+        />
       ) : (
-        <div className="space-y-3">
-          {filteredFAQs
-            .sort((a, b) => a.order - b.order)
-            .map((faq) => (
-              <motion.div
-                key={faq.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-[#1a1a1a] border border-[#333333] rounded-lg p-4 hover:border-[#444444] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-1 bg-[#3B82F6]/20 text-[#3B82F6] text-xs font-medium rounded">
-                        {faq.type === 'homepage' ? 'Ana Sayfa' : 'SSS Sayfası'}
-                      </span>
-                      <span className="px-2 py-1 bg-[#333333] text-[#ebebeb] text-xs rounded">
-                        Sıra: {faq.order}
-                      </span>
-                      {faq.active ? (
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
-                          Aktif
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
-                          Pasif
-                        </span>
-                      )}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Soru</TableHead>
+              <TableHead className="w-36">Tip</TableHead>
+              <TableHead className="w-20">Sıra</TableHead>
+              <TableHead className="w-28">Durum</TableHead>
+              <TableHead className="w-40 text-right">İşlemler</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredFAQs
+              .sort((a, b) => a.order - b.order)
+              .map((faq) => (
+                <TableRow key={faq.id}>
+                  <TableCell className="max-w-[420px]">
+                    <p className="font-medium text-foreground">{faq.question}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{faq.answer}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="default">
+                      {faq.type === 'homepage' ? 'Ana Sayfa' : 'SSS Sayfası'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{faq.order}</TableCell>
+                  <TableCell>
+                    <Badge variant={faq.active ? 'success' : 'destructive'}>
+                      {faq.active ? 'Aktif' : 'Pasif'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleToggleActive(faq)}
+                        className={faq.active ? 'h-9 w-9 text-success' : 'h-9 w-9 text-destructive'}
+                        title={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
+                        aria-label={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
+                      >
+                        {faq.active ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          <XCircle className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenModal(faq)}
+                        className="h-9 w-9"
+                        title="Düzenle"
+                        aria-label="Düzenle"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(faq.id)}
+                        className="h-9 w-9 text-destructive"
+                        title="Sil"
+                        aria-label="Sil"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <h3 className="text-base font-medium text-white mb-2">{faq.question}</h3>
-                    <p className="text-sm text-[#ebebeb] line-clamp-2">{faq.answer}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleToggleActive(faq)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        faq.active
-                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                          : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                      }`}
-                      title={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
-                    >
-                      {faq.active ? '✓' : '✗'}
-                    </button>
-                    <button
-                      onClick={() => handleOpenModal(faq)}
-                      className="p-2 rounded-lg bg-[#333333] hover:bg-[#3B82F6] text-[#ebebeb] hover:text-white transition-colors"
-                      title="Düzenle"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(faq.id)}
-                      className="p-2 rounded-lg bg-[#333333] hover:bg-red-500/20 text-[#ebebeb] hover:text-red-400 transition-colors"
-                      title="Sil"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-        </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
       )}
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1a1a1a] border border-[#333333] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card shadow-elevated">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-medium text-white">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">
                   {editingFaq ? 'SSS Düzenle' : 'Yeni SSS'}
                 </h2>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleCloseModal}
-                  className="p-2 rounded-lg hover:bg-[#333333] text-[#ebebeb] hover:text-white transition-colors"
+                  aria-label="Kapat"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="faq-question" className="mb-2 block text-sm font-medium text-foreground">
                     Soru *
                   </label>
-                  <input
+                  <Input
+                    id="faq-question"
                     type="text"
                     value={formData.question}
                     onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                     required
-                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                     placeholder="Soru metnini girin"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="faq-answer" className="mb-2 block text-sm font-medium text-foreground">
                     Cevap *
                   </label>
-                  <textarea
+                  <Textarea
+                    id="faq-answer"
                     value={formData.answer}
                     onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                     required
                     rows={6}
-                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent resize-none"
                     placeholder="Cevap metnini girin"
+                    className="resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="faq-type" className="mb-2 block text-sm font-medium text-foreground">
                       Tip *
                     </label>
                     <select
+                      id="faq-type"
                       value={formData.type}
                       onChange={(e) =>
                         setFormData({ ...formData, type: e.target.value as 'homepage' | 'page' })
                       }
                       required
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                      className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       <option value="homepage">Ana Sayfa</option>
                       <option value="page">SSS Sayfası</option>
@@ -370,10 +378,11 @@ export default function AdminFAQsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="faq-order" className="mb-2 block text-sm font-medium text-foreground">
                       Sıra *
                     </label>
-                    <input
+                    <Input
+                      id="faq-order"
                       type="number"
                       value={formData.order}
                       onChange={(e) =>
@@ -381,7 +390,6 @@ export default function AdminFAQsPage() {
                       }
                       required
                       min="0"
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -392,45 +400,36 @@ export default function AdminFAQsPage() {
                     id="active"
                     checked={formData.active}
                     onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                    className="w-4 h-4 rounded border-[#333333] text-[#3B82F6] focus:ring-[#3B82F6] bg-[#0f0f0f]"
+                    className="h-4 w-4 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <label htmlFor="active" className="text-sm text-white cursor-pointer">
+                  <label htmlFor="active" className="cursor-pointer text-sm text-foreground">
                     Aktif
                   </label>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#333333]">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 bg-[#333333] hover:bg-[#444444] text-white rounded-lg transition-colors text-sm font-medium"
-                  >
+                <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
+                  <Button type="button" variant="outline" onClick={handleCloseModal}>
                     İptal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Kaydediliyor...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4" />
+                        <Save className="h-4 w-4" />
                         {editingFaq ? 'Güncelle' : 'Oluştur'}
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-

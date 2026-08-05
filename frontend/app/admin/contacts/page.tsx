@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Mail,
   MailOpen,
@@ -11,8 +10,11 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
-  XCircle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { cn } from '@/lib/utils';
 import {
   getAdminContacts,
   markContactAsRead,
@@ -113,288 +115,193 @@ export default function AdminContactsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-[#3B82F6]" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500">{error}</p>
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1
-            className="text-lg md:text-xl lg:text-2xl font-normal mb-4 text-foreground text-[#ebebeb]"
-            style={{
-              color: '#ebebeb',
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-            }}
-          >
-            Mesajlar
-          </h1>
-          <p
-            className="text-[#ebebeb]"
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            Bize ulaşın formundan gelen mesajları görüntüleyin ve yönetin
-          </p>
-        </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        title="Mesajlar"
+        description="Bize ulaşın formundan gelen mesajları görüntüleyin ve yönetin"
+      />
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg transition-all ${
-              filter === 'all'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-card border border-white/20 text-[#ebebeb]/50 hover:bg-accent'
-            }`}
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            Tümü ({contacts.length})
-          </button>
-          <button
-            onClick={() => setFilter('unread')}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              filter === 'unread'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-card border border-border text-[#ebebeb] hover:bg-accent'
-            }`}
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            <Mail className="w-4 h-4" />
-            Okunmamış ({unreadCount})
-          </button>
-          <button
-            onClick={() => setFilter('read')}
-            className={`px-4 py-2 rounded-lg transition-all ${
-              filter === 'read'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-card border border-border text-[#ebebeb] hover:bg-accent'
-            }`}
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            Okundu ({contacts.length - unreadCount})
-          </button>
-        </div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('all')}
+        >
+          Tümü ({contacts.length})
+        </Button>
+        <Button
+          variant={filter === 'unread' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('unread')}
+        >
+          <Mail className="h-4 w-4" />
+          Okunmamış ({unreadCount})
+        </Button>
+        <Button
+          variant={filter === 'read' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('read')}
+        >
+          Okundu ({contacts.length - unreadCount})
+        </Button>
+      </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Contact List */}
-          <div className="lg:col-span-1">
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-                {filteredContacts.length === 0 ? (
-                  <div className="p-8 text-center text-[#ebebeb]">
-                    <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Henüz mesaj yok</p>
-                  </div>
-                ) : (
-                  filteredContacts.map((contact) => (
-                    <motion.div
-                      key={contact.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      onClick={() => handleContactClick(contact)}
-                      className={`p-4 border-b border-border cursor-pointer transition-all ${
-                        selectedContact?.id === contact.id
-                          ? 'bg-[#3B82F6]/10 border-l-4 border-l-[#3B82F6]'
-                          : 'hover:bg-accent'
-                      } ${!contact.isRead ? 'bg-blue-50/5' : ''}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            {!contact.isRead && (
-                              <div className="w-2 h-2 bg-[#3B82F6] rounded-full flex-shrink-0"></div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Contact List */}
+        <div className="lg:col-span-1">
+          {filteredContacts.length === 0 ? (
+            <EmptyState icon={<Mail />} title="Henüz mesaj yok" />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+              <div className="max-h-[calc(100vh-300px)] divide-y divide-border overflow-y-auto">
+                {filteredContacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    type="button"
+                    onClick={() => handleContactClick(contact)}
+                    className={cn(
+                      'block w-full cursor-pointer border-l-2 p-4 text-left transition-colors hover:bg-secondary',
+                      selectedContact?.id === contact.id
+                        ? 'border-l-primary bg-accent'
+                        : 'border-l-transparent',
+                    )}
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-center gap-2">
+                          {!contact.isRead && (
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                          )}
+                          <h3
+                            className={cn(
+                              'truncate text-sm font-semibold',
+                              contact.isRead ? 'text-muted-foreground' : 'text-foreground',
                             )}
-                            <h3
-                              className={`font-semibold truncate ${
-                                !contact.isRead ? 'text-[#ebebeb]' : 'text-[#ebebeb]/70'
-                              }`}
-                              style={{
-                                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                              }}
-                            >
-                              {contact.name}
-                            </h3>
-                          </div>
-                          <p
-                            className="text-sm truncate text-[#ebebeb]/80"
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
                           >
-                            {contact.subject}
-                          </p>
+                            {contact.name}
+                          </h3>
                         </div>
-                        {contact.isRead ? (
-                          <MailOpen className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
-                        ) : (
-                          <Mail className="w-4 h-4 text-[#3B82F6] flex-shrink-0 ml-2" />
-                        )}
+                        <p className="truncate text-sm text-muted-foreground">{contact.subject}</p>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-[#ebebeb]/70">
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
-                          {formatDate(contact.createdAt)}
-                        </span>
-                        <a
-                          href={`mailto:${contact.email}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="hover:text-[#3B82F6] transition-colors"
-                        >
-                          {contact.email}
-                        </a>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
+                      {contact.isRead ? (
+                        <MailOpen className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <Mail className="ml-2 h-4 w-4 shrink-0 text-primary" />
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{formatDate(contact.createdAt)}</span>
+                      <a
+                        href={`mailto:${contact.email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="truncate transition-colors hover:text-accent-foreground"
+                      >
+                        {contact.email}
+                      </a>
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Contact Detail */}
-          <div className="lg:col-span-2">
-            {selectedContact ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card border border-border rounded-2xl p-6 md:p-8"
-              >
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2
-                      className="text-2xl md:text-3xl font-normal mb-2 text-[#ebebeb]"
-                      style={{
-                        fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                      }}
-                    >
-                      {selectedContact.subject}
-                    </h2>
-                    <div className="flex items-center gap-4 text-sm text-[#ebebeb]/80">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
-                          {selectedContact.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        <a
-                          href={`mailto:${selectedContact.email}`}
-                          className="hover:text-[#3B82F6] transition-colors"
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
-                          {selectedContact.email}
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span
-                          style={{
-                            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                          }}
-                        >
-                          {formatDate(selectedContact.createdAt)}
-                        </span>
-                      </div>
+        {/* Contact Detail */}
+        <div className="lg:col-span-2">
+          {selectedContact ? (
+            <div className="rounded-xl border border-border bg-card p-6 shadow-card md:p-8">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                    {selectedContact.subject}
+                  </h2>
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 shrink-0" />
+                      <span>{selectedContact.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <a
+                        href={`mailto:${selectedContact.email}`}
+                        className="transition-colors hover:text-accent-foreground"
+                      >
+                        {selectedContact.email}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 shrink-0" />
+                      <span>{formatDate(selectedContact.createdAt)}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    {selectedContact.isRead ? (
-                      <button
-                        onClick={() => handleMarkAsUnread(selectedContact.id)}
-                        className="p-2 rounded-lg bg-accent hover:bg-accent/80 transition-colors"
-                        title="Okunmadı olarak işaretle"
-                      >
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleMarkAsRead(selectedContact.id)}
-                        className="p-2 rounded-lg bg-[#3B82F6]/10 hover:bg-[#3B82F6]/20 transition-colors"
-                        title="Okundu olarak işaretle"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
-                      </button>
-                    )}
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  {selectedContact.isRead ? (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleMarkAsUnread(selectedContact.id)}
+                      title="Okunmadı olarak işaretle"
+                      aria-label="Okunmadı olarak işaretle"
+                    >
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleMarkAsRead(selectedContact.id)}
+                      title="Okundu olarak işaretle"
+                      aria-label="Okundu olarak işaretle"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button asChild size="icon" title="Mail gönder">
                     <a
                       href={`mailto:${selectedContact.email}?subject=Re: ${encodeURIComponent(selectedContact.subject)}`}
-                      className="p-2 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white transition-colors"
-                      title="Mail gönder"
+                      aria-label="Mail gönder"
                     >
-                      <Mail className="w-4 h-4" />
+                      <Mail className="h-4 w-4" />
                     </a>
-                  </div>
+                  </Button>
                 </div>
+              </div>
 
-                <div className="border-t border-border pt-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                    <h3
-                      className="font-semibold text-[#ebebeb]"
-                      style={{
-                        fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                      }}
-                    >
-                      Mesaj
-                    </h3>
-                  </div>
-                  <p
-                    className="whitespace-pre-wrap leading-relaxed text-[#ebebeb]/90"
-                    style={{
-                      fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                    }}
-                  >
-                    {selectedContact.message}
-                  </p>
+              <div className="border-t border-border pt-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="text-base font-semibold text-foreground">Mesaj</h3>
                 </div>
-              </motion.div>
-            ) : (
-              <div className="bg-card border border-border rounded-2xl p-12 text-center text-[#ebebeb]">
-                <Mail className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p
-                  style={{
-                    fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                  }}
-                >
-                  Bir mesaj seçin
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                  {selectedContact.message}
                 </p>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <EmptyState icon={<Mail />} title="Bir mesaj seçin" />
+          )}
         </div>
       </div>
     </div>
   );
 }
-

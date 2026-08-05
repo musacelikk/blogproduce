@@ -121,7 +121,11 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
               IdempotencyKey,
               Settings,
             ],
-            synchronize: true,
+            // Auto-sync alters the live schema on boot. Off in production unless
+            // DB_SYNCHRONIZE=true is set deliberately (e.g. a first deploy).
+            synchronize:
+              configService.get<string>('NODE_ENV') !== 'production' ||
+              configService.get<string>('DB_SYNCHRONIZE') === 'true',
             logging: false,
             ssl: configService.get<string>('NODE_ENV') === 'production' ? {
               rejectUnauthorized: false,
@@ -170,7 +174,9 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
             IdempotencyKey,
             Settings,
           ],
-          synchronize: true,
+          synchronize:
+            configService.get<string>('NODE_ENV') !== 'production' ||
+            configService.get<string>('DB_SYNCHRONIZE') === 'true',
           logging: false,
           ssl: configService.get<string>('DB_SSL') === 'true' ? {
             rejectUnauthorized: false,

@@ -44,5 +44,20 @@ export class GenerateBlogDto {
   @IsString()
   @IsOptional()
   workspaceId?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(10)
+  language?: string; // ISO code, e.g. 'tr', 'en' (default: 'tr')
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  length?: string; // 'short' | 'medium' | 'long' (default: 'medium')
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  model?: string; // tier ('standard' | 'pro' | 'premium') or concrete model id
 }
 

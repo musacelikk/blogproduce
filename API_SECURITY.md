@@ -1,185 +1,83 @@
-# API Security Documentation
+# API Security
 
-## Güvenlik Özeti (Checklist)
+## Checklist
 
 | Önlem | Durum | Açıklama |
 |-------|--------|----------|
 | **Helmet** | ✅ | Güvenlik başlıkları (X-Content-Type-Options, X-Frame-Options vb.). CSP/COEP kapalı. |
-| **CORS** | ✅ | Origin whitelist, credentials, blogproduce/railway/vercel pattern. |
+| **CORS** | ✅ | Tam hostname eşleşmesi (substring değil). Public read-only uçlar `/api/v1/public/*` için credentials'sız açık. |
 | **Rate limiting (Throttler)** | ✅ | Global: IP başına dakikada istek (varsayılan 150). `THROTTLE_LIMIT` ile ayarlanır. |
 | **IP Blacklist / Whitelist** | ✅ | `IP_BLACKLIST`, `IP_WHITELIST` (env boşsa kapalı). |
-| **Trust proxy** | ✅ | Production’da proxy arkasında doğru IP. |
+| **Trust proxy** | ✅ | Production'da proxy arkasında doğru IP. |
 | **ValidationPipe** | ✅ | `whitelist: true`, `forbidNonWhitelisted: true` – DTO dışı alanlar reddedilir. |
-| **JWT auth** | ✅ | Korumalı route’larda `JwtAuthGuard`. |
-| **API key auth** | ✅ | API route’larında `ApiKeyGuard` / `ApiKeyOrJwtGuard`. |
-| **API key hashing** | ✅ | SHA-256; düz metin saklanmaz. |
-| **HMAC (opsiyonel)** | ✅ | Replay koruması (timestamp ±5 dk). |
-| **API key rate limit** | ✅ | Workspace bazlı RPM / günlük generate limiti (`RateLimitGuard`). |
-| **PII sanitization** | ✅ | Loglarda hassas veri maskeleme (`PiiSanitizationInterceptor`). |
-| **Admin route’lar** | ⚠️ | Backend’de sadece `JwtAuthGuard`; admin rolü frontend’de kontrol ediliyor. İsterseniz backend’e `AdminGuard` (role === admin) eklenebilir. |
+| **JWT auth** | ✅ | Korumalı route'larda `JwtAuthGuard`. `JWT_SECRET` zorunlu — tanımsızsa uygulama başlamaz. |
+| **Admin yetkilendirme** | ✅ | `AdminController` sınıf düzeyinde `JwtAuthGuard + RolesGuard` ve `@Roles(ADMIN)`. Kasıtlı public uçlar `@Public()` ile işaretli. |
+| **API key auth** | ✅ | `/api/v1/*` uçlarında `ApiKeyGuard`; legacy blog uçlarında `ApiKeyOrJwtGuard`. |
+| **API key hashing** | ✅ | SHA-256; düz metin saklanmaz, yalnızca oluşturulurken bir kez gösterilir. |
+| **Tenant izolasyonu** | ✅ | Her API key bir organization+project'e bağlı; sorgular bu kapsamla filtrelenir. |
+| **PII sanitization** | ✅ | Loglarda kimlik bilgileri tamamen redakte edilir (önizleme yok), içerik alanları uzunlukla değiştirilir. |
+| **Webhook SSRF koruması** | ✅ | Yalnız public `https` host; loopback/private/link-local adresler hem kayıtta hem gönderimde reddedilir. |
+| **Idempotency** | ✅ | `Idempotency-Key` işlem öncesi rezerve edilir; farklı gövdeyle tekrar kullanım 409 döner. |
+| **DB schema auto-sync** | ✅ | Production'da kapalı (`DB_SYNCHRONIZE=true` ile bilinçli açılabilir). |
 
-**Sonuç:** Tüm temel güvenlik önlemleri (rate limiting, helmet, CORS, blacklist/whitelist, validation, auth) hazır. Sınırlar aşırı dar değil; env ile ayarlanabilir.
+### Bilinen sınırlamalar
 
----
-
-## Authentication Methods
-
-### 1. Bearer Token Authentication (Basic)
-
-**Header:**
-```
-Authorization: Bearer <api_key>
-```
-
-**Alternative Headers:**
-- `X-API-Key: <api_key>`
-- Query parameter: `?apiKey=<api_key>`
-
-**Security:**
-- API key is hashed with SHA-256 before storage
-- Plaintext key is **never** stored in database
-- Key is shown **only once** during creation
-
-**Workspace Scope:**
-- API keys are **workspace-specific** and automatically scoped to the workspace they belong to
-- **Workspace slug is NOT required** in private API endpoints (`/api/blog`, `/api/blog/:id`, etc.)
-- The API key itself identifies which workspace's content to access
-
-### 2. HMAC Authentication (Legacy, Optional)
-
-**Headers Required:**
-```
-X-Client-Id: <client_id>
-X-Signature: <hmac_signature>
-X-Timestamp: <unix_timestamp_ms>
-```
-
-**How it works:**
-1. Client generates timestamp: `timestamp = Date.now()`
-2. Client creates message: `message = JSON.stringify(body) + timestamp`
-3. Client calculates HMAC: `signature = HMAC_SHA256(client_secret, message)`
-4. Client sends request with all three headers
-
-**Server-side verification:**
-- Validates timestamp (max 5 minutes difference)
-- Retrieves encrypted `client_secret` from database
-- Decrypts secret using AES-256-GCM
-- Verifies HMAC signature
-- Prevents replay attacks via timestamp validation
-
-**Example (JavaScript):**
-```javascript
-const crypto = require('crypto');
-
-const clientId = 'bg_client_xxxxx';
-const clientSecret = 'bg_secret_xxxxx';
-const body = JSON.stringify({ limit: 10 });
-const timestamp = Date.now().toString();
-const message = `${body}${timestamp}`;
-
-const signature = crypto
-  .createHmac('sha256', clientSecret)
-  .update(message)
-  .digest('hex');
-
-fetch('https://api.example.com/api/v1/published', {
-  headers: {
-    'X-Client-Id': clientId,
-    'X-Signature': signature,
-    'X-Timestamp': timestamp,
-    'Content-Type': 'application/json',
-  },
-  body: body,
-});
-```
-
-## API Key Creation
-
-**Endpoint:** `POST /organizations/:organizationId/projects/:projectId/api-keys`
-
-**Response (shown only once!):**
-```json
-{
-  "id": "uuid",
-  "apiKey": "bg_xxxxx",           // Bearer token (shown once!)
-  "clientId": "bg_client_xxxxx",  // For HMAC auth (shown once!)
-  "clientSecret": "bg_secret_xxxxx", // For HMAC signing (shown once!)
-  "name": "Production API Key",
-  "expiresAt": null,
-  "createdAt": "2024-01-01T00:00:00Z",
-  "warning": "Store these credentials securely. They will not be shown again."
-}
-```
-
-**Important:**
-- Store credentials immediately - they cannot be retrieved later
-- `apiKey` is hashed and stored as `keyHash` in database
-- `clientSecret` is encrypted (AES-256-GCM) and stored separately
-- Only `clientId` is visible in API key list
-
-## Security Best Practices
-
-1. **Never store API keys in version control**
-2. **Use environment variables for secrets**
-3. **Rotate keys regularly**
-4. **Use HMAC for additional security** (prevents MITM attacks)
-5. **Monitor API key usage** (check `lastUsedAt` field)
-6. **Set expiration dates** for temporary keys
-7. **Revoke compromised keys immediately**
-
-## Replay Attack Prevention
-
-HMAC authentication includes timestamp validation:
-- Timestamp must be within ±5 minutes of server time
-- Old requests cannot be replayed
-- Clock skew is automatically handled
-
-## Rate Limiting, Helmet, CORS, IP Blacklist/Whitelist
-
-### Rate Limiting (Throttler)
-
-- **Global limit:** IP başına dakikada istek sayısı (varsayılan: 150).
-- **Env:** `THROTTLE_LIMIT` (opsiyonel, örn. `200`) – aşırı daraltma yapılmaz.
-- Belirli route’larda `@SkipThrottle()` ile kapatılabilir.
-
-### Helmet (Güvenlik Başlıkları)
-
-- X-Content-Type-Options, X-Frame-Options vb. başlıklar eklenir.
-- CSP ve COEP kapalı; mevcut uygulama bozulmaz.
-
-### CORS
-
-- `CORS_ORIGIN`: izin verilen origin’ler (virgülle ayrılmış).
-- `ALLOW_ALL_ORIGINS=true`: tüm origin’lere izin (gerekirse).
-- Production’da blogproduce.com, railway.app, vercel.app pattern’leri desteklenir.
-- `allowedHeaders`: Content-Type, Authorization, X-Request-ID.
-- `exposedHeaders`: X-RateLimit-Limit, X-RateLimit-Remaining.
-
-### IP Blacklist / Whitelist
-
-- **IP_BLACKLIST:** Virgülle ayrılmış IP’ler – bu IP’ler 403 alır. Boş = kapalı.
-- **IP_WHITELIST:** Virgülle ayrılmış IP’ler – sadece bu IP’ler erişebilir. Boş = kapalı.
-- Her iki liste de boşsa filtre uygulanmaz; aşırı daraltma yapılmaz.
+- **Postgres TLS**: production'da `rejectUnauthorized: false` kullanılıyor. Sağlayıcının CA
+  sertifikası ile `ssl: { ca }` yapılandırması önerilir.
+- **HMAC imzalı istemci kimlik doğrulaması yoktur.** `bg_client_*` client ID'ler yalnızca public
+  tanımlayıcıdır; kimlik doğrulama için kullanılamaz. Tek geçerli yöntem `bg_secret_*` API key'dir.
 
 ---
 
-## Environment Variables
+## Authentication
 
-Required for HMAC authentication:
-```env
-API_KEY_ENCRYPTION_KEY=<64_hex_characters>  # 32 bytes for AES-256
+### Bearer token (tek yöntem)
+
+```
+Authorization: Bearer bg_secret_...
 ```
 
-Optional for security layer:
-```env
-THROTTLE_LIMIT=150        # Rate limit: requests per minute per IP (default 150)
-IP_BLACKLIST=             # Comma-separated IPs to block (empty = off)
-IP_WHITELIST=             # Comma-separated IPs to allow only (empty = off)
-CORS_ORIGIN=http://localhost:3000
-ALLOW_ALL_ORIGINS=false
-```
+Alternatif başlık: `X-API-Key: bg_secret_...`
 
-Generate encryption key with:
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+- API key SHA-256 ile hash'lenerek saklanır; düz metin **hiçbir zaman** veritabanında tutulmaz.
+- Key yalnızca oluşturulduğu anda **bir kez** gösterilir.
+- Key workspace'e özeldir; endpoint'lerde ayrıca workspace/slug belirtmeye gerek yoktur — key'in
+  kendisi hangi içeriğe erişileceğini belirler.
+- İptal edilen key anında geçersiz olur.
+
+### Public uçlar (kimlik doğrulama yok)
+
+`/api/v1/public/projects/:projectSlug/posts` ve alt uçları yalnızca **yayınlanmış** içeriği döner.
+Tarayıcıdan doğrudan çağrılabilir; API key gerektirmez ve yazar e-postası gibi hesap bilgilerini
+içermez.
+
+---
+
+## Rate limiting
+
+- Global throttle: IP başına dakikada `THROTTLE_LIMIT` (varsayılan 150) istek.
+- Yanıtlarda `X-RateLimit-Limit` ve `X-RateLimit-Remaining` başlıkları döner.
+- 429 alındığında exponential backoff ile tekrar denenmelidir.
+
+---
+
+## Webhook güvenliği
+
+- URL yalnızca public `https` olabilir. Loopback (`127.0.0.1`, `::1`), private aralıklar
+  (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16` — cloud metadata) ve `.local`
+  benzeri iç host'lar reddedilir.
+- Kontrol hem kayıt sırasında hem her gönderimden önce yapılır (DNS rebinding'e karşı).
+- Gövde, webhook secret'ı ile HMAC-SHA256 imzalanır ve `X-Webhook-Signature` başlığında gönderilir;
+  `X-Webhook-Event` ve `X-Webhook-Timestamp` başlıkları da eşlik eder.
+
+---
+
+## Zorunlu ortam değişkenleri
+
+| Değişken | Neden zorunlu |
+|---|---|
+| `JWT_SECRET` | En az 32 karakter. Tanımsızsa uygulama başlatılmaz (sabit fallback yoktur). |
+| `DATABASE_URL` veya `DB_*` | Veritabanı bağlantısı. |
+| `OPENAI_API_KEY` | İçerik üretimi (standard/pro katmanları). |
+| `ANTHROPIC_API_KEY` | Opsiyonel — premium (Claude) katmanını etkinleştirir. |
+| `SQS_GENERATE_POST_QUEUE_URL` + AWS kimlik bilgileri | Asenkron üretim kuyruğu. |

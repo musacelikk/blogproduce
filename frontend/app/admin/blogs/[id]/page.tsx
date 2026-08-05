@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   FileText,
@@ -10,7 +9,6 @@ import {
   User,
   Building2,
   Tag,
-  Eye,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -23,15 +21,20 @@ import {
   Hash,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 import { getAdminPostById, type Post } from '@/lib/api';
+import { sanitizeHtml } from '@/lib/sanitize';
 
-const statusColors = {
-  draft: 'bg-gray-500/20 text-gray-400',
-  queued: 'bg-yellow-500/20 text-yellow-400',
-  generating: 'bg-blue-500/20 text-blue-400',
-  generated: 'bg-green-500/20 text-green-400',
-  failed: 'bg-red-500/20 text-red-400',
-  published: 'bg-purple-500/20 text-purple-400',
+type StatusVariant = NonNullable<BadgeProps['variant']>;
+
+const statusVariants: Record<string, StatusVariant> = {
+  draft: 'outline',
+  queued: 'warning',
+  generating: 'info',
+  generated: 'success',
+  failed: 'destructive',
+  published: 'primary',
 };
 
 const statusIcons = {
@@ -102,10 +105,10 @@ export default function AdminBlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 mx-auto mb-2 text-[#3B82F6] animate-spin" />
-          <p className="text-xs text-[#ebebeb]">Yükleniyor...</p>
+          <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -113,25 +116,16 @@ export default function AdminBlogDetailPage() {
 
   if (error || !post) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="text-[#ebebeb]/80 hover:text-[#ebebeb]"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-        </div>
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-medium text-red-400 mb-1">Hata</h3>
-              <p className="text-xs text-[#ebebeb]">{error || 'Blog bulunamadı'}</p>
-            </div>
+      <div className="mx-auto max-w-7xl space-y-6">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+          Geri
+        </Button>
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-6">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <h3 className="text-sm font-semibold text-destructive">Hata</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{error || 'Blog bulunamadı'}</p>
           </div>
         </div>
       </div>
@@ -139,74 +133,38 @@ export default function AdminBlogDetailPage() {
   }
 
   const StatusIcon = statusIcons[post.status as keyof typeof statusIcons] || FileText;
-  const statusColor = statusColors[post.status as keyof typeof statusColors] || statusColors.draft;
+  const statusVariant = statusVariants[post.status] || 'outline';
   const isGenerating = post.status === 'generating' || post.status === 'queued';
   const selectedRevision = post.revisions?.[selectedRevisionIndex];
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-      >
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/admin/blogs')}
-            className="text-[#ebebeb]/80 hover:text-[#ebebeb]"
-          >
-            <ArrowLeft className="w-4 h-4 sm:mr-2" />
+          <Button variant="ghost" size="sm" onClick={() => router.push('/admin/blogs')}>
+            <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Geri</span>
           </Button>
-          <h1
-            className="text-lg sm:text-xl font-medium text-white"
-            style={{
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-            }}
-          >
-            Blog Detayı
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Blog Detayı</h1>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium ${statusColor}`}>
-            {isGenerating ? (
-              <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
-            ) : (
-              <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            )}
-            <span className="hidden sm:inline">{post.status}</span>
-            <span className="sm:hidden">{post.status.substring(0, 4)}</span>
-          </span>
-        </div>
-      </motion.div>
+        <Badge variant={statusVariant}>
+          <StatusIcon className={isGenerating ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />
+          {post.status}
+        </Badge>
+      </div>
 
       {/* Post Info Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-4 sm:p-6"
-      >
-        <h2
-          className="text-base sm:text-lg font-medium text-white mb-4"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          {post.title}
-        </h2>
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card sm:p-6">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">{post.title}</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-          <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-            <Hash className="w-4 h-4" />
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Hash className="h-4 w-4 shrink-0" />
             <span>ID: {post.id}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4 shrink-0" />
             <span>
               Oluşturulma: {new Date(post.createdAt).toLocaleDateString('tr-TR', {
                 year: 'numeric',
@@ -217,8 +175,8 @@ export default function AdminBlogDetailPage() {
               })}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4 shrink-0" />
             <span>
               Güncellenme: {new Date(post.updatedAt).toLocaleDateString('tr-TR', {
                 year: 'numeric',
@@ -230,8 +188,8 @@ export default function AdminBlogDetailPage() {
             </span>
           </div>
           {post.author && (
-            <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-              <User className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4 shrink-0" />
               <span>
                 Yazar: {post.author.name || post.author.email}
                 {post.author.id && ` (${post.author.id.substring(0, 8)}...)`}
@@ -239,8 +197,8 @@ export default function AdminBlogDetailPage() {
             </div>
           )}
           {post.workspace && (
-            <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-              <Building2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Building2 className="h-4 w-4 shrink-0" />
               <span>
                 Workspace: {post.workspace.name}
                 {post.workspace.owner && ` (${post.workspace.owner.name})`}
@@ -248,74 +206,59 @@ export default function AdminBlogDetailPage() {
             </div>
           )}
           {post.slug && (
-            <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-              <Globe className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-4 w-4 shrink-0" />
               <span>Slug: {post.slug}</span>
             </div>
           )}
           {post.language && (
-            <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-              <Globe className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-4 w-4 shrink-0" />
               <span>Dil: {post.language}</span>
             </div>
           )}
         </div>
 
         {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Tag className="w-4 h-4 text-[#ebebeb]" />
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Tag className="h-4 w-4 text-muted-foreground" />
             {post.tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="px-2.5 py-1 rounded-full text-xs bg-[#333333] text-[#ebebeb]/80"
-              >
+              <Badge key={tag.id} variant="outline">
                 {tag.name}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
 
         {post.excerpt && (
-          <div className="mb-4">
-            <p className="text-sm text-[#ebebeb]/80 leading-relaxed">{post.excerpt}</p>
-          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">{post.excerpt}</p>
         )}
-      </motion.div>
+      </div>
 
       {/* Revisions */}
       {post.revisions && post.revisions.length > 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-6"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2 mb-4">
-            <h3
-              className="text-sm sm:text-base font-medium text-white"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
+        <div className="rounded-xl border border-border bg-card p-5 shadow-card sm:p-6">
+          <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-2">
+            <h3 className="text-base font-semibold text-foreground">
               Versiyonlar ({post.revisions.length})
             </h3>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleCopyContent}
-                className="text-[#ebebeb]/80 border-[#ebebeb]/20 hover:border-[#ebebeb]/40 hover:text-[#ebebeb] text-xs flex-1 sm:flex-initial"
+                className="flex-1 sm:flex-initial"
               >
-                <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                <Copy className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Kopyala</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleDownloadContent}
-                className="text-[#ebebeb]/80 border-[#ebebeb]/20 hover:border-[#ebebeb]/40 hover:text-[#ebebeb] text-xs flex-1 sm:flex-initial"
+                className="flex-1 sm:flex-initial"
               >
-                <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                <Download className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">İndir</span>
               </Button>
             </div>
@@ -327,7 +270,8 @@ export default function AdminBlogDetailPage() {
               <select
                 value={selectedRevisionIndex}
                 onChange={(e) => setSelectedRevisionIndex(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+                aria-label="Versiyon seç"
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {post.revisions?.map((revision, index) => {
                   // Versiyon numarasını hesapla (en yeni versiyon v1, en eski vN)
@@ -352,22 +296,22 @@ export default function AdminBlogDetailPage() {
 
           {/* Selected Revision Info */}
           {selectedRevision && (
-            <div className="mb-4 p-4 bg-[#0f0f0f] rounded-lg border border-[#333333]">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-[#ebebeb]">
+            <div className="mb-4 rounded-lg border border-border bg-secondary p-4">
+              <div className="grid grid-cols-1 gap-3 text-sm text-muted-foreground md:grid-cols-3">
                 {selectedRevision.contentFormat && (
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
+                    <FileText className="h-4 w-4 shrink-0" />
                     <span>Format: {selectedRevision.contentFormat.toUpperCase()}</span>
                   </div>
                 )}
                 {selectedRevision.model && (
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
+                    <Zap className="h-4 w-4 shrink-0" />
                     <span>Model: {selectedRevision.model}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
+                  <Calendar className="h-4 w-4 shrink-0" />
                   <span>
                     {new Date(selectedRevision.createdAt).toLocaleDateString('tr-TR', {
                       year: 'numeric',
@@ -384,56 +328,41 @@ export default function AdminBlogDetailPage() {
 
           {/* Content Display */}
           {selectedRevision && selectedRevision.content && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-white">İçerik Önizlemesi</h4>
-              <div className="bg-[#0f0f0f] rounded-lg border border-[#333333] p-4 sm:p-6 lg:p-8 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
-                <div className="prose prose-invert prose-lg max-w-none">
-                  {selectedRevision.contentFormat === 'html' ? (
-                    <div
-                      dangerouslySetInnerHTML={{ __html: selectedRevision.content }}
-                      className="text-[#ebebeb]/90 leading-relaxed"
-                      style={{
-                        fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      dangerouslySetInnerHTML={{ 
-                        __html: selectedRevision.content
-                          .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-[#ebebeb]">$1</h3>')
-                          .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#ebebeb]">$1</h2>')
-                          .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-[#ebebeb]">$1</h1>')
-                          .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                          .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
-                          .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2 text-[#ebebeb]">• $1</li>')
-                          .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 mb-2 text-[#ebebeb]">$1</li>')
-                          .replace(/\n/g, '<br />')
-                      }}
-                      className="text-[#ebebeb]/90 leading-relaxed"
-                      style={{
-                        fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                      }}
-                    />
-                  )}
-                </div>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">İçerik Önizlemesi</h4>
+              <div className="max-h-[600px] overflow-y-auto rounded-lg border border-border bg-background p-4 sm:max-h-[800px] sm:p-6 lg:p-8">
+                {selectedRevision.contentFormat === 'html' ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedRevision.content) }}
+                    className="max-w-none text-sm leading-relaxed text-foreground"
+                  />
+                ) : (
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHtml(selectedRevision.content
+                        .replace(/^### (.*$)/gim, '<h3 class="mt-6 mb-3 text-xl font-semibold text-foreground">$1</h3>')
+                        .replace(/^## (.*$)/gim, '<h2 class="mt-8 mb-4 text-2xl font-semibold text-foreground">$1</h2>')
+                        .replace(/^# (.*$)/gim, '<h1 class="mt-8 mb-4 text-3xl font-semibold text-foreground">$1</h1>')
+                        .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+                        .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2 text-foreground">• $1</li>')
+                        .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 mb-2 text-foreground">$1</li>')
+                        .replace(/\n/g, '<br />'))
+                    }}
+                    className="max-w-none text-sm leading-relaxed text-foreground"
+                  />
+                )}
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-6"
-        >
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-[#ebebeb]" />
-            <p className="text-sm text-[#ebebeb]">Henüz versiyon bulunmuyor</p>
-          </div>
-        </motion.div>
+        <EmptyState
+          icon={<FileText />}
+          title="Henüz versiyon bulunmuyor"
+          description="Bu blog için kaydedilmiş bir içerik versiyonu yok."
+        />
       )}
     </div>
   );
 }
-

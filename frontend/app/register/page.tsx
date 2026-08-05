@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Mail, Lock, User, ArrowRight, ArrowLeft,
   CheckCircle2, Star, Users, TrendingUp,
@@ -65,22 +66,15 @@ export default function RegisterPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
 
       {/* ── Left panel ── */}
-      <div
-        className="hidden lg:flex lg:w-[52%] xl:w-[55%] flex-col relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #f0f4ff 0%, #e8eeff 55%, #e0f7ff 100%)' }}
-      >
-        {/* Decorative orbs */}
-        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-40 blur-3xl" style={{ background: 'rgba(32,62,236,0.15)' }} />
-        <div className="absolute -bottom-16 -left-16 w-72 h-72 rounded-full opacity-30 blur-3xl" style={{ background: 'rgba(0,212,255,0.12)' }} />
-
-        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
+      <div className="hidden border-r border-border bg-accent lg:flex lg:w-[52%] lg:flex-col xl:w-[55%]">
+        <div className="flex h-full flex-col p-10 xl:p-14">
           {/* Logo */}
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55 }}>
             <Link href="/" className="inline-flex items-center gap-3">
-              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="w-44 h-44 object-contain" />
+              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="h-32 w-32 object-contain" />
             </Link>
           </motion.div>
 
@@ -89,12 +83,12 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.1 }}
-            className="mt-12 mb-8"
+            className="mb-8 mt-12"
           >
-            <h2 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight mb-3" style={{ color: '#0f172a' }}>
+            <h2 className="mb-3 text-3xl font-semibold leading-tight tracking-tight text-foreground xl:text-4xl">
               Bugün başlayın,<br />yarın yayınlayın
             </h2>
-            <p className="text-sm xl:text-base leading-relaxed max-w-sm" style={{ color: '#64748b' }}>
+            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground xl:text-base">
               Ücretsiz hesap oluşturun ve AI destekli blog üretimine hemen başlayın. Kredi kartı gerekmez.
             </p>
           </motion.div>
@@ -104,16 +98,16 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex gap-6 mb-10"
+            className="mb-10 flex gap-6"
           >
             {highlights.map(({ icon: Icon, value, label }) => (
               <div key={label} className="flex items-start gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mt-0.5 flex-shrink-0" style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-                  <Icon className="w-4 h-4 text-white" />
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+                  <Icon className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold leading-none" style={{ color: '#203eec' }}>{value}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{label}</p>
+                  <p className="text-lg font-semibold leading-none text-primary">{value}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
                 </div>
               </div>
             ))}
@@ -126,10 +120,7 @@ export default function RegisterPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="mt-auto"
           >
-            <div
-              className="rounded-2xl p-5 relative overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid rgba(32,62,236,0.12)' }}
-            >
+            <div className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-card">
               <motion.div
                 key={activeTestimonial}
                 initial={{ opacity: 0, x: 12 }}
@@ -137,28 +128,31 @@ export default function RegisterPage() {
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.4 }}
               >
-                <p className="text-sm leading-relaxed mb-3 italic" style={{ color: '#334155' }}>
+                <p className="mb-3 text-sm leading-relaxed text-foreground">
                   &ldquo;{testimonials[activeTestimonial].text}&rdquo;
                 </p>
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {testimonials[activeTestimonial].author[0]}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold" style={{ color: '#0f172a' }}>{testimonials[activeTestimonial].author}</p>
-                    <p className="text-[10px]" style={{ color: '#64748b' }}>{testimonials[activeTestimonial].role}</p>
+                    <p className="text-xs font-semibold text-foreground">{testimonials[activeTestimonial].author}</p>
+                    <p className="text-[11px] text-muted-foreground">{testimonials[activeTestimonial].role}</p>
                   </div>
                 </div>
               </motion.div>
             </div>
             {/* Dots */}
-            <div className="flex gap-1.5 mt-3">
+            <div className="mt-3 flex gap-1.5">
               {testimonials.map((_, i) => (
                 <button
                   key={i}
+                  type="button"
+                  aria-label={`Yorum ${i + 1}`}
                   onClick={() => setActiveTestimonial(i)}
-                  className="h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: i === activeTestimonial ? 20 : 6, background: i === activeTestimonial ? '#203eec' : 'rgba(32,62,236,0.2)' }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeTestimonial ? 'w-5 bg-primary' : 'w-1.5 bg-border'
+                  }`}
                 />
               ))}
             </div>
@@ -167,24 +161,25 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right panel (form) ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 md:px-10 lg:p-14 bg-background">
-        <div className="w-full max-w-[420px]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55 }}
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 md:px-10 lg:p-14">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55 }}
+          className="w-full max-w-md"
+        >
+          {/* Back link */}
+          <Link
+            href="/"
+            className="group mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            {/* Back link */}
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-7 group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-              Ana Sayfaya Dön
-            </Link>
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+            Ana Sayfaya Dön
+          </Link>
 
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card sm:p-8">
             <div className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-1.5">
+              <h1 className="mb-1.5 text-2xl font-semibold tracking-tight text-foreground">
                 Hesap Oluştur
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -192,9 +187,9 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3.5 rounded-xl text-sm text-red-600" style={{ background: '#fee2e2', border: '1px solid #fecaca' }}>
+                <div className="rounded-lg border border-destructive/30 bg-[var(--destructive-muted)] px-3.5 py-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -203,8 +198,8 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label htmlFor="name" className="text-xs font-medium text-foreground">Ad Soyad</label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Adınız Soyadınız" required className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]" />
+                  <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="name" type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Adınız Soyadınız" required className="h-11 pl-10 text-sm" />
                 </div>
               </div>
 
@@ -212,8 +207,8 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <label htmlFor="email" className="text-xs font-medium text-foreground">E-posta</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="ornek@email.com" required className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]" />
+                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="email" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="ornek@email.com" required className="h-11 pl-10 text-sm" />
                 </div>
               </div>
 
@@ -222,79 +217,74 @@ export default function RegisterPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="password" className="text-xs font-medium text-foreground">Şifre</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" required minLength={6} className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]" />
+                    <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="password" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" required minLength={6} className="h-11 pl-10 text-sm" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="confirmPassword" className="text-xs font-medium text-foreground">Tekrar</label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" required minLength={6} className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]" />
+                    <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="confirmPassword" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" required minLength={6} className="h-11 pl-10 text-sm" />
                   </div>
                 </div>
               </div>
 
               {/* Agreements */}
               <div className="space-y-2.5">
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input type="checkbox" required className="mt-0.5 w-4 h-4 text-[#203eec] border-border rounded focus:ring-[#203eec] flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground leading-relaxed">
-                    <Link href="/terms" className="font-medium hover:underline" style={{ color: '#203eec' }}>Hizmet Şartları</Link>
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <input type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                  <span className="text-xs leading-relaxed text-muted-foreground">
+                    <Link href="/terms" className="font-medium text-accent-foreground hover:underline">Hizmet Şartları</Link>
                     {' '}ve{' '}
-                    <Link href="/kvkk" className="font-medium hover:underline" style={{ color: '#203eec' }}>KVKK Aydınlatma Metni</Link>
+                    <Link href="/kvkk" className="font-medium text-accent-foreground hover:underline">KVKK Aydınlatma Metni</Link>
                     {' '}ni okudum ve kabul ediyorum.
                   </span>
                 </label>
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input type="checkbox" className="mt-0.5 w-4 h-4 text-[#203eec] border-border rounded focus:ring-[#203eec] flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground leading-relaxed">
-                    <Link href="/privacy" className="font-medium hover:underline" style={{ color: '#203eec' }}>Gizlilik Politikası</Link>
+                <label className="flex cursor-pointer items-start gap-2.5">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                  <span className="text-xs leading-relaxed text-muted-foreground">
+                    <Link href="/privacy" className="font-medium text-accent-foreground hover:underline">Gizlilik Politikası</Link>
                     {' '}nı okudum ve kabul ediyorum.
                   </span>
                 </label>
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full h-11 rounded-full text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              >
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
                 {isSubmitting ? 'Hesap oluşturuluyor…' : (
-                  <>Kayıt Ol <ArrowRight className="w-4 h-4" /></>
+                  <>Kayıt Ol <ArrowRight className="h-4 w-4" /></>
                 )}
-              </button>
+              </Button>
             </form>
 
             <p className="mt-6 text-center text-xs text-muted-foreground">
               Zaten hesabınız var mı?{' '}
-              <Link href="/login" className="font-semibold transition-colors hover:opacity-80" style={{ color: '#203eec' }}>
+              <Link href="/login" className="font-semibold text-accent-foreground transition-colors hover:underline">
                 Giriş Yap
               </Link>
             </p>
+          </div>
 
-            {/* Trust badges */}
-            <div className="mt-7 flex items-center justify-center gap-4 flex-wrap">
-              {['SSL Güvenli', 'KVKK Uyumlu', 'Ücretsiz Başla'].map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: '#203eec' }} />
-                  {t}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Mini footer */}
-        <footer className="mt-auto pt-8 w-full text-center">
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-1.5">
-            {[{ href: '/kvkk', label: 'KVKK' }, { href: '/privacy', label: 'Gizlilik' }, { href: '/terms', label: 'Şartlar' }, { href: '/cookie', label: 'Çerezler' }].map(({ href, label }) => (
-              <Link key={href} href={href} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">{label}</Link>
+          {/* Trust badges */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            {['SSL Güvenli', 'KVKK Uyumlu', 'Ücretsiz Başla'].map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-success" />
+                {t}
+              </span>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground">
-            © 2026 <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Bilal ORHANLAR</a>
+        </motion.div>
+
+        {/* Mini footer */}
+        <footer className="mt-auto w-full pt-8 text-center">
+          <div className="mb-1.5 flex flex-wrap items-center justify-center gap-3">
+            {[{ href: '/kvkk', label: 'KVKK' }, { href: '/privacy', label: 'Gizlilik' }, { href: '/terms', label: 'Şartlar' }, { href: '/cookie', label: 'Çerezler' }].map(({ href, label }) => (
+              <Link key={href} href={href} className="text-[11px] text-muted-foreground transition-colors hover:text-foreground">{label}</Link>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            © 2026 <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">Bilal ORHANLAR</a>
           </p>
         </footer>
       </div>

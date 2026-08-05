@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { User, Bell, Shield, Key, CreditCard, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { User, Bell, Shield, Key, CreditCard, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
 import { getProfile, updateProfile, updatePassword, deleteAccount } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
@@ -167,33 +169,12 @@ export default function SettingsPage() {
     }
   };
 
-    return (
-      <div className="space-y-5">
-        {/* Page Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="flex items-center gap-4"
-        >
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <User className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Ayarlar</h1>
-            <p className="text-sm text-muted-foreground">Profil, güvenlik ve uygulama tercihlerinizi yönetin</p>
-          </div>
-        </motion.div>
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Ayarlar" description="Profil, güvenlik ve uygulama tercihlerinizi yönetin" />
 
-        {/* Tabs Navigation */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-2xl p-1.5"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
+      {/* Tabs Navigation */}
+      <Card className="p-1.5 shadow-card">
         <div className="flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -201,638 +182,464 @@ export default function SettingsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg transition-all duration-200 ${
+                className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-[#203eec] text-white shadow-sm'
-                    : 'text-muted-foreground hover:bg-[var(--secondary)] hover:text-foreground'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="h-4 w-4" />
                 <span className="font-medium">{tab.label}</span>
               </button>
             );
           })}
         </div>
-      </motion.div>
+      </Card>
 
       {/* Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-          <div className="rounded-2xl p-5 lg:p-6"
-               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            {/* Tab Header */}
-            <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-[var(--border)]">
-              <div className="w-9 h-9 bg-[#203eec]/10 rounded-lg flex items-center justify-center">
-                <ActiveTabIcon className="w-4 h-4 text-[#203eec]" />
+      <Card className="p-5 shadow-card lg:p-6">
+        {/* Tab Header */}
+        <div className="mb-5 flex items-center gap-2.5 border-b border-border pb-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+            <ActiveTabIcon className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-medium text-foreground">
+              {tabs.find(t => t.id === activeTab)?.label}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {activeTab === 'profile' && 'Profil bilgilerinizi güncelleyin'}
+              {activeTab === 'account' && 'Hesap ayarlarınızı yönetin'}
+              {activeTab === 'notifications' && 'Bildirim tercihlerinizi ayarlayın'}
+              {activeTab === 'api' && 'API ayarlarınızı yönetin'}
+              {activeTab === 'billing' && 'Faturalama ve ödeme bilgileriniz'}
+              {activeTab === 'security' && 'Güvenlik ayarlarınızı yönetin'}
+            </p>
+          </div>
+        </div>
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-5">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+                {profileData.name.charAt(0)}
               </div>
               <div>
-                <h2
-                  className="text-lg font-medium text-foreground"
-                  style={{
-                  }}
-                >
-                  {tabs.find(t => t.id === activeTab)?.label}
-                </h2>
-                <p
-                  className="text-xs text-muted-foreground"
-                  style={{
-                  }}
-                >
-                  {activeTab === 'profile' && 'Profil bilgilerinizi güncelleyin'}
-                  {activeTab === 'account' && 'Hesap ayarlarınızı yönetin'}
-                  {activeTab === 'notifications' && 'Bildirim tercihlerinizi ayarlayın'}
-                  {activeTab === 'api' && 'API ayarlarınızı yönetin'}
-                  {activeTab === 'billing' && 'Faturalama ve ödeme bilgileriniz'}
-                  {activeTab === 'security' && 'Güvenlik ayarlarınızı yönetin'}
+                <Button variant="outline" size="sm">
+                  Fotoğraf Değiştir
+                </Button>
+                <p className="mt-1.5 text-[10px] text-muted-foreground">
+                  JPG, PNG veya GIF. Max 2MB
                 </p>
               </div>
             </div>
 
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-              <div className="space-y-5">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-[#203eec] rounded-full flex items-center justify-center text-white text-xl font-bold">
-                    {profileData.name.charAt(0)}
-                  </div>
-                  <div>
-                    <Button variant="outline" size="sm" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] text-sm">
-                      Fotoğraf Değiştir
-                    </Button>
-                    <p
-                      className="text-[10px] text-muted-foreground mt-1.5"
-                      style={{
-                      }}
-                    >
-                      JPG, PNG veya GIF. Max 2MB
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  <div>
-                    <label
-                      className="text-sm font-medium text-foreground mb-2 block"
-                      style={{
-                      }}
-                    >
-                      Ad Soyad
-                    </label>
-                    <Input
-                      value={profileData.name}
-                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      className="border-[var(--border)] focus:border-[#203eec]"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="text-sm font-medium text-foreground mb-2 block"
-                      style={{
-                      }}
-                    >
-                      E-posta
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        value={profileData.email}
-                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      className="text-sm font-medium text-foreground mb-2 block"
-                      style={{
-                      }}
-                    >
-                      Telefon
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={profileData.phone}
-                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      className="text-sm font-medium text-foreground mb-2 block"
-                      style={{
-                      }}
-                    >
-                      Konum
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={profileData.location}
-                        onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                        className="pl-10 border-[var(--border)] focus:border-[#203eec]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Hakkımda
-                  </label>
-                  <textarea
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none resize-none"
-                    style={{
-                    }}
+            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Ad Soyad
+                </label>
+                <Input
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  E-posta
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    className="pl-9"
                   />
                 </div>
               </div>
-            )}
-
-            {/* Account Tab */}
-            {activeTab === 'account' && (
-              <div className="space-y-6">
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Dil
-                  </label>
-                  <select
-                    value={accountData.language}
-                    onChange={(e) => setAccountData({ ...accountData, language: e.target.value })}
-                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
-                  >
-                    <option value="tr">Türkçe</option>
-                    <option value="en">English</option>
-                  </select>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Telefon
+                </label>
+                <div className="relative">
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    className="pl-9"
+                  />
                 </div>
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Saat Dilimi
-                  </label>
-                  <select
-                    value={accountData.timezone}
-                    onChange={(e) => setAccountData({ ...accountData, timezone: e.target.value })}
-                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
-                  >
-                    <option value="Europe/Istanbul">İstanbul (GMT+3)</option>
-                    <option value="Europe/London">London (GMT+0)</option>
-                    <option value="America/New_York">New York (GMT-5)</option>
-                  </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Konum
+                </label>
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={profileData.location}
+                    onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                    className="pl-9"
+                  />
                 </div>
+              </div>
+            </div>
 
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Hakkımda
+              </label>
+              <Textarea
+                value={profileData.bio}
+                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Account Tab */}
+        {activeTab === 'account' && (
+          <div className="space-y-6">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Dil
+              </label>
+              <select
+                value={accountData.language}
+                onChange={(e) => setAccountData({ ...accountData, language: e.target.value })}
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="tr">Türkçe</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Saat Dilimi
+              </label>
+              <select
+                value={accountData.timezone}
+                onChange={(e) => setAccountData({ ...accountData, timezone: e.target.value })}
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="Europe/Istanbul">İstanbul (GMT+3)</option>
+                <option value="Europe/London">London (GMT+0)</option>
+                <option value="America/New_York">New York (GMT-5)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Tarih Formatı
+              </label>
+              <select
+                value={accountData.dateFormat}
+                onChange={(e) => setAccountData({ ...accountData, dateFormat: e.target.value })}
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="DD/MM/YYYY">GG/AA/YYYY</option>
+                <option value="MM/DD/YYYY">AA/GG/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-AA-GG</option>
+              </select>
+            </div>
+
+            <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
+              <p className="mb-1 text-sm font-semibold text-destructive">Tehlikeli Alan</p>
+              <p className="mb-3 text-xs text-destructive">
+                Hesabınızı silerseniz profiliniz ve erişiminiz kalıcı olarak kaldırılır.
+              </p>
+              <Button onClick={handleDeleteAccount} disabled={deletingAccount} variant="destructive">
+                <Trash2 />
+                {deletingAccount ? 'Hesap Siliniyor...' : 'Hesabı Sil'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Notifications Tab */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-4">
+            {Object.entries(notifications).map(([key, value]) => (
+              <div key={key} className="flex items-start justify-between gap-3 rounded-xl bg-secondary p-4 sm:items-center">
                 <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Tarih Formatı
-                  </label>
-                  <select
-                    value={accountData.dateFormat}
-                    onChange={(e) => setAccountData({ ...accountData, dateFormat: e.target.value })}
-                    className="w-full px-4 py-2 border border-[var(--border)] rounded-xl focus:border-[#203eec] focus:outline-none"
-                  >
-                    <option value="DD/MM/YYYY">GG/AA/YYYY</option>
-                    <option value="MM/DD/YYYY">AA/GG/YYYY</option>
-                    <option value="YYYY-MM-DD">YYYY-AA-GG</option>
-                  </select>
-                </div>
-
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-sm font-semibold text-red-700 mb-1">Tehlikeli Alan</p>
-                  <p className="text-xs text-red-600 mb-3">
-                    Hesabınızı silerseniz profiliniz ve erişiminiz kalıcı olarak kaldırılır.
+                  <p className="font-medium text-foreground">
+                    {key === 'email' && 'E-posta Bildirimleri'}
+                    {key === 'blogGenerated' && 'Blog Üretildiğinde'}
+                    {key === 'blogPublished' && 'Blog Yayınlandığında'}
+                    {key === 'weeklyReport' && 'Haftalık Rapor'}
+                    {key === 'marketing' && 'Pazarlama E-postaları'}
                   </p>
-                  <Button
-                    onClick={handleDeleteAccount}
-                    disabled={deletingAccount}
-                    variant="outline"
-                    className="border-red-300 text-red-700 hover:bg-red-100 hover:text-red-800"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    {deletingAccount ? 'Hesap Siliniyor...' : 'Hesabı Sil'}
+                  <p className="text-sm text-muted-foreground">
+                    {key === 'email' && 'Tüm e-posta bildirimlerini al'}
+                    {key === 'blogGenerated' && 'Yeni blog üretildiğinde bildirim gönder'}
+                    {key === 'blogPublished' && 'Blog yayınlandığında bildirim gönder'}
+                    {key === 'weeklyReport' && 'Haftalık aktivite raporu gönder'}
+                    {key === 'marketing' && 'Pazarlama ve güncelleme e-postaları al'}
+                  </p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                    className="peer sr-only"
+                  />
+                  <div className="peer h-6 w-11 rounded-full bg-secondary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-card after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-card peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring"></div>
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* API Tab */}
+        {activeTab === 'api' && (
+          <div className="space-y-6">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                API Anahtarı
+              </label>
+              <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <Input
+                  type="password"
+                  value={apiSettings.apiKey}
+                  readOnly
+                  className="flex-1 bg-secondary font-mono"
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 sm:flex-none">
+                    Kopyala
+                  </Button>
+                  <Button variant="outline" className="flex-1 sm:flex-none">
+                    Yenile
                   </Button>
                 </div>
               </div>
-            )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                API anahtarınızı güvenli tutun ve kimseyle paylaşmayın
+              </p>
+            </div>
 
-            {/* Notifications Tab */}
-            {activeTab === 'notifications' && (
-              <div className="space-y-4">
-                {Object.entries(notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-start sm:items-center justify-between gap-3 p-4 bg-[var(--secondary)] rounded-xl">
-                    <div>
-                      <p
-                        className="font-medium text-foreground"
-                        style={{
-                        }}
-                      >
-                        {key === 'email' && 'E-posta Bildirimleri'}
-                        {key === 'blogGenerated' && 'Blog Üretildiğinde'}
-                        {key === 'blogPublished' && 'Blog Yayınlandığında'}
-                        {key === 'weeklyReport' && 'Haftalık Rapor'}
-                        {key === 'marketing' && 'Pazarlama E-postaları'}
-                      </p>
-                      <p
-                        className="text-sm text-muted-foreground"
-                        style={{
-                        }}
-                      >
-                        {key === 'email' && 'Tüm e-posta bildirimlerini al'}
-                        {key === 'blogGenerated' && 'Yeni blog üretildiğinde bildirim gönder'}
-                        {key === 'blogPublished' && 'Blog yayınlandığında bildirim gönder'}
-                        {key === 'weeklyReport' && 'Haftalık aktivite raporu gönder'}
-                        {key === 'marketing' && 'Pazarlama ve güncelleme e-postaları al'}
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#203eec] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#203eec]"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Webhook URL
+              </label>
+              <Input
+                type="url"
+                value={apiSettings.webhookUrl}
+                onChange={(e) => setApiSettings({ ...apiSettings, webhookUrl: e.target.value })}
+                placeholder="https://example.com/webhook"
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Blog üretildiğinde bu URL&apos;ye bildirim gönderilir
+              </p>
+            </div>
 
-            {/* API Tab */}
-            {activeTab === 'api' && (
-              <div className="space-y-6">
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    API Anahtarı
-                  </label>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Input
-                      type="password"
-                      value={apiSettings.apiKey}
-                      readOnly
-                      className="border-[var(--border)] bg-[var(--secondary)] font-mono flex-1"
-                    />
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 sm:flex-none border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-                        Kopyala
-                      </Button>
-                      <Button variant="outline" className="flex-1 sm:flex-none border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-                        Yenile
-                      </Button>
-                    </div>
-                  </div>
-                  <p
-                    className="text-xs text-muted-foreground mt-2"
-                    style={{
-                    }}
-                  >
-                    API anahtarınızı güvenli tutun ve kimseyle paylaşmayın
-                  </p>
-                </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Rate Limit (Dakikada)
+              </label>
+              <Input
+                type="number"
+                value={apiSettings.rateLimit}
+                onChange={(e) => setApiSettings({ ...apiSettings, rateLimit: e.target.value })}
+              />
+            </div>
 
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Webhook URL
-                  </label>
-                  <Input
-                    type="url"
-                    value={apiSettings.webhookUrl}
-                    onChange={(e) => setApiSettings({ ...apiSettings, webhookUrl: e.target.value })}
-                    placeholder="https://example.com/webhook"
-                    className="border-[var(--border)] focus:border-[#203eec]"
-                  />
-                  <p
-                    className="text-xs text-muted-foreground mt-2"
-                    style={{
-                    }}
-                  >
-                    Blog üretildiğinde bu URL&apos;ye bildirim gönderilir
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Rate Limit (Dakikada)
-                  </label>
-                  <Input
-                    type="number"
-                    value={apiSettings.rateLimit}
-                    onChange={(e) => setApiSettings({ ...apiSettings, rateLimit: e.target.value })}
-                    className="border-[var(--border)] focus:border-[#203eec]"
-                  />
-                </div>
-
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <p
-                    className="text-sm text-blue-800"
-                    style={{
-                    }}
-                  >
-                    💡 API dokümantasyonunu görüntülemek için{' '}
-                    <a href="#" className="underline font-medium">buraya tıklayın</a>
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Billing Tab */}
-            {activeTab === 'billing' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-[var(--secondary)] rounded-xl border border-[var(--border)]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div>
-                      <h3
-                        className="text-lg font-medium text-foreground mb-1"
-                        style={{
-                        }}
-                      >
-                        Mevcut Plan
-                      </h3>
-                      <p
-                        className="text-sm text-muted-foreground"
-                        style={{
-                        }}
-                      >
-                        Ücretsiz Plan
-                      </p>
-                    </div>
-                    <Button className="bg-[#203eec] hover:bg-[#1a32cc] text-white">
-                      Planı Yükselt
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p
-                        className="text-muted-foreground mb-1"
-                        style={{
-                        }}
-                      >
-                        Kullanılan Blog
-                      </p>
-                      <p
-                        className="text-lg font-semibold text-foreground"
-                        style={{
-                        }}
-                      >
-                        12 / 50
-                      </p>
-                    </div>
-                    <div>
-                      <p
-                        className="text-muted-foreground mb-1"
-                        style={{
-                        }}
-                      >
-                        Sonraki Fatura
-                      </p>
-                      <p
-                        className="text-lg font-semibold text-foreground"
-                        style={{
-                        }}
-                      >
-                        Ücretsiz
-                      </p>
-                    </div>
-                    <div>
-                      <p
-                        className="text-muted-foreground mb-1"
-                        style={{
-                        }}
-                      >
-                        Ödeme Yöntemi
-                      </p>
-                      <p
-                        className="text-lg font-semibold text-foreground"
-                        style={{
-                        }}
-                      >
-                        Yok
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3
-                    className="text-lg font-medium text-foreground mb-4"
-                    style={{
-                    }}
-                  >
-                    Fatura Geçmişi
-                  </h3>
-                  <div className="p-8 text-center border border-[var(--border)] rounded-xl">
-                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <p
-                      className="text-muted-foreground"
-                      style={{
-                      }}
-                    >
-                      Henüz fatura bulunmuyor
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Security Tab */}
-            {activeTab === 'security' && (
-              <div className="space-y-6">
-                {error && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <p className="text-sm text-red-600">{error}</p>
-                  </div>
-                )}
-                {success && (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                    <p className="text-sm text-green-600">{success}</p>
-                  </div>
-                )}
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Mevcut Şifre
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Mevcut şifrenizi girin"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="pr-10 border-[var(--border)] focus:border-[#203eec]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Yeni Şifre
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showNewPassword ? 'text' : 'password'}
-                      placeholder="Yeni şifrenizi girin"
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="pr-10 border-[var(--border)] focus:border-[#203eec]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p
-                    className="text-xs text-muted-foreground mt-2"
-                    style={{
-                    }}
-                  >
-                    En az 6 karakter olmalıdır
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Yeni Şifre (Tekrar)
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="Yeni şifrenizi tekrar girin"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    className="border-[var(--border)] focus:border-[#203eec]"
-                  />
-                </div>
-
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                  <p
-                    className="text-sm text-yellow-800"
-                    style={{
-                    }}
-                  >
-                    ⚠️ Şifrenizi değiştirdikten sonra tüm cihazlardan çıkış yapmanız gerekebilir
-                  </p>
-                </div>
-
-                <div className="pt-6 border-t border-[var(--border)]">
-                  <h3
-                    className="text-lg font-medium text-foreground mb-4"
-                    style={{
-                    }}
-                  >
-                    İki Faktörlü Doğrulama
-                  </h3>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--secondary)] rounded-xl">
-                    <div>
-                      <p
-                        className="font-medium text-foreground"
-                        style={{
-                        }}
-                      >
-                        2FA Aktif Değil
-                      </p>
-                      <p
-                        className="text-sm text-muted-foreground"
-                        style={{
-                        }}
-                      >
-                        Hesabınızı daha güvenli hale getirin
-                      </p>
-                    </div>
-                    <Button variant="outline" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-                      Etkinleştir
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          {/* Save Button */}
-          <div className="mt-6 pt-5 border-t border-[var(--border)] flex justify-end">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-[#203eec] hover:bg-[#1a32cc] text-white rounded-full px-5 py-2.5 text-sm"
-              style={{
-              }}
-            >
-              {saving ? (
-                <>
-                  <span className="animate-spin mr-1.5">⏳</span>
-                  Kaydediliyor...
-                </>
-              ) : (
-                <>
-                  <Save className="w-3.5 h-3.5 mr-1.5" />
-                  Değişiklikleri Kaydet
-                </>
-              )}
-            </Button>
+            <div className="rounded-xl border border-border bg-info-muted p-4">
+              <p className="text-sm text-info">
+                API dokümantasyonunu görüntülemek için{' '}
+                <a href="#" className="font-medium underline">buraya tıklayın</a>
+              </p>
+            </div>
           </div>
+        )}
+
+        {/* Billing Tab */}
+        {activeTab === 'billing' && (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border bg-secondary p-6">
+              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="mb-1 text-lg font-medium text-foreground">
+                    Mevcut Plan
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Ücretsiz Plan
+                  </p>
+                </div>
+                <Button>
+                  Planı Yükselt
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+                <div>
+                  <p className="mb-1 text-muted-foreground">
+                    Kullanılan Blog
+                  </p>
+                  <p className="text-lg font-semibold text-foreground">
+                    12 / 50
+                  </p>
+                </div>
+                <div>
+                  <p className="mb-1 text-muted-foreground">
+                    Sonraki Fatura
+                  </p>
+                  <p className="text-lg font-semibold text-foreground">
+                    Ücretsiz
+                  </p>
+                </div>
+                <div>
+                  <p className="mb-1 text-muted-foreground">
+                    Ödeme Yöntemi
+                  </p>
+                  <p className="text-lg font-semibold text-foreground">
+                    Yok
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-4 text-lg font-medium text-foreground">
+                Fatura Geçmişi
+              </h3>
+              <div className="rounded-xl border border-border p-8 text-center">
+                <CreditCard className="mx-auto mb-4 h-12 w-12 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">
+                  Henüz fatura bulunmuyor
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            {error && (
+              <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+            {success && (
+              <div className="rounded-xl border border-border bg-success-muted p-4">
+                <p className="text-sm text-success">{success}</p>
+              </div>
+            )}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Mevcut Şifre
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mevcut şifrenizi girin"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Yeni Şifre
+              </label>
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Yeni şifrenizi girin"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showNewPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                En az 6 karakter olmalıdır
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Yeni Şifre (Tekrar)
+              </label>
+              <Input
+                type="password"
+                placeholder="Yeni şifrenizi tekrar girin"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+              />
+            </div>
+
+            <div className="rounded-xl border border-border bg-warning-muted p-4">
+              <p className="text-sm text-warning">
+                Şifrenizi değiştirdikten sonra tüm cihazlardan çıkış yapmanız gerekebilir
+              </p>
+            </div>
+
+            <div className="border-t border-border pt-6">
+              <h3 className="mb-4 text-lg font-medium text-foreground">
+                İki Faktörlü Doğrulama
+              </h3>
+              <div className="flex flex-col justify-between gap-3 rounded-xl bg-secondary p-4 sm:flex-row sm:items-center">
+                <div>
+                  <p className="font-medium text-foreground">
+                    2FA Aktif Değil
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Hesabınızı daha güvenli hale getirin
+                  </p>
+                </div>
+                <Button variant="outline">
+                  Etkinleştir
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save Button */}
+        <div className="mt-6 flex justify-end border-t border-border pt-5">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Kaydediliyor...
+              </>
+            ) : (
+              <>
+                <Save />
+                Değişiklikleri Kaydet
+              </>
+            )}
+          </Button>
         </div>
-      </motion.div>
+      </Card>
 
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/45"
-            onClick={() => !deletingAccount && setIsDeleteModalOpen(false)}
-          />
-          <div className="relative w-full max-w-md rounded-2xl border border-red-200 bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
+          <div className="relative w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-elevated">
             <h3 className="text-lg font-semibold text-foreground">Hesabı Sil</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Bu işlem geri alınamaz. Devam etmek için aşağıya <strong>HESABIMI SIL</strong> yazın ve mevcut şifrenizi girin.
@@ -843,14 +650,12 @@ export default function SettingsPage() {
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="HESABIMI SIL"
-                className="border-red-200 focus:border-red-400"
               />
               <Input
                 type="password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
                 placeholder="Mevcut şifreniz"
-                className="border-red-200 focus:border-red-400"
               />
             </div>
 
@@ -865,7 +670,7 @@ export default function SettingsPage() {
               <Button
                 onClick={handleConfirmDeleteAccount}
                 disabled={deletingAccount}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                variant="destructive"
               >
                 {deletingAccount ? 'Siliniyor...' : 'Hesabı Kalıcı Olarak Sil'}
               </Button>
@@ -876,4 +681,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

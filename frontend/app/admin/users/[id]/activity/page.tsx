@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Activity,
   Clock,
   User,
   Search,
-  Filter,
   Loader2,
   AlertCircle,
   FileText,
@@ -22,12 +20,20 @@ import {
   Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 import {
   getAdminUserById,
   getAdminActivityLogs,
   type AdminUser,
   type ActivityLog,
 } from '@/lib/api';
+
+const selectClass =
+  'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 export default function UserActivityPage() {
   const params = useParams();
@@ -106,31 +112,31 @@ export default function UserActivityPage() {
     return Activity;
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityVariant = (severity: string): 'success' | 'warning' | 'destructive' | 'info' => {
     switch (severity) {
       case 'success':
-        return 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/50';
+        return 'success';
       case 'warning':
-        return 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/50';
+        return 'warning';
       case 'error':
-        return 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/50';
+        return 'destructive';
       default:
-        return 'bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/50';
+        return 'info';
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeStyles = (type: string) => {
     switch (type) {
       case 'user':
-        return 'bg-[#3B82F6]/20 text-[#3B82F6]';
+        return 'bg-accent text-accent-foreground';
       case 'blog':
-        return 'bg-[#10B981]/20 text-[#10B981]';
+        return 'bg-success-muted text-success';
       case 'auth':
-        return 'bg-[#F59E0B]/20 text-[#F59E0B]';
+        return 'bg-warning-muted text-warning';
       case 'system':
-        return 'bg-[#8B5CF6]/20 text-[#8B5CF6]';
+        return 'bg-info-muted text-info';
       default:
-        return 'bg-[#666666]/20 text-[#ebebeb]';
+        return 'bg-secondary text-muted-foreground';
     }
   };
 
@@ -145,10 +151,10 @@ export default function UserActivityPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 mx-auto mb-2 text-[#3B82F6] animate-spin" />
-          <p className="text-xs text-[#ebebeb]">Yükleniyor...</p>
+          <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -157,21 +163,17 @@ export default function UserActivityPage() {
   if (error && !user) {
     return (
       <div className="space-y-6">
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+        <div className="rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4">
+          <div className="flex items-start gap-2 text-destructive">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
+              <p className="text-sm font-medium">Hata</p>
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         </div>
-        <Button
-          onClick={() => router.push('/admin/users')}
-          variant="outline"
-          className="border-[#333333] text-white"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+        <Button onClick={() => router.push('/admin/users')} variant="outline">
+          <ArrowLeft className="h-4 w-4" />
           Geri Dön
         </Button>
       </div>
@@ -181,245 +183,156 @@ export default function UserActivityPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
-      >
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => router.push('/admin/users')}
-            variant="ghost"
-            size="sm"
-            className="text-[#ebebeb] hover:text-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri Dön
-          </Button>
-          <div>
-            <h1
-              className="text-lg font-medium text-white mb-1"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
-              Kullanıcı Aktiviteleri
-            </h1>
-            {user && (
-              <p
-                className="text-xs text-[#ebebeb]"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
-                {user.name} ({user.email})
-              </p>
-            )}
-          </div>
-        </div>
-      </motion.div>
+      <div className="space-y-4">
+        <Button
+          onClick={() => router.push('/admin/users')}
+          variant="ghost"
+          size="sm"
+          className="-ml-3 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Geri Dön
+        </Button>
+        <PageHeader
+          title="Kullanıcı Aktiviteleri"
+          description={user ? `${user.name} (${user.email})` : undefined}
+          className="mb-0"
+        />
+      </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+        <div className="rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4">
+          <div className="flex items-start gap-2 text-destructive">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
+              <p className="text-sm font-medium">Hata</p>
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {/* Search */}
           <div className="md:col-span-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ebebeb]" />
-              <input
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 type="text"
                 placeholder="Aktivite veya hedef ile ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none transition-all"
+                className="bg-card pl-9"
               />
             </div>
           </div>
 
           {/* Type Filter */}
-          <div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none transition-all"
-            >
-              <option value="all">Tüm Tipler</option>
-              <option value="user">Kullanıcı</option>
-              <option value="blog">Blog</option>
-              <option value="auth">Kimlik Doğrulama</option>
-              <option value="system">Sistem</option>
-            </select>
-          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as any)}
+            aria-label="Tip filtresi"
+            className={selectClass}
+          >
+            <option value="all">Tüm Tipler</option>
+            <option value="user">Kullanıcı</option>
+            <option value="blog">Blog</option>
+            <option value="auth">Kimlik Doğrulama</option>
+            <option value="system">Sistem</option>
+          </select>
 
           {/* Severity Filter */}
-          <div>
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value as any)}
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none transition-all"
-            >
-              <option value="all">Tüm Seviyeler</option>
-              <option value="info">Bilgi</option>
-              <option value="success">Başarılı</option>
-              <option value="warning">Uyarı</option>
-              <option value="error">Hata</option>
-            </select>
-          </div>
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverityFilter(e.target.value as any)}
+            aria-label="Seviye filtresi"
+            className={selectClass}
+          >
+            <option value="all">Tüm Seviyeler</option>
+            <option value="info">Bilgi</option>
+            <option value="success">Başarılı</option>
+            <option value="warning">Uyarı</option>
+            <option value="error">Hata</option>
+          </select>
         </div>
-      </motion.div>
+      </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Toplam Aktivite', value: logs.length, color: 'bg-[#3B82F6]' },
-          { label: 'Hatalar', value: logs.filter((l) => l.severity === 'error').length, color: 'bg-[#EF4444]' },
-          { label: 'Uyarılar', value: logs.filter((l) => l.severity === 'warning').length, color: 'bg-[#F59E0B]' },
-          { label: 'Başarılı', value: logs.filter((l) => l.severity === 'success').length, color: 'bg-[#10B981]' },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]"
-          >
-            <p
-              className="text-xs text-[#ebebeb] mb-1.5"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
-              {stat.label}
-            </p>
-            <p
-              className="text-2xl font-semibold text-white"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
-              {stat.value}
-            </p>
-          </motion.div>
-        ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <StatCard label="Toplam Aktivite" value={logs.length} icon={<Activity />} />
+        <StatCard label="Hatalar" value={logs.filter((l) => l.severity === 'error').length} />
+        <StatCard label="Uyarılar" value={logs.filter((l) => l.severity === 'warning').length} />
+        <StatCard label="Başarılı" value={logs.filter((l) => l.severity === 'success').length} />
       </div>
 
       {/* Logs List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="space-y-3"
-      >
+      <div className="space-y-3">
         {loadingLogs ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-8 border border-[#333333] text-center text-sm text-[#ebebeb]">
-            <Loader2 className="w-6 h-6 mx-auto mb-2 text-[#3B82F6] animate-spin" />
-            <p>Loglar yükleniyor...</p>
+          <div className="rounded-xl border border-border bg-card p-8 text-center shadow-card">
+            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loglar yükleniyor...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-8 border border-[#333333] text-center text-sm text-[#ebebeb]">
-            <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>Aktivite bulunamadı</p>
-          </div>
+          <EmptyState
+            icon={<Activity />}
+            title="Aktivite bulunamadı"
+            description="Seçtiğiniz filtrelerle eşleşen bir aktivite kaydı yok."
+          />
         ) : (
-          filteredLogs.map((log, index) => {
+          filteredLogs.map((log) => {
             const TypeIcon = getActivityIcon(log.type);
             const ActionIcon = getActionIcon(log.action);
 
             return (
-              <motion.div
+              <div
                 key={log.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333] hover:border-[#3B82F6]/50 transition-colors"
+                className="rounded-xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-card-hover"
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getTypeColor(log.type)}`}>
-                    <TypeIcon className="w-5 h-5" />
+                  <div
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${getTypeStyles(log.type)}`}
+                  >
+                    <TypeIcon className="h-5 w-5" />
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <ActionIcon className="w-4 h-4 text-[#ebebeb]" />
-                          <p
-                            className="text-white font-medium text-sm"
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
-                          >
-                            {log.action}
-                          </p>
-                          <span className={`px-2 py-0.5 rounded text-xs border ${getSeverityColor(log.severity)}`}>
-                            {log.severity}
-                          </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row">
+                      <div className="min-w-0">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <ActionIcon className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-foreground">{log.action}</p>
+                          <Badge variant={getSeverityVariant(log.severity)}>{log.severity}</Badge>
                         </div>
 
                         {log.targetName && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <FileText className="w-3 h-3 text-[#ebebeb]" />
-                            <span
-                              className="text-xs text-[#ebebeb]"
-                              style={{
-                                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                              }}
-                            >
+                          <div className="mb-1 flex items-center gap-2">
+                            <FileText className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
                               {log.targetType}: {log.targetName}
                             </span>
                           </div>
                         )}
 
                         {log.details && (
-                          <div className="mt-2 p-2 bg-[#0f0f0f] rounded-lg">
-                            <pre
-                              className="text-xs text-[#ebebeb] font-mono"
-                              style={{
-                                fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
-                              }}
-                            >
+                          <div className="mt-2 overflow-x-auto rounded-lg border border-border bg-secondary p-2">
+                            <pre className="font-mono text-xs text-muted-foreground">
                               {JSON.stringify(log.details, null, 2)}
                             </pre>
                           </div>
                         )}
                       </div>
 
-                      <div className="text-right">
-                        <div className="flex items-center gap-2 text-xs text-[#ebebeb] mb-2">
-                          <Clock className="w-4 h-4" />
-                          <span
-                            style={{
-                              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                            }}
-                          >
+                      <div className="flex-shrink-0 sm:text-right">
+                        <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:justify-end">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
                             {new Date(log.timestamp || log.createdAt || '').toLocaleString('tr-TR')}
                           </span>
                         </div>
                         {log.ipAddress && (
-                          <p
-                            className="text-xs text-[#ebebeb] font-mono"
-                            style={{
-                              fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
-                            }}
-                          >
+                          <p className="font-mono text-xs text-muted-foreground">
                             IP: {log.ipAddress}
                           </p>
                         )}
@@ -427,12 +340,11 @@ export default function UserActivityPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
-

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 /* ─── Showcase: mockup ile büyük bölümler ─── */
 const showcases = [
@@ -100,7 +102,7 @@ const fadeUp = {
 };
 const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
-function Section({ showcase, index }: { showcase: typeof showcases[0]; index: number }) {
+function Section({ showcase }: { showcase: typeof showcases[0] }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
 
@@ -110,45 +112,40 @@ function Section({ showcase, index }: { showcase: typeof showcases[0]; index: nu
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
       variants={stagger}
-      className={`grid md:grid-cols-2 gap-8 md:gap-16 items-center ${showcase.reverse ? 'md:[&>*:first-child]:order-2' : ''}`}
+      className={`grid items-center gap-8 md:grid-cols-2 md:gap-16 ${
+        showcase.reverse ? 'md:[&>*:first-child]:order-2' : ''
+      }`}
     >
       {/* Text */}
       <motion.div variants={fadeUp} className="flex flex-col gap-5">
-        <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase"
-          style={{ background: 'linear-gradient(135deg,#203eec18,#00d4ff18)', color: '#203eec' }}>
-          {showcase.tag}
-        </span>
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight text-foreground">
+        <Badge className="w-fit uppercase tracking-wide">{showcase.tag}</Badge>
+        <h2 className="text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-3xl lg:text-4xl">
           {showcase.title}
         </h2>
         <p className="text-base leading-relaxed text-muted-foreground">
           {showcase.description}
         </p>
-        <ul className="flex flex-col gap-2.5 mt-1">
+        <ul className="mt-1 flex flex-col gap-2.5">
           {showcase.bullets.map((b) => (
             <li key={b} className="flex items-center gap-2.5 text-sm">
-              <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
+                <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
               </span>
-              <span className="text-foreground font-medium">{b}</span>
+              <span className="font-medium text-foreground">{b}</span>
             </li>
           ))}
         </ul>
       </motion.div>
 
       {/* Mockup */}
-      <motion.div variants={fadeUp} className="relative">
-        <div className="absolute -inset-4 rounded-3xl opacity-30 blur-2xl"
-          style={{ background: index % 2 === 0 ? 'linear-gradient(135deg,#203eec40,#00d4ff20)' : 'linear-gradient(135deg,#00d4ff20,#203eec40)' }} />
-        <div className="relative rounded-2xl md:rounded-3xl overflow-hidden border"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--secondary)' }}>
+      <motion.div variants={fadeUp}>
+        <div className="overflow-hidden rounded-xl border border-border bg-secondary shadow-card">
           <Image
             src={showcase.image}
             alt={showcase.title}
             width={800}
             height={500}
-            className="w-full h-auto object-contain"
+            className="h-auto w-full object-contain"
           />
         </div>
       </motion.div>
@@ -165,7 +162,7 @@ function ExtrasGrid() {
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
       variants={stagger}
-      className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
     >
       {extras.map((item) => {
         const Icon = item.icon;
@@ -173,14 +170,12 @@ function ExtrasGrid() {
           <motion.div
             key={item.title}
             variants={fadeUp}
-            className="group flex flex-col gap-3 p-5 rounded-2xl border transition-all duration-300 hover:border-[#203eec]/40 hover:shadow-sm"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+            className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover"
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-              <Icon className="w-5 h-5 text-white" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent">
+              <Icon className="h-5 w-5 text-accent-foreground" />
             </div>
-            <h3 className="font-semibold text-base text-foreground">{item.title}</h3>
+            <h3 className="text-base font-semibold text-foreground">{item.title}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
           </motion.div>
         );
@@ -195,8 +190,8 @@ export default function SolutionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full pt-24 md:pt-32 pb-20">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-12">
+      <main className="w-full pb-16 pt-32 sm:pb-24 sm:pt-40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
           {/* ── Hero ── */}
           <motion.div
@@ -204,63 +199,46 @@ export default function SolutionsPage() {
             initial="hidden"
             animate={heroInView ? 'visible' : 'hidden'}
             variants={stagger}
-            className="text-center mb-20 md:mb-28"
+            className="mb-16 text-center sm:mb-24"
           >
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-6"
-              style={{ background: 'linear-gradient(135deg,#203eec18,#00d4ff18)', color: '#203eec' }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Çözümlerimiz
-            </motion.span>
+            <motion.div variants={fadeUp}>
+              <Badge className="mb-6 uppercase tracking-wide">
+                <Sparkles className="h-3.5 w-3.5" />
+                Çözümlerimiz
+              </Badge>
+            </motion.div>
             <motion.h1
               variants={fadeUp}
-              className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground mb-6 max-w-3xl mx-auto leading-[1.1]"
+              className="mx-auto mb-6 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
             >
-              İçerik üretiminin{' '}
-              <span style={{
-                background: 'linear-gradient(135deg,#203eec,#00d4ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                her adımı
-              </span>{' '}
-              burada
+              İçerik üretiminin <span className="text-primary">her adımı</span> burada
             </motion.h1>
             <motion.p
               variants={fadeUp}
-              className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-10"
+              className="mx-auto mb-10 max-w-2xl text-base text-muted-foreground sm:text-lg"
             >
               AI ile üret, panelinizden yönet, API ile yayınla. Baştan sona entegre bir içerik altyapısı.
             </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              >
-                Ücretsiz Başla
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:border-[#203eec] hover:text-[#203eec]"
-                style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
-              >
-                Fiyatları Gör
-              </Link>
+            <motion.div variants={fadeUp} className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/register">
+                  Ücretsiz Başla
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/pricing">Fiyatları Gör</Link>
+              </Button>
             </motion.div>
           </motion.div>
 
           {/* ── Stats strip ── */}
-          <motion.div
+          <motion.dl
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl overflow-hidden mb-20 md:mb-28"
-            style={{ border: '1px solid var(--border)' }}
+            className="mb-16 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card sm:mb-24 md:grid-cols-4"
           >
             {[
               { val: '50+', label: 'Dil Desteği' },
@@ -268,22 +246,22 @@ export default function SolutionsPage() {
               { val: 'REST', label: 'API Entegrasyonu' },
               { val: '%100', label: 'SEO Uyumlu' },
             ].map((stat) => (
-              <div key={stat.label}
-                className="flex flex-col items-center justify-center py-6 px-4 text-center"
-                style={{ backgroundColor: 'var(--card)' }}>
-                <span className="text-2xl md:text-3xl font-bold tracking-tight"
-                  style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <div
+                key={stat.label}
+                className="flex flex-col items-center justify-center bg-card px-4 py-6 text-center"
+              >
+                <dt className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
                   {stat.val}
-                </span>
-                <span className="text-xs text-muted-foreground mt-1 font-medium">{stat.label}</span>
+                </dt>
+                <dd className="mt-1 text-xs font-medium text-muted-foreground">{stat.label}</dd>
               </div>
             ))}
-          </motion.div>
+          </motion.dl>
 
           {/* ── Showcase sections ── */}
-          <div className="flex flex-col gap-24 md:gap-32 mb-24 md:mb-32">
-            {showcases.map((s, i) => (
-              <Section key={s.tag} showcase={s} index={i} />
+          <div className="mb-16 flex flex-col gap-20 sm:mb-24 md:gap-28">
+            {showcases.map((s) => (
+              <Section key={s.tag} showcase={s} />
             ))}
           </div>
 
@@ -293,18 +271,18 @@ export default function SolutionsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="text-center mb-10"
+            className="mb-10 text-center"
           >
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-3">
+            <h2 className="mb-3 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
               Ve daha fazlası
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-sm md:text-base">
+            <p className="mx-auto max-w-xl text-sm text-muted-foreground md:text-base">
               Her iş akışına uyum sağlayan esnek özellik seti.
             </p>
           </motion.div>
 
           {/* ── Extras grid ── */}
-          <div className="mb-20 md:mb-28">
+          <div className="mb-16 sm:mb-24">
             <ExtrasGrid />
           </div>
 
@@ -314,39 +292,27 @@ export default function SolutionsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.55 }}
-            className="relative overflow-hidden rounded-2xl md:rounded-3xl p-8 md:p-16 text-center"
-            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }}
+            className="rounded-xl border border-border bg-accent p-8 text-center shadow-card md:p-16"
           >
-            {/* background orb */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-10 blur-3xl pointer-events-none"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }} />
-            <div className="relative">
-              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#203eec' }}>
-                Hemen başlayın
-              </p>
-              <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-foreground mb-4 max-w-xl mx-auto leading-tight">
-                AI ile içerik üretiminde yeni bir çağ
-              </h2>
-              <p className="text-muted-foreground mb-8 max-w-lg mx-auto text-sm md:text-base">
-                Ücretsiz hesap oluştur, ilk blogunu dakikalar içinde yayınla.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg"
-                  style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-                >
+            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-accent-foreground">
+              Hemen başlayın
+            </p>
+            <h2 className="mx-auto mb-4 max-w-xl text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
+              AI ile içerik üretiminde yeni bir çağ
+            </h2>
+            <p className="mx-auto mb-8 max-w-lg text-sm text-muted-foreground md:text-base">
+              Ücretsiz hesap oluştur, ilk blogunu dakikalar içinde yayınla.
+            </p>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/register">
                   Ücretsiz Dene
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="/docs"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:border-[#203eec] hover:text-[#203eec]"
-                  style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                >
-                  API Dökümanı
-                </Link>
-              </div>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/docs">API Dökümanı</Link>
+              </Button>
             </div>
           </motion.div>
 

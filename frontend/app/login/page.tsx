@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Mail, Lock, ArrowRight, ArrowLeft,
   FileText, Zap, Globe, Code2, BarChart2, Sparkles, CheckCircle2,
@@ -56,18 +57,11 @@ export default function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
 
       {/* ── Left panel ── */}
-      <div
-        className="hidden lg:flex lg:w-[52%] xl:w-[55%] flex-col relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #f0f4ff 0%, #e8eeff 55%, #e0f7ff 100%)' }}
-      >
-        {/* Decorative orbs */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-40 blur-3xl" style={{ background: 'rgba(32,62,236,0.15)' }} />
-        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-30 blur-3xl" style={{ background: 'rgba(0,212,255,0.12)' }} />
-
-        <div className="relative z-10 flex flex-col h-full p-10 xl:p-14">
+      <div className="hidden border-r border-border bg-accent lg:flex lg:w-[52%] lg:flex-col xl:w-[55%]">
+        <div className="flex h-full flex-col p-10 xl:p-14">
           {/* Logo */}
           <motion.div
             initial={{ opacity: 0, x: -16 }}
@@ -75,7 +69,7 @@ export default function LoginPage() {
             transition={{ duration: 0.55 }}
           >
             <Link href="/" className="inline-flex items-center gap-3">
-              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="w-44 h-44 object-contain" />
+              <Image src="/images/logo.png" alt="BlogProduce Logo" width={400} height={400} className="h-32 w-32 object-contain" />
             </Link>
           </motion.div>
 
@@ -84,12 +78,12 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.1 }}
-            className="mt-12 mb-8"
+            className="mb-8 mt-12"
           >
-            <h2 className="text-3xl xl:text-4xl font-bold leading-tight tracking-tight mb-3" style={{ color: '#0f172a' }}>
+            <h2 className="mb-3 text-3xl font-semibold leading-tight tracking-tight text-foreground xl:text-4xl">
               AI ile dakikalar içinde<br />profesyonel blog yazıları
             </h2>
-            <p className="text-sm xl:text-base leading-relaxed max-w-sm" style={{ color: '#64748b' }}>
+            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground xl:text-base">
               Prompt yazın, SEO uyumlu özgün içerik üretin. API veya web arayüzüyle kolayca entegre edin.
             </p>
           </motion.div>
@@ -99,12 +93,12 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex gap-6 mb-10"
+            className="mb-10 flex gap-8"
           >
             {stats.map((s) => (
               <div key={s.label}>
-                <p className="text-2xl font-bold" style={{ color: '#203eec' }}>{s.value}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{s.label}</p>
+                <p className="text-2xl font-semibold tracking-tight text-primary">{s.value}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </motion.div>
@@ -114,7 +108,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="grid grid-cols-2 gap-2 mt-auto"
+            className="mt-auto grid grid-cols-2 gap-3"
           >
             {features.map(({ icon: Icon, label }, i) => (
               <motion.li
@@ -122,13 +116,12 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.35, delay: 0.35 + i * 0.06 }}
-                className="flex items-center gap-2.5 py-2.5 px-3 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(32,62,236,0.12)' }}
+                className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 shadow-card"
               >
-                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-                  <Icon className="w-3.5 h-3.5 text-white" />
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
+                  <Icon className="h-3.5 w-3.5 text-primary-foreground" />
                 </span>
-                <span className="text-xs xl:text-sm font-medium" style={{ color: '#0f172a' }}>{label}</span>
+                <span className="text-xs font-medium text-foreground xl:text-sm">{label}</span>
               </motion.li>
             ))}
           </motion.ul>
@@ -136,24 +129,25 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right panel (form) ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 md:px-10 lg:p-14 bg-background">
-        <div className="w-full max-w-[400px]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55 }}
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 md:px-10 lg:p-14">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55 }}
+          className="w-full max-w-md"
+        >
+          {/* Back link */}
+          <Link
+            href="/"
+            className="group mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            {/* Back link */}
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
-              Ana Sayfaya Dön
-            </Link>
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+            Ana Sayfaya Dön
+          </Link>
 
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card sm:p-8">
             <div className="mb-7">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-1.5">
+              <h1 className="mb-1.5 text-2xl font-semibold tracking-tight text-foreground">
                 Giriş Yap
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -163,7 +157,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3.5 rounded-xl text-sm text-red-600" style={{ background: '#fee2e2', border: '1px solid #fecaca' }}>
+                <div className="rounded-lg border border-destructive/30 bg-[var(--destructive-muted)] px-3.5 py-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -171,12 +165,12 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label htmlFor="email" className="text-xs font-medium text-foreground">E-posta</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email" type="email" name="email"
                     value={formData.email} onChange={handleChange}
                     placeholder="ornek@email.com" required
-                    className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]"
+                    className="h-11 pl-10 text-sm"
                   />
                 </div>
               </div>
@@ -184,61 +178,56 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label htmlFor="password" className="text-xs font-medium text-foreground">Şifre</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password" type="password" name="password"
                     value={formData.password} onChange={handleChange}
                     placeholder="••••••••" required
-                    className="pl-10 h-11 text-sm focus-visible:ring-[#203eec]"
+                    className="h-11 pl-10 text-sm"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between text-xs">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-border text-[#203eec] focus:ring-[#203eec]" />
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="checkbox" className="h-3.5 w-3.5 rounded border-border accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                   <span className="text-muted-foreground">Beni hatırla</span>
                 </label>
-                <Link href="/forgot-password" className="font-medium transition-colors hover:opacity-80" style={{ color: '#203eec' }}>
+                <Link href="/forgot-password" className="font-medium text-accent-foreground transition-colors hover:underline">
                   Şifremi unuttum
                 </Link>
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full h-11 rounded-full text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-200 hover:opacity-90 hover:shadow-lg disabled:opacity-60"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              >
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
                 {isSubmitting ? 'Giriş yapılıyor…' : (
-                  <>Giriş Yap <ArrowRight className="w-4 h-4" /></>
+                  <>Giriş Yap <ArrowRight className="h-4 w-4" /></>
                 )}
-              </button>
+              </Button>
             </form>
 
             <p className="mt-7 text-center text-xs text-muted-foreground">
               Hesabınız yok mu?{' '}
-              <Link href="/register" className="font-semibold transition-colors hover:opacity-80" style={{ color: '#203eec' }}>
+              <Link href="/register" className="font-semibold text-accent-foreground transition-colors hover:underline">
                 Kayıt Ol
               </Link>
             </p>
+          </div>
 
-            {/* Trust badges */}
-            <div className="mt-8 flex items-center justify-center gap-4 flex-wrap">
-              {['SSL Güvenli', 'KVKK Uyumlu', 'Veri Şifreli'].map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <CheckCircle2 className="w-3 h-3" style={{ color: '#203eec' }} />
-                  {t}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+          {/* Trust badges */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            {['SSL Güvenli', 'KVKK Uyumlu', 'Veri Şifreli'].map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <CheckCircle2 className="h-3 w-3 text-success" />
+                {t}
+              </span>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Mini footer */}
-        <footer className="mt-auto pt-8 w-full text-center">
-          <p className="text-[10px] text-muted-foreground">
-            © 2026 <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">Bilal ORHANLAR</a>
+        <footer className="mt-auto w-full pt-8 text-center">
+          <p className="text-[11px] text-muted-foreground">
+            © 2026 <a href="https://bilalorhanlar.com" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">Bilal ORHANLAR</a>
           </p>
         </footer>
       </div>

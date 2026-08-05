@@ -1,11 +1,12 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/", label: "Ana Sayfa" },
@@ -36,129 +37,101 @@ export const PortfolioNavbar = () => {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          backgroundColor: isScrolled ? "rgba(255,255,255,0.85)" : "transparent",
-          backdropFilter: isScrolled ? "blur(12px)" : "none",
-          borderBottom: isScrolled ? "1px solid var(--border)" : "none",
-        }}
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
+          isScrolled
+            ? "border-b border-border bg-card backdrop-blur-md"
+            : "border-b border-transparent bg-transparent",
+        )}
       >
-        <div className="max-w-[1280px] mx-auto px-6 md:px-12">
-          <nav className="flex items-center justify-between h-16 md:h-20">
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
-              style={{ color: "var(--foreground)" }}
-            >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex h-16 items-center justify-between md:h-20">
+            <Link href="/" className="flex items-center" aria-label="BlogProduce ana sayfa">
               <Image
                 src="/images/logo.png"
                 alt="BlogProduce"
                 width={400}
                 height={400}
-                className="w-44 h-44 object-contain"
+                priority
+                className="h-10 w-auto object-contain"
               />
             </Link>
 
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden items-center gap-8 md:flex">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm transition-colors"
-                  style={{
-                    color: isActive(item.href) ? "var(--foreground)" : "var(--muted-foreground)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = "var(--foreground)"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = isActive(item.href)
-                      ? "var(--foreground)"
-                      : "var(--muted-foreground)"
-                  }}
+                  className={cn(
+                    "text-sm transition-colors hover:text-foreground",
+                    isActive(item.href)
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground",
+                  )}
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
 
-            <div className="hidden md:flex items-center gap-3">
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium transition-colors rounded-full"
-                style={{ color: "var(--muted-foreground)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--foreground)" }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted-foreground)" }}
-              >
-                Giriş
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold rounded-full text-white transition-all hover:shadow-xl relative overflow-hidden group"
-                style={{
-                  background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)",
-                  boxShadow: "0 4px 20px rgba(32, 62, 236, 0.3)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 8px 30px rgba(32, 62, 236, 0.5), 0 0 40px rgba(0, 212, 255, 0.3)"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(32, 62, 236, 0.3)"
-                }}
-              >
-                <span className="relative z-10">Ücretsiz Başla</span>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl bg-gradient-to-r from-[#203eec] to-[#00d4ff]" />
-              </Link>
+            <div className="hidden items-center gap-2 md:flex">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">Giriş</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/register">Ücretsiz Başla</Link>
+              </Button>
             </div>
 
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 -mr-2"
+              className="-mr-2 md:hidden"
               aria-label="Menüyü aç"
             >
-              <Menu className="w-5 h-5" style={{ color: "var(--foreground)" }} />
-            </button>
+              <Menu className="h-5 w-5" />
+            </Button>
           </nav>
         </div>
       </header>
 
       {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-50 md:hidden"
-          style={{ backgroundColor: "var(--background)" }}
-        >
-          <div className="flex flex-col h-full p-6">
+        <div className="fixed inset-0 z-50 bg-background md:hidden">
+          <div className="flex h-full flex-col p-6">
             <div className="flex items-center justify-between">
               <Link
                 href="/"
-                className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+                className="flex items-center"
                 onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="BlogProduce ana sayfa"
               >
                 <Image
                   src="/images/logo.png"
                   alt="BlogProduce"
                   width={400}
                   height={400}
-                  className="w-44 h-44 object-contain"
+                  className="h-10 w-auto object-contain"
                 />
               </Link>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 -mr-2"
+                className="-mr-2"
                 aria-label="Menüyü kapat"
               >
-                <X className="w-5 h-5" style={{ color: "var(--foreground)" }} />
-              </button>
+                <X className="h-5 w-5" />
+              </Button>
             </div>
 
-            <nav className="flex flex-col gap-6 mt-12">
+            <nav className="mt-12 flex flex-col gap-6">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-3xl font-semibold transition-colors"
-                  style={{ color: "var(--foreground)" }}
+                  className="text-3xl font-semibold tracking-tight text-foreground transition-colors hover:text-primary"
                 >
                   {item.label}
                 </Link>
@@ -166,29 +139,16 @@ export const PortfolioNavbar = () => {
             </nav>
 
             <div className="mt-auto flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="py-3 px-5 rounded-full text-center font-medium transition-colors"
-                style={{
-                  color: "var(--muted-foreground)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                Giriş
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="inline-flex items-center justify-center w-full px-5 py-3.5 text-base font-semibold rounded-full text-white transition-all relative overflow-hidden group"
-                style={{
-                  background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)",
-                  boxShadow: "0 4px 20px rgba(32, 62, 236, 0.3)",
-                }}
-              >
-                <span className="relative z-10">Ücretsiz Başla</span>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl bg-gradient-to-r from-[#203eec] to-[#00d4ff]" />
-              </Link>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                  Giriş
+                </Link>
+              </Button>
+              <Button asChild size="lg">
+                <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                  Ücretsiz Başla
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

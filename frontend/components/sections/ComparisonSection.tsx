@@ -52,42 +52,35 @@ const aspects = [
 
 export const ComparisonSection = () => {
   return (
-    <section id="karsilastirma" className="py-20 md:py-32" style={{ borderTop: "1px solid var(--border)" }}>
-      <div className="max-w-[1280px] mx-auto px-6 md:px-12">
-        <div className="mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-balance mb-4">
+    <section id="karsilastirma" className="border-t border-border py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 sm:mb-16">
+          <h2 className="mb-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl lg:text-5xl">
             Neden BlogProduce?
           </h2>
-          <p className="text-lg leading-relaxed max-w-xl" style={{ color: "var(--muted-foreground)" }}>
+          <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
             AI araç kullanmak ile geleneksel yazı yöntemi arasındaki farkı inceleyin.
           </p>
         </div>
         <div className="flex flex-col gap-4">
-          {aspects.map((row, index) => (
+          {aspects.map((row) => (
             <div
-              key={index}
-              className="group flex items-center justify-between p-5 md:p-6 rounded-2xl transition-all"
-              style={{ border: "1px solid var(--border)", cursor: "default" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--secondary)"
-                e.currentTarget.style.borderColor = "rgba(32,62,236,0.2)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent"
-                e.currentTarget.style.borderColor = "var(--border)"
-              }}
+              key={row.aspect}
+              className="flex cursor-default items-center justify-between rounded-xl border border-border bg-card p-5 shadow-card transition-all hover:bg-secondary hover:shadow-card-hover md:p-6"
             >
-              <div className="flex items-start gap-6 flex-1">
-                <div className="w-32 flex-shrink-0">
-                  <span className="text-sm font-semibold" style={{ color: "var(--muted-foreground)" }}>{row.aspect}</span>
+              <div className="flex flex-1 items-start gap-6">
+                <div className="w-32 shrink-0">
+                  <span className="text-sm font-semibold text-muted-foreground">{row.aspect}</span>
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Check className="w-4 h-4 flex-shrink-0" style={{ color: "#203eec" }} />
-                    <span className="text-sm md:text-base font-semibold">{row.tool}</span>
+                  <div className="mb-1 flex items-center gap-2">
+                    <Check className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="text-sm font-semibold text-foreground md:text-base">
+                      {row.tool}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2" style={{ color: "var(--muted-foreground)" }}>
-                    <X className="w-4 h-4 flex-shrink-0 opacity-40" />
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <X className="h-4 w-4 shrink-0" />
                     <span className="text-sm">{row.human}</span>
                   </div>
                 </div>

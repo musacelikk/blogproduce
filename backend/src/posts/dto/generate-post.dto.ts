@@ -30,7 +30,7 @@ export class GeneratePostDto {
 
   @IsString()
   @IsOptional()
-  model?: string; // 'gpt-4o-mini' | 'gpt-4.1-mini' | 'gpt-4.1'
+  model?: string; // tier ('standard'|'pro'|'premium' / 'ucuz'|'orta'|'pahalı') or concrete model id (gpt-4.1-mini, gpt-4.1, claude-opus-5)
 
   @IsString()
   @IsOptional()

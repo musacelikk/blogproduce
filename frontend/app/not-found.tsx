@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Home, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Home, ArrowLeft, ArrowRight, Compass } from 'lucide-react';
 import { PortfolioNavbar } from '@/components/layout/PortfolioNavbar';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/ui/button';
 
 const quickLinks = [
   { href: '/', label: 'Ana Sayfa' },
@@ -16,37 +17,23 @@ const quickLinks = [
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <PortfolioNavbar />
 
-      <main className="flex-1 flex items-center justify-center px-6 py-24">
-        <div className="max-w-xl w-full text-center">
+      <main className="flex flex-1 items-center justify-center px-4 py-24 sm:px-6 lg:px-8">
+        <div className="w-full max-w-xl text-center">
 
           {/* Big 404 */}
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="relative mb-8 select-none"
+            className="mb-8 select-none"
           >
-            {/* Glow behind */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              aria-hidden
-            >
-              <div
-                className="w-64 h-32 rounded-full blur-3xl opacity-20"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              />
+            <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
+              <Compass className="h-5 w-5" />
             </div>
-            <span
-              className="relative text-[9rem] md:text-[11rem] font-bold leading-none tracking-tighter"
-              style={{
-                background: 'linear-gradient(135deg,#203eec,#00d4ff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
+            <span className="text-7xl font-semibold leading-none tracking-tighter text-primary sm:text-8xl">
               404
             </span>
           </motion.div>
@@ -57,10 +44,10 @@ export default function NotFound() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.15 }}
           >
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-3">
+            <h1 className="mb-3 text-2xl font-semibold tracking-tight text-foreground">
               Sayfa bulunamadı
             </h1>
-            <p className="text-base text-muted-foreground mb-10 max-w-sm mx-auto leading-relaxed">
+            <p className="mx-auto mb-10 max-w-sm text-sm leading-relaxed text-muted-foreground">
               Aradığınız sayfa mevcut değil veya taşınmış olabilir. URL&apos;yi kontrol edin ya da aşağıdaki bağlantıları kullanın.
             </p>
           </motion.div>
@@ -70,24 +57,18 @@ export default function NotFound() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12"
+            className="mb-12 flex flex-col items-center justify-center gap-3 sm:flex-row"
           >
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-            >
-              <Home className="w-4 h-4" />
-              Ana Sayfaya Dön
-            </Link>
-            <button
-              onClick={() => window.history.back()}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 hover:border-[#203eec] hover:text-[#203eec]"
-              style={{ border: '1px solid var(--border)', color: 'var(--foreground)', background: 'var(--card)' }}
-            >
-              <ArrowLeft className="w-4 h-4" />
+            <Button asChild>
+              <Link href="/">
+                <Home className="h-4 w-4" />
+                Ana Sayfaya Dön
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={() => window.history.back()}>
+              <ArrowLeft className="h-4 w-4" />
               Geri Git
-            </button>
+            </Button>
           </motion.div>
 
           {/* Quick links */}
@@ -95,10 +76,9 @@ export default function NotFound() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="pt-8"
-            style={{ borderTop: '1px solid var(--border)' }}
+            className="border-t border-border pt-8"
           >
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Hızlı Erişim
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -106,11 +86,10 @@ export default function NotFound() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 hover:border-[#203eec] hover:text-[#203eec]"
-                  style={{ border: '1px solid var(--border)', color: 'var(--muted-foreground)', background: 'var(--card)' }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-card transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   {link.label}
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               ))}
             </div>

@@ -943,12 +943,27 @@ export class PostsService {
 
     for (const post of duePosts) {
       try {
-        if (!post.publishedRevisionId) {
-          post.publishedRevisionId = (await this.resolvePublishedRevisionId(post)) ?? null;
+        const publishedRevisionId =
+          post.publishedRevisionId ?? (await this.resolvePublishedRevisionId(post)) ?? null;
+
+        // Claim the post atomically — the scheduler runs in both the API and worker
+        // processes, so a plain save() would publish (and webhook) twice.
+        const claim = await this.postsRepository
+          .createQueryBuilder()
+          .update(Post)
+          .set({ status: PostStatus.PUBLISHED, publishedAt: now, publishedRevisionId })
+          .where('id = :id', { id: post.id })
+          .andWhere('status = :scheduled', { scheduled: PostStatus.SCHEDULED })
+          .execute();
+
+        if ((claim.affected ?? 0) === 0) {
+          // Another process already published it.
+          continue;
         }
+
         post.status = PostStatus.PUBLISHED;
         post.publishedAt = now;
-        await this.postsRepository.save(post);
+        post.publishedRevisionId = publishedRevisionId;
 
         if (post.organizationId && post.projectId) {
           await this.webhookService.triggerWebhook(

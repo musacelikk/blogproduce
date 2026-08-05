@@ -1,6 +1,9 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface PublicPost {
   id: string;
@@ -78,7 +81,7 @@ function formatMarkdownToHtml(md: string): string {
     .replace(/^### (.*$)/gim, '<h3 class="example-blog-h3">$1</h3>')
     .replace(/^## (.*$)/gim, '<h2 class="example-blog-h2">$1</h2>')
     .replace(/^# (.*$)/gim, '<h1 class="example-blog-h1">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-[#202020]">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
     .replace(/^- (.*$)/gim, '<li class="example-blog-li">$1</li>')
     .replace(/^\d+\. (.*$)/gim, '<li class="example-blog-li">$1</li>');
@@ -252,34 +255,28 @@ export default async function ExampleBlogDetailPage({ params }: PageProps) {
   const contentHtml = buildContentHtml(post);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-[#fafafa]">
-      <main className="max-w-4xl mx-auto px-4 md:px-6 lg:px-0 pt-24 pb-16">
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto max-w-4xl px-4 pb-16 pt-32 sm:px-6 sm:pb-24 sm:pt-40 lg:px-8">
         <header className="mb-8 md:mb-10">
-          <div className="flex items-center justify-between gap-4 mb-2">
-            <p className="text-sm text-[#203eec]">Örnek Blog</p>
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <Badge>Örnek Blog</Badge>
             {post.canonicalUrl && (
-              <a
-                href={post.canonicalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white rounded-full transition-opacity hover:opacity-80 flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Yayınlanan sitede görüntüle
-              </a>
+              <Button asChild size="sm" variant="outline">
+                <a href={post.canonicalUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Yayınlanan sitede görüntüle
+                </a>
+              </Button>
             )}
           </div>
-          <h1
-            className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-[#202020] mb-4"
-          >
+          <h1 className="mb-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-[#666666]">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span>{authorName}</span>
             {publishedAt && (
               <>
-                <span className="w-1 h-1 rounded-full bg-[#d4d4d4]" />
+                <span className="h-1 w-1 rounded-full bg-border" />
                 <span>{publishedAt}</span>
               </>
             )}
@@ -287,7 +284,7 @@ export default async function ExampleBlogDetailPage({ params }: PageProps) {
         </header>
 
         {post.coverImageUrl && (
-          <div className="relative w-full h-64 md:h-80 lg:h-[360px] rounded-2xl overflow-hidden mb-10">
+          <div className="relative mb-10 h-64 w-full overflow-hidden rounded-xl border border-border bg-secondary md:h-80 lg:h-[360px]">
             <Image
               src={post.coverImageUrl}
               alt={title}
@@ -300,8 +297,8 @@ export default async function ExampleBlogDetailPage({ params }: PageProps) {
 
         {contentHtml && (
           <article
-            className="example-blog-article max-w-none text-[#202020]"
-            dangerouslySetInnerHTML={{ __html: contentHtml }}
+            className="example-blog-article max-w-none text-foreground"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(contentHtml) }}
           />
         )}
       </main>

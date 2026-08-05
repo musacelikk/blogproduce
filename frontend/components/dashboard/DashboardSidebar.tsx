@@ -52,49 +52,29 @@ export function DashboardSidebar() {
     <>
       {/* Sidebar */}
       <aside
-        className={`fixed top-14 bottom-0 left-0 pt-3 z-40 flex flex-col transition-all duration-300 ${
+        className={`fixed bottom-0 left-0 top-14 z-40 flex w-60 flex-col border-r border-border bg-card pt-3 transition-all duration-300 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${isCollapsed ? 'lg:w-[68px]' : 'lg:w-60'} w-60`}
-        style={{ background: 'var(--card)', borderRight: '1px solid var(--border)' }}
+        } ${isCollapsed ? 'lg:w-[68px]' : 'lg:w-60'}`}
       >
         {/* Collapse Toggle - Desktop only */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex absolute -right-3.5 top-6 w-7 h-7 rounded-full items-center justify-center transition-all duration-200"
-          style={{
-            background: 'var(--card)',
-            border: '1.5px solid var(--border)',
-            color: 'var(--muted-foreground)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            zIndex: 60,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = '#203eec';
-            (e.currentTarget as HTMLElement).style.color = 'white';
-            (e.currentTarget as HTMLElement).style.borderColor = '#203eec';
-            (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 12px rgba(32,62,236,0.35)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = 'var(--card)';
-            (e.currentTarget as HTMLElement).style.color = 'var(--muted-foreground)';
-            (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-            (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-          }}
+          className="absolute -right-3.5 top-6 z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-card transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:flex"
           aria-label={isCollapsed ? 'Sidebar\'ı genişlet' : 'Sidebar\'ı daralt'}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="h-3.5 w-3.5" />
           ) : (
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           )}
         </button>
 
         {/* Nav Items */}
-        <div className={`flex-1 overflow-y-auto space-y-5 px-3 py-2 ${isCollapsed ? 'lg:px-2' : ''}`}>
+        <div className={`flex-1 space-y-5 overflow-y-auto px-3 py-2 ${isCollapsed ? 'lg:px-2' : ''}`}>
           {sidebarGroups.map((group) => (
             <div key={group.label ?? 'main'}>
               {!isCollapsed && group.label && (
-                <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {group.label}
                 </p>
               )}
@@ -108,31 +88,16 @@ export function DashboardSidebar() {
                       href={item.href}
                       onClick={() => setIsMobileOpen(false)}
                       title={isCollapsed ? item.name : undefined}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                         isCollapsed ? 'lg:justify-center lg:px-2' : ''
-                      }`}
-                      style={
+                      } ${
                         isActive
-                          ? {
-                              background: 'linear-gradient(135deg,#203eec,#00b4d8)',
-                              color: 'white',
-                            }
-                          : { color: 'var(--muted-foreground)' }
-                      }
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = 'var(--secondary)';
-                          (e.currentTarget as HTMLElement).style.color = 'var(--foreground)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          (e.currentTarget as HTMLElement).style.color = 'var(--muted-foreground)';
-                        }
-                      }}
+                          ? 'bg-accent text-accent-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      }`}
                     >
-                      <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                      <Icon className="h-[18px] w-[18px] shrink-0" />
                       {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
                     </Link>
                   );
@@ -143,26 +108,15 @@ export function DashboardSidebar() {
         </div>
 
         {/* Logout */}
-        <div
-          className={`px-3 py-3 ${isCollapsed ? 'lg:px-2' : ''}`}
-          style={{ borderTop: '1px solid var(--border)' }}
-        >
+        <div className={`border-t border-border px-3 py-3 ${isCollapsed ? 'lg:px-2' : ''}`}>
           <button
             onClick={handleLogout}
             title={isCollapsed ? 'Çıkış Yap' : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-sm font-medium transition-all duration-150 text-muted-foreground ${
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--destructive-muted)] hover:text-destructive ${
               isCollapsed ? 'lg:justify-center lg:px-2' : ''
             }`}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = '#fef2f2';
-              (e.currentTarget as HTMLElement).style.color = '#ef4444';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = 'transparent';
-              (e.currentTarget as HTMLElement).style.color = 'var(--muted-foreground)';
-            }}
           >
-            <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
             {!isCollapsed && <span>Çıkış Yap</span>}
           </button>
         </div>
@@ -171,7 +125,7 @@ export function DashboardSidebar() {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-30"
+          className="fixed inset-0 z-30 bg-foreground/40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}

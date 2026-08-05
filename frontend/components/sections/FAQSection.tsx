@@ -30,9 +30,9 @@ export const FAQSection = ({
   if (!faqs || faqs.length === 0) {
     if (process.env.NODE_ENV === 'development') {
       return (
-        <section id="faq" className="w-full py-20 md:py-32 px-6 md:px-12">
-          <div className="max-w-[1280px] mx-auto">
-            <p className="text-red-500 text-sm">DEBUG: No FAQs found. Check console for details.</p>
+        <section id="faq" className="w-full py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <p className="text-sm text-destructive">DEBUG: No FAQs found. Check console for details.</p>
           </div>
         </section>
       );
@@ -41,26 +41,30 @@ export const FAQSection = ({
   }
 
   return (
-    <section id="faq" className="w-full py-20 md:py-32 px-6 md:px-12" style={{ borderTop: "1px solid var(--border)" }}>
-      <div className="max-w-[1280px] mx-auto">
-        <div className="grid lg:grid-cols-12 gap-8 md:gap-16">
+    <section id="faq" className="w-full border-t border-border py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight lg:sticky lg:top-24 mb-6 lg:mb-0" style={{ color: "var(--foreground)" }}>
+            <h2 className="mb-6 text-3xl font-semibold tracking-tight text-foreground md:text-4xl lg:sticky lg:top-24 lg:mb-0 lg:text-5xl">
               {title}
             </h2>
           </div>
           <div className="lg:col-span-8">
-            <div className="space-y-0">
+            <div className="divide-y divide-border border-b border-border">
               {faqs.map((faq, index) => (
-                <div key={faq.id} style={{ borderBottom: "1px solid var(--border)" }} className="last:border-b-0">
+                <div key={faq.id}>
                   <button
                     onClick={() => toggleFAQ(index)}
-                    className="w-full flex items-center justify-between py-6 text-left hover:opacity-70 transition-opacity duration-150"
+                    className="flex w-full items-center justify-between gap-8 py-6 text-left transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-expanded={openIndex === index}
                   >
-                    <span className="text-lg leading-7 pr-8 font-medium" style={{ color: "var(--foreground)" }}>{faq.question}</span>
-                    <motion.div animate={{ rotate: openIndex === index ? 45 : 0 }} transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }} className="flex-shrink-0">
-                      <Plus className="w-6 h-6" style={{ color: "#203eec" }} strokeWidth={1.5} />
+                    <span className="text-lg font-medium leading-7">{faq.question}</span>
+                    <motion.div
+                      animate={{ rotate: openIndex === index ? 45 : 0 }}
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                      className="shrink-0"
+                    >
+                      <Plus className="h-6 w-6 text-primary" strokeWidth={1.5} />
                     </motion.div>
                   </button>
                   <AnimatePresence initial={false}>
@@ -73,7 +77,9 @@ export const FAQSection = ({
                         className="overflow-hidden"
                       >
                         <div className="pb-6 pr-12">
-                          <p className="text-base leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{faq.answer}</p>
+                          <p className="text-base leading-relaxed text-muted-foreground">
+                            {faq.answer}
+                          </p>
                         </div>
                       </motion.div>
                     )}

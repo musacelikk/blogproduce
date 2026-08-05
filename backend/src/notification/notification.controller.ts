@@ -10,6 +10,9 @@ import {
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../entities/user.entity';
 import { CurrentUser } from '../auth/decorators/user.decorator';
 import { User } from '../entities/user.entity';
 import { NotificationType } from '../entities/notification.entity';
@@ -67,7 +70,8 @@ export class NotificationController {
 
   // Admin broadcast
   @Post('broadcast')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async broadcast(
     @CurrentUser() user: User,
     @Body()

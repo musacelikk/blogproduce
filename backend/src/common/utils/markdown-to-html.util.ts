@@ -1,62 +1,34 @@
+import { marked } from 'marked';
+
+marked.setOptions({
+  gfm: true, // tables, strikethrough, autolinks — the AI pipeline emits GFM tables
+  breaks: false,
+});
+
 /**
- * Simple Markdown to HTML converter
- * For production, consider using a library like 'marked' or 'remark'
+ * Convert Markdown to HTML.
+ *
+ * This output is what integrators embed as `content_html`, so it goes through a real
+ * parser rather than regex substitution (the previous hand-rolled version collapsed
+ * newlines before its line-anchored list/blockquote rules ran, which silently destroyed
+ * every list and blockquote). Callers are still expected to run the result through
+ * HtmlSanitizerService before returning it.
  */
 export function markdownToHtml(markdown: string): string {
   if (!markdown) {
     return '';
   }
 
-  let html = markdown;
-
-  // Headers
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-
-  // Bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-  // Italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  // Images
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
-
-  // Code blocks
-  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Line breaks
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = html.replace(/\n/g, '<br />');
-
-  // Wrap in paragraph if not already wrapped
-  if (!html.startsWith('<')) {
-    html = '<p>' + html + '</p>';
+  try {
+    return marked.parse(markdown, { async: false }) as string;
+  } catch {
+    // Never fail a response over a formatting edge case — fall back to escaped text.
+    const escaped = markdown
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `<p>${escaped.replace(/\n{2,}/g, '</p><p>')}</p>`;
   }
-
-  // Lists
-  html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
-  html = html.replace(/^- (.+)$/gim, '<li>$1</li>');
-  html = html.replace(/^\+ (.+)$/gim, '<li>$1</li>');
-  
-  // Wrap consecutive list items in ul
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
-    return '<ul>' + match + '</ul>';
-  });
-
-  // Blockquotes
-  html = html.replace(/^> (.+)$/gim, '<blockquote>$1</blockquote>');
-
-  return html;
 }
 
 /**

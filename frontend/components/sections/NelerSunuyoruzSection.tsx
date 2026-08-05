@@ -6,6 +6,8 @@ import { ArrowUpRight, Target, Sparkles, Send } from "lucide-react"
 import { motion, useInView } from "framer-motion"
 import { useRef } from "react"
 import { SectionTitle } from "@/components/ui/section-title"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 const steps = [
   {
@@ -77,49 +79,39 @@ export const NelerSunuyoruzSection = () => {
   const cardsInView = useInView(cardsRef, { once: true, margin: "-80px" })
 
   return (
-    <section id="ozellikler" className="py-20 md:py-10 md:pt-32 pb-4">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-12">
-        <div className="flex items-center justify-between mb-12 md:mb-16">
-          <SectionTitle className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight">
+    <section id="ozellikler" className="py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 flex items-end justify-between gap-6 sm:mb-16">
+          <SectionTitle className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
             Nasıl çalışır
           </SectionTitle>
           <Link
             href="/solutions"
-            className="hidden md:inline-flex items-center gap-2 text-sm transition-colors"
-            style={{ color: "#203eec" }}
+            className="hidden items-center gap-1.5 text-sm font-medium text-accent-foreground transition-colors hover:underline md:inline-flex"
           >
             Tüm özellikler
-            <ArrowUpRight className="w-4 h-4" style={{ color: "#203eec" }} />
+            <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
 
         {/* 3 adım */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-16 md:mb-20">
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-3 lg:mb-20">
           {steps.map((item) => {
             const Icon = item.icon
             return (
               <div
                 key={item.step}
-                className="flex gap-4 p-5 md:p-6 rounded-2xl transition-colors"
-                style={{
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--card)",
-                }}
+                className="flex gap-4 rounded-xl border border-border bg-card p-6 shadow-card transition-shadow hover:shadow-card-hover"
               >
-                <div
-                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold text-lg"
-                  style={{
-                    background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)",
-                  }}
-                >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground">
                   {item.step}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Icon className="w-5 h-5" style={{ color: "#203eec" }} />
+                <div className="min-w-0">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                    <Icon className="h-5 w-5 text-primary" />
                     {item.title}
                   </h3>
-                  <p className="text-sm mt-1.5 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                     {item.description}
                   </p>
                 </div>
@@ -130,21 +122,16 @@ export const NelerSunuyoruzSection = () => {
 
         <motion.div
           ref={cardsRef}
-          className="flex flex-col gap-12 md:gap-16"
+          className="flex flex-col gap-8 lg:gap-12"
           initial="hidden"
           animate={cardsInView ? "visible" : "hidden"}
           variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <motion.div key={feature.id} variants={cardVariants}>
               <Link href="/solutions" className="group block">
-                <article
-                  className="overflow-hidden rounded-2xl md:rounded-3xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-[var(--border)] bg-[var(--card)]"
-                >
-                  <div
-                    className="relative overflow-hidden rounded-t-2xl md:rounded-t-3xl"
-                    style={{ aspectRatio: "2/1", backgroundColor: "var(--secondary)" }}
-                  >
+                <article className="overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated">
+                  <div className="relative aspect-[2/1] overflow-hidden bg-secondary">
                     <Image
                       src={feature.image}
                       alt={feature.title}
@@ -152,31 +139,26 @@ export const NelerSunuyoruzSection = () => {
                       className="object-contain object-center transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <div className="p-4 md:p-6 rounded-b-2xl md:rounded-b-3xl bg-[var(--card)]">
+                  <div className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium uppercase tracking-wider mb-1 text-[#203eec]">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-accent-foreground">
                           {feature.category}
                         </p>
-                        <h3 className="text-lg md:text-xl font-semibold text-[var(--foreground)]">
+                        <h3 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
                           {feature.title}
                         </h3>
-                        <p className="text-sm mt-1 leading-relaxed text-[var(--muted-foreground)]">
+                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                           {feature.description}
                         </p>
                       </div>
-                      <ArrowUpRight
-                        className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1 text-[#203eec]"
-                      />
+                      <ArrowUpRight className="mt-1 h-5 w-5 shrink-0 text-accent-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       {feature.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1 text-xs font-medium rounded-full bg-[var(--secondary)] text-[var(--foreground)]"
-                        >
+                        <Badge key={tag} variant="outline">
                           {tag}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -186,15 +168,13 @@ export const NelerSunuyoruzSection = () => {
           ))}
         </motion.div>
 
-        <div className="md:hidden mt-8 text-center">
-          <Link
-            href="/solutions"
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-full hover:opacity-80 transition-opacity"
-            style={{ color: "#203eec", border: "1px solid #203eec" }}
-          >
-            Tüm özellikler
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
+        <div className="mt-8 text-center md:hidden">
+          <Button asChild variant="outline">
+            <Link href="/solutions">
+              Tüm özellikler
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

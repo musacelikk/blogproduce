@@ -16,6 +16,7 @@ import { User } from '../entities/user.entity';
 import { UnsplashModule } from '../unsplash/unsplash.module';
 import { AuthModule } from '../auth/auth.module';
 import { CommonModule } from '../common/common.module';
+import { AiModule } from '../ai/ai.module';
 import { TenantFilterGuard } from '../common/guards/tenant-filter.guard';
 import { BlogV1Controller } from './v1/blog-v1.controller';
 
@@ -25,6 +26,7 @@ import { BlogV1Controller } from './v1/blog-v1.controller';
     UnsplashModule,
     AuthModule,
     CommonModule,
+    AiModule,
   ],
   controllers: [BlogController, BlogV1Controller], // Legacy + v1
   providers: [BlogService, SeoService, TenantFilterGuard],

@@ -1,10 +1,22 @@
 'use client';
 
+import * as React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Shield, Headphones, ArrowRight } from 'lucide-react';
+import { Check, Minus, Zap, Shield, Headphones, ArrowRight } from 'lucide-react';
 import { PlanDefinition } from '@/lib/api';
 import Link from 'next/link';
 import { trackButtonClick, trackCustomEvent } from '@/lib/analytics';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface PricingPageClientProps {
   plans: PlanDefinition[];
@@ -186,25 +198,33 @@ function getFeatureComparison(plans: PlanDefinition[]): FeatureComparison[] {
   ];
 }
 
+function FeatureValue({ value }: { value: boolean | string }) {
+  if (value === false) {
+    return <Minus className="mx-auto h-4 w-4 text-muted-foreground" />;
+  }
+  if (typeof value === 'string') {
+    return <span className="block text-center text-xs md:text-sm">{value}</span>;
+  }
+  return (
+    <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-primary">
+      <Check className="h-3.5 w-3.5 text-primary-foreground" />
+    </span>
+  );
+}
+
 export function PricingPageClient({ plans }: PricingPageClientProps) {
   // If no plans, show empty state
   if (plans.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="w-full px-4 md:px-6 lg:px-8 pt-20 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-          <div className="max-w-[1280px] mx-auto">
-            <div className="text-center">
-              <h1
-                className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground mb-4 md:mb-6"
-              >
-                Fiyatlandırma
-              </h1>
-              <p
-                className="text-sm md:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto"
-              >
-                Planlar yakında eklenecek.
-              </p>
-            </div>
+        <main className="w-full px-4 pb-16 pt-32 sm:px-6 sm:pb-24 sm:pt-40 lg:px-8">
+          <div className="mx-auto max-w-7xl text-center">
+            <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+              Fiyatlandırma
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              Planlar yakında eklenecek.
+            </p>
           </div>
         </main>
       </div>
@@ -219,7 +239,7 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
   });
 
   const featureComparison = getFeatureComparison(plans);
-  
+
   // Get sorted plans for table headers (cheapest first)
   const sortedPlansForTable = [...plans].sort((a, b) => {
     const priceA = a.price?.monthly || 0;
@@ -229,38 +249,33 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full px-4 md:px-6 lg:px-8 pt-20 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-        <div className="max-w-[1280px] mx-auto">
+      <main className="w-full px-4 pb-16 pt-32 sm:px-6 sm:pb-24 sm:pt-40 lg:px-8">
+        <div className="mx-auto max-w-7xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12 md:mb-16"
+            className="mb-12 text-center sm:mb-16"
           >
-            <span
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
-              style={{ background: 'linear-gradient(135deg,#203eec18,#00d4ff18)', color: '#203eec' }}
-            >
-              Fiyatlandırma
-            </span>
-            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground mb-4">
+            <Badge className="mb-5 uppercase tracking-wide">Fiyatlandırma</Badge>
+            <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               İhtiyacına uygun planı seç
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
               Tüm planlarda 14 gün ücretsiz deneme ve iptal garantisi. Kredi kartı gerekmez.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               {[
                 { icon: Shield, label: 'Güvenli Ödeme' },
                 { icon: Zap, label: 'Anında Aktivasyon' },
                 { icon: Headphones, label: '7/24 Destek' },
               ].map(({ icon: Icon, label }) => (
-                <div key={label}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium"
-                  style={{ border: '1px solid var(--border)', color: 'var(--muted-foreground)', backgroundColor: 'var(--card)' }}
+                <div
+                  key={label}
+                  className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium text-muted-foreground"
                 >
-                  <Icon className="w-3.5 h-3.5" style={{ color: '#203eec' }} />
+                  <Icon className="h-3.5 w-3.5 text-primary" />
                   {label}
                 </div>
               ))}
@@ -268,57 +283,38 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
           </motion.div>
 
           {/* Plans Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16 lg:mb-20">
+          <div className="mb-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:mb-24">
             {sortedPlans.map((plan, index) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className={`relative bg-card border rounded-2xl md:rounded-[30px] lg:rounded-3xl p-5 md:p-6 lg:p-8 flex flex-col ${
-                  plan.popular
-                    ? 'border-[#203eec] bg-[#203eec]/5 shadow-lg shadow-[#203eec]/20 lg:scale-105'
-                    : 'border-border hover:border-[#203eec]/50'
-                } transition-all duration-300`}
+                className={cn(
+                  'relative flex flex-col rounded-xl border bg-card p-6 shadow-card transition-shadow hover:shadow-card-hover lg:p-8',
+                  plan.popular ? 'border-primary shadow-card-hover' : 'border-border',
+                )}
               >
                 {plan.popular && (
-                  <div className="absolute -top-2.5 md:-top-3 left-1/2 -translate-x-1/2 z-10">
-                    <span
-                      className="bg-[#203eec] text-white px-3 md:px-4 py-1 rounded-full text-xs md:text-sm font-semibold"
-                    >
-                      En Popüler
-                    </span>
-                  </div>
+                  <Badge variant="primary" className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
+                    En Popüler
+                  </Badge>
                 )}
-                <div className="mb-4 md:mb-6">
-                  <h3
-                    className="text-xl md:text-2xl font-medium mb-2 text-foreground"
-                  >
+                <div className="mb-6">
+                  <h3 className="mb-2 text-xl font-semibold tracking-tight text-foreground">
                     {plan.name}
                   </h3>
                   {plan.description && (
-                    <p
-                      className="text-muted-foreground mb-3 md:mb-4 text-xs md:text-sm"
-                    >
-                      {plan.description}
-                    </p>
+                    <p className="mb-4 text-sm text-muted-foreground">{plan.description}</p>
                   )}
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span
-                      className="text-4xl md:text-5xl font-medium text-foreground"
-                    >
+                  <div className="mb-2 flex items-baseline gap-1">
+                    <span className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
                       {plan.price.monthly.toLocaleString('tr-TR')}$
                     </span>
-                    <span
-                      className="text-base md:text-lg text-muted-foreground"
-                    >
-                      /ay
-                    </span>
+                    <span className="text-base text-muted-foreground">/ay</span>
                   </div>
                   {plan.price.yearly > 0 && plan.price.monthly > 0 && (
-                    <p
-                      className="text-sm text-muted-foreground"
-                    >
+                    <p className="text-sm text-muted-foreground">
                       Yıllık: {Math.round(plan.price.yearly / 12).toLocaleString('tr-TR')}$/ay
                       {(() => {
                         const fullYear = plan.price.monthly * 12;
@@ -330,7 +326,7 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                               )
                             : 0;
                         return discount > 0 ? (
-                          <span className="text-green-600 ml-1">
+                          <span className="ml-1 font-medium text-success">
                             (%{discount} indirim)
                           </span>
                         ) : null;
@@ -338,15 +334,13 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                     </p>
                   )}
                 </div>
-                <ul className="space-y-2.5 md:space-y-3 mb-6 md:mb-8 flex-grow">
+                <ul className="mb-8 flex-grow space-y-3">
                   {typeof plan.features.maxBlogs !== 'undefined' && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </span>
+                      <span className="text-sm text-foreground">
                         {typeof plan.features.maxBlogs === 'number'
                           ? `Ayda ${plan.features.maxBlogs.toLocaleString('tr-TR')} blog içeriği üretebilir`
                           : 'Sınırsız blog içeriği üretebilir'}
@@ -354,13 +348,11 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                     </li>
                   )}
                   {typeof plan.features.maxTokensPerMonth !== 'undefined' && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </span>
+                      <span className="text-sm text-foreground">
                         {typeof plan.features.maxTokensPerMonth === 'number'
                           ? `Ayda ${plan.features.maxTokensPerMonth.toLocaleString('tr-TR')} token kullanabilir`
                           : 'Sınırsız token kullanabilir'}
@@ -368,13 +360,11 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                     </li>
                   )}
                   {typeof plan.features.maxWorkspaces !== 'undefined' && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </span>
+                      <span className="text-sm text-foreground">
                         {typeof plan.features.maxWorkspaces === 'number'
                           ? `${plan.features.maxWorkspaces} workspace oluşturabilir`
                           : plan.features.maxWorkspaces === 'unlimited'
@@ -384,25 +374,19 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                     </li>
                   )}
                   {plan.features.apiAccess && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
-                        RESTful API erişimi
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
                       </span>
+                      <span className="text-sm text-foreground">RESTful API erişimi</span>
                     </li>
                   )}
                   {plan.features.languages && plan.features.languages.length > 0 && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </span>
+                      <span className="text-sm text-foreground">
                         {plan.features.languages.length > 10
                           ? '50+ dil desteği'
                           : `${plan.features.languages.length}+ dil desteği`}
@@ -410,37 +394,34 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
                     </li>
                   )}
                   {plan.features.support && (
-                    <li className="flex items-start">
-                      <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-[#203eec] flex items-center justify-center mr-2.5 md:mr-3 flex-shrink-0 mt-0.5">
-                        <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
-                      </div>
-                      <span
-                        className="text-xs md:text-sm text-foreground"
-                      >
-                        {plan.features.support}
+                    <li className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+                        <Check className="h-3 w-3 text-accent-foreground" />
                       </span>
+                      <span className="text-sm text-foreground">{plan.features.support}</span>
                     </li>
                   )}
                 </ul>
-                <Link
-                  href={plan.level === 'enterprise' ? '/contact' : '/register'}
-                  onClick={() => {
-                    trackButtonClick(plan.level === 'enterprise' ? 'contact_enterprise' : `select_plan_${plan.level}`, '/pricing');
-                    trackCustomEvent('plan_selection', {
-                      plan_name: plan.name,
-                      plan_level: plan.level,
-                      plan_id: plan.id,
-                    });
-                  }}
-                  className={`w-full py-2.5 md:py-3 px-5 md:px-6 rounded-full text-sm md:text-base font-semibold transition-all text-center ${
-                    plan.popular
-                      ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]'
-                      : 'bg-secondary text-foreground hover:bg-secondary/80'
-                  } hover:rounded-2xl flex items-center justify-center gap-2`}
+                <Button
+                  asChild
+                  variant={plan.popular ? 'default' : 'secondary'}
+                  className="w-full"
                 >
-                  {plan.level === 'enterprise' ? 'İletişime Geç' : 'Başla'}
-                  <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                </Link>
+                  <Link
+                    href={plan.level === 'enterprise' ? '/contact' : '/register'}
+                    onClick={() => {
+                      trackButtonClick(plan.level === 'enterprise' ? 'contact_enterprise' : `select_plan_${plan.level}`, '/pricing');
+                      trackCustomEvent('plan_selection', {
+                        plan_name: plan.name,
+                        plan_level: plan.level,
+                        plan_id: plan.id,
+                      });
+                    }}
+                  >
+                    {plan.level === 'enterprise' ? 'İletişime Geç' : 'Başla'}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
               </motion.div>
             ))}
           </div>
@@ -450,142 +431,79 @@ export function PricingPageClient({ plans }: PricingPageClientProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="mb-12 md:mb-16 lg:mb-20"
+            className="mb-16 lg:mb-24"
           >
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-6 md:mb-8 text-center text-foreground">
+            <h2 className="mb-8 text-center text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
               Özellik Karşılaştırması
             </h2>
-            <div className="bg-card border border-border rounded-2xl md:rounded-[30px] lg:rounded-3xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <div className="min-w-[640px] sm:min-w-0">
-                  {/* Table Header with Plan Names */}
-                  <div className="grid grid-cols-4 gap-3 md:gap-4 lg:gap-6 px-3 md:px-4 lg:px-6 py-3 md:py-4 bg-secondary/50 border-b border-border">
-                    <div className="col-span-1">
-                      <span
-                        className="text-xs md:text-sm font-semibold text-foreground"
-                      >
-                        Özellik
-                      </span>
-                    </div>
-                    {sortedPlansForTable.map((plan, index) => (
-                      <div key={plan.id} className="col-span-1 text-center">
-                        <span
-                          className="text-xs md:text-sm font-semibold text-foreground"
-                        >
-                          {plan.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {featureComparison.map((category, categoryIndex) => (
-                    <div key={categoryIndex} className={categoryIndex > 0 ? 'border-t border-border' : ''}>
-                      <div className="bg-secondary/50 px-3 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4">
-                        <h3
-                          className="text-base md:text-lg font-semibold text-foreground"
-                        >
-                          {category.category}
-                        </h3>
-                      </div>
-                      <div className="divide-y divide-border">
-                        {category.features.map((feature, featureIndex) => (
-                          <div
-                            key={featureIndex}
-                            className="grid grid-cols-4 gap-3 md:gap-4 lg:gap-6 px-3 md:px-4 lg:px-6 py-3 md:py-4 hover:bg-secondary/30 transition-colors"
-                          >
-                            <div className="col-span-1 flex items-center min-w-[140px] sm:min-w-0">
-                              <span
-                                className="text-xs md:text-sm text-foreground font-medium"
-                              >
-                                {feature.name}
-                              </span>
-                            </div>
-                            <div className="col-span-1 flex items-center justify-center min-w-[100px] sm:min-w-0">
-                              {feature.plan1 === false ? (
-                                <X className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
-                              ) : typeof feature.plan1 === 'string' ? (
-                                <span
-                                  className="text-xs md:text-sm text-foreground text-center break-words"
-                                >
-                                  {feature.plan1}
-                                </span>
-                              ) : (
-                                <Check className="w-4 h-4 md:w-5 md:h-5 text-[#203eec] flex-shrink-0" />
-                              )}
-                            </div>
-                            <div className="col-span-1 flex items-center justify-center min-w-[100px] sm:min-w-0">
-                              {feature.plan2 === false ? (
-                                <X className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
-                              ) : typeof feature.plan2 === 'string' ? (
-                                <span
-                                  className="text-xs md:text-sm text-foreground text-center break-words"
-                                >
-                                  {feature.plan2}
-                                </span>
-                              ) : (
-                                <Check className="w-4 h-4 md:w-5 md:h-5 text-[#203eec] flex-shrink-0" />
-                              )}
-                            </div>
-                            <div className="col-span-1 flex items-center justify-center min-w-[100px] sm:min-w-0">
-                              {feature.plan3 === false ? (
-                                <X className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground flex-shrink-0" />
-                              ) : typeof feature.plan3 === 'string' ? (
-                                <span
-                                  className="text-xs md:text-sm text-foreground text-center break-words"
-                                >
-                                  {feature.plan3}
-                                </span>
-                              ) : (
-                                <Check className="w-4 h-4 md:w-5 md:h-5 text-[#203eec] flex-shrink-0" />
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">Özellik</TableHead>
+                  {sortedPlansForTable.map((plan) => (
+                    <TableHead key={plan.id} className="min-w-[120px] text-center">
+                      {plan.name}
+                    </TableHead>
                   ))}
-                </div>
-              </div>
-            </div>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {featureComparison.map((category) => (
+                  <React.Fragment key={category.category}>
+                    <TableRow className="hover:bg-secondary">
+                      <TableCell
+                        colSpan={sortedPlansForTable.length + 1}
+                        className="bg-secondary text-sm font-semibold"
+                      >
+                        {category.category}
+                      </TableCell>
+                    </TableRow>
+                    {category.features.map((feature) => (
+                      <TableRow key={`${category.category}-${feature.name}`}>
+                        <TableCell className="text-sm font-medium">{feature.name}</TableCell>
+                        <TableCell className="text-center">
+                          <FeatureValue value={feature.plan1} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <FeatureValue value={feature.plan2} />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <FeatureValue value={feature.plan3} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
           </motion.div>
-
 
           {/* CTA Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="relative overflow-hidden rounded-2xl md:rounded-3xl p-8 md:p-14 text-center"
-            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }}
+            className="rounded-xl border border-border bg-accent p-8 text-center md:p-14"
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[280px] rounded-full opacity-10 blur-3xl pointer-events-none"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }} />
-            <div className="relative">
-              <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#203eec' }}>
-                Hemen başlayın
-              </p>
-              <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-foreground mb-4 max-w-xl mx-auto leading-tight">
-                14 gün ücretsiz, iptal garantili
-              </h2>
-              <p className="text-sm md:text-base text-muted-foreground mb-8 max-w-lg mx-auto">
-                BlogProduce ile içerik üretimini hızlandırın. Risk almadan deneyin.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg"
-                  style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-                >
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-accent-foreground">
+              Hemen başlayın
+            </p>
+            <h2 className="mx-auto mb-4 max-w-xl text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
+              14 gün ücretsiz, iptal garantili
+            </h2>
+            <p className="mx-auto mb-8 max-w-lg text-base text-muted-foreground">
+              BlogProduce ile içerik üretimini hızlandırın. Risk almadan deneyin.
+            </p>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/register">
                   Ücretsiz Deneme Başlat
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:border-[#203eec] hover:text-[#203eec]"
-                  style={{ border: '1px solid var(--border)', color: 'var(--foreground)' }}
-                >
-                  İletişime Geç
-                </Link>
-              </div>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/contact">İletişime Geç</Link>
+              </Button>
             </div>
           </motion.div>
         </div>

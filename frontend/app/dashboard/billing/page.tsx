@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CreditCard, Calendar, Clock, CheckCircle2, XCircle, Loader2, AlertCircle, Receipt } from 'lucide-react';
+import { CreditCard, Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { TableSkeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Skeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { getBillingHistory, getCurrentPlan, type BillingHistoryItem, type UserPlanInfo } from '@/lib/api';
 import Link from 'next/link';
 
-const statusColors = {
-  active: 'bg-green-500/20 text-green-400',
-  cancelled: 'bg-gray-500/20 text-gray-400',
-  expired: 'bg-red-500/20 text-red-400',
-  pending: 'bg-yellow-500/20 text-yellow-400',
+const statusVariant: Record<string, 'success' | 'outline' | 'destructive' | 'warning'> = {
+  active: 'success',
+  cancelled: 'outline',
+  expired: 'destructive',
+  pending: 'warning',
 };
 
 const statusIcons = {
@@ -70,24 +73,24 @@ export default function BillingPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="mb-6">
-            <div className="h-8 w-64 bg-[var(--border)] animate-pulse rounded mb-2" />
-            <div className="h-4 w-96 bg-[var(--border)] animate-pulse rounded" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
           </div>
-          <div className="h-10 w-32 bg-[var(--border)] animate-pulse rounded-lg" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
         </div>
 
-        <div className="rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <div className="h-6 w-32 bg-[var(--border)] animate-pulse rounded mb-4" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-6 shadow-card">
+          <Skeleton className="mb-4 h-6 w-32" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {[...Array(3)].map((_, i) => (
               <div key={i}>
-                <div className="h-3 w-24 bg-[var(--border)] animate-pulse rounded mb-2" />
-                <div className="h-5 w-32 bg-[var(--border)] animate-pulse rounded" />
+                <Skeleton className="mb-2 h-3 w-24" />
+                <Skeleton className="h-5 w-32" />
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         <TableSkeleton rows={5} />
       </div>
@@ -97,18 +100,13 @@ export default function BillingPage() {
   if (error) {
     return (
       <div className="space-y-5">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
+        <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-destructive">
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-medium">Hata</p>
               <p>{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadBillingData}
-                className="mt-2 border-red-200 text-red-600 hover:bg-red-100"
-              >
+              <Button variant="outline" size="sm" onClick={loadBillingData} className="mt-2">
                 Tekrar Dene
               </Button>
             </div>
@@ -120,82 +118,51 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <CreditCard className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Fatura Geçmişi</h1>
-            <p className="text-sm text-muted-foreground">Abonelik ve ödeme geçmişinizi görüntüleyin</p>
-          </div>
-        </div>
-        <Link href="/dashboard/plans">
-          <Button variant="outline" className="border-[#203eec] text-[#203eec] hover:bg-[#203eec]/10 rounded-full">
-            Planları Görüntüle
-          </Button>
-        </Link>
-      </motion.div>
+      <PageHeader
+        title="Fatura Geçmişi"
+        description="Abonelik ve ödeme geçmişinizi görüntüleyin"
+        actions={
+          <Link href="/dashboard/plans">
+            <Button variant="outline">
+              Planları Görüntüle
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Current Plan Summary */}
       {currentPlanInfo && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-2xl p-6" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <CreditCard className="w-5 h-5 text-[#203eec]" />
-            <h2
-              className="text-lg font-semibold text-foreground"
-            >
+        <Card className="p-6 shadow-card">
+          <div className="mb-4 flex items-center gap-3">
+            <CreditCard className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
               Aktif Abonelik
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <p
-                className="text-xs text-muted-foreground mb-1"
-              >
+              <p className="mb-1 text-xs text-muted-foreground">
                 Plan
               </p>
-              <p
-                className="text-base font-medium text-foreground"
-              >
+              <p className="text-base font-medium text-foreground">
                 {currentPlanInfo.currentPlan?.name || 'Ücretsiz Plan'}
               </p>
             </div>
             {currentPlanInfo.subscription && (
               <>
                 <div>
-                  <p
-                    className="text-xs text-muted-foreground mb-1"
-                  >
+                  <p className="mb-1 text-xs text-muted-foreground">
                     Faturalama Dönemi
                   </p>
-                  <p
-                    className="text-base font-medium text-foreground"
-                  >
+                  <p className="text-base font-medium text-foreground">
                     {currentPlanInfo.subscription.billingPeriod === 'yearly' ? 'Yıllık' : 'Aylık'}
                   </p>
                 </div>
                 <div>
-                  <p
-                    className="text-xs text-muted-foreground mb-1"
-                  >
+                  <p className="mb-1 text-xs text-muted-foreground">
                     {currentPlanInfo.subscription.expiresAt ? 'Bitiş Tarihi' : 'Durum'}
                   </p>
-                  <p
-                    className="text-base font-medium text-foreground"
-                  >
+                  <p className="text-base font-medium text-foreground">
                     {currentPlanInfo.subscription.expiresAt
                       ? formatDate(currentPlanInfo.subscription.expiresAt)
                       : 'Zamansız'}
@@ -205,113 +172,89 @@ export default function BillingPage() {
             )}
             {!currentPlanInfo.subscription && (
               <div>
-                <p
-                  className="text-xs text-muted-foreground mb-1"
-                >
+                <p className="mb-1 text-xs text-muted-foreground">
                   Durum
                 </p>
-                <p
-                  className="text-base font-medium text-foreground"
-                >
+                <p className="text-base font-medium text-foreground">
                   Aktif - Zamansız
                 </p>
               </div>
             )}
           </div>
-        </motion.div>
+        </Card>
       )}
 
       {/* Billing History */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        <div className="p-6 border-b border-[var(--border)]">
+      <Card className="overflow-hidden shadow-card">
+        <div className="border-b border-border p-6">
           <div className="flex items-center gap-3">
-            <Receipt className="w-5 h-5 text-[#203eec]" />
-            <h2
-              className="text-lg font-semibold text-foreground"
-            >
+            <Receipt className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
               Fatura Geçmişi
             </h2>
           </div>
         </div>
         {billingHistory.length === 0 ? (
-          <div className="p-12 text-center">
-            <Receipt className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <p
-              className="text-lg text-muted-foreground mb-2"
-            >
-              Henüz fatura geçmişi bulunmuyor
-            </p>
-            <p
-              className="text-sm text-muted-foreground"
-            >
-              Plan satın aldığınızda faturalarınız burada görünecek
-            </p>
-          </div>
+          <EmptyState
+            className="rounded-none border-0"
+            icon={<Receipt />}
+            title="Henüz fatura geçmişi bulunmuyor"
+            description="Plan satın aldığınızda faturalarınız burada görünecek"
+          />
         ) : (
-          <div className="divide-y divide-[var(--border)]">
-            {billingHistory.map((item, index) => {
+          <div className="divide-y divide-border">
+            {billingHistory.map((item) => {
               const StatusIcon = statusIcons[item.status as keyof typeof statusIcons] || CheckCircle2;
-              const statusColor = statusColors[item.status as keyof typeof statusColors] || statusColors.active;
+              const variant = statusVariant[item.status] || 'success';
               const price = item.billingPeriod === 'yearly' ? item.plan.price.yearly : item.plan.price.monthly;
 
               return (
-                <motion.div
+                <div
                   key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="p-6 hover:bg-[var(--secondary)] transition-colors"
+                  className="p-6 transition-colors hover:bg-secondary"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3
-                          className="text-base font-medium text-foreground"
-                        >
+                      <div className="mb-2 flex items-center gap-3">
+                        <h3 className="text-base font-medium text-foreground">
                           {item.plan.name}
                         </h3>
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor}`}>
-                          <StatusIcon className="w-3 h-3" />
+                        <Badge variant={variant}>
+                          <StatusIcon className="h-3 w-3" />
                           {item.status === 'active' ? 'Aktif' : item.status === 'cancelled' ? 'İptal Edildi' : item.status === 'expired' ? 'Süresi Doldu' : 'Beklemede'}
-                        </span>
+                        </Badge>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 gap-4 text-sm text-muted-foreground md:grid-cols-3">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="h-4 w-4" />
                           <span>Başlangıç: {formatDate(item.startedAt)}</span>
                         </div>
                         {item.expiresAt && (
                           <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
+                            <Clock className="h-4 w-4" />
                             <span>Bitiş: {formatDate(item.expiresAt)}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2">
-                          <Receipt className="w-4 h-4" />
+                          <Receipt className="h-4 w-4" />
                           <span>
                             {item.billingPeriod === 'yearly' ? 'Yıllık' : 'Aylık'} - {formatPrice(price)}
                           </span>
                         </div>
                       </div>
                       {item.cancelledAt && (
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="mt-2 text-xs text-muted-foreground">
                           İptal tarihi: {formatDate(item.cancelledAt)}
                         </p>
                       )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         )}
-      </motion.div>
+      </Card>
     </div>
   );
 }
-

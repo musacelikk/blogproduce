@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtStrategy, requireJwtSecret } from './strategies/jwt.strategy';
 import { User } from '../entities/user.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { ApiKey } from '../entities/api-key.entity';
@@ -28,7 +28,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key',
+        secret: requireJwtSecret(configService),
         signOptions: { expiresIn: '24h' },
       }),
       inject: [ConfigService],

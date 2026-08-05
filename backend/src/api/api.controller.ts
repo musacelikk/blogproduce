@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   Headers,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiService } from './api.service';
 import { GenerateApiDto } from './dto/generate-api.dto';
@@ -35,8 +36,15 @@ export class ApiController {
     @CurrentOrganization() organization: Organization,
     @CurrentProject() project: Project,
     @Body() dto: GenerateApiDto,
+    // Express parses 'posts:generate' as the literal 'posts' plus a param, so a
+    // typo'd URL like /api/v1/postsX would otherwise start (and bill) a generation.
+    @Param('generate') action: string,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
+    if (action !== ':generate') {
+      throw new NotFoundException('Cannot POST this path');
+    }
+
     const result = await this.apiService.generate(organization, project, dto, idempotencyKey);
     return {
       success: true,
@@ -115,7 +123,9 @@ export class ApiController {
     };
   }
 
-  @Post('posts/:id:publish')
+  // NOTE: Express 4 cannot parse two adjacent params ('posts/:id:publish' captures a
+  // single character into :id), so the publish action uses a path segment.
+  @Post('posts/:id/publish')
   @HttpCode(HttpStatus.OK)
   async publishPost(
     @CurrentOrganization() organization: Organization,
@@ -138,12 +148,13 @@ export class ApiController {
     @CurrentOrganization() organization: Organization,
     @CurrentProject() project: Project,
     @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    const posts = await this.apiService.getPublishedPosts(organization, project, limitNum);
+    const result = await this.apiService.getPublishedPosts(organization, project, limitNum, cursor);
     return {
       success: true,
-      data: posts,
+      data: result,
     };
   }
 

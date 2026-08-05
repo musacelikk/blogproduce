@@ -14,6 +14,9 @@ import { CreateFAQDto } from './dto/create-faq.dto';
 import { UpdateFAQDto } from './dto/update-faq.dto';
 import { FAQType } from '../entities/faq.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../entities/user.entity';
 import { CurrentUser } from '../auth/decorators/user.decorator';
 import { User } from '../entities/user.entity';
 
@@ -33,7 +36,8 @@ export class FAQController {
 
   // Admin endpoints (auth required)
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async getAllFAQs(@CurrentUser() user: User, @Query('type') type?: FAQType) {
     const faqs = await this.faqService.findAllAdmin(type);
     return {
@@ -43,7 +47,8 @@ export class FAQController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async getFAQById(@CurrentUser() user: User, @Param('id') id: string) {
     const faq = await this.faqService.findOne(id);
     return {
@@ -53,7 +58,8 @@ export class FAQController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async createFAQ(@CurrentUser() user: User, @Body() createFAQDto: CreateFAQDto) {
     const faq = await this.faqService.create(createFAQDto);
     return {
@@ -63,7 +69,8 @@ export class FAQController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async updateFAQ(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -77,7 +84,8 @@ export class FAQController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async deleteFAQ(@CurrentUser() user: User, @Param('id') id: string) {
     await this.faqService.delete(id);
     return {

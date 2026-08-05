@@ -30,6 +30,10 @@ export default function AdminLoginLayout({
     };
   }, []);
 
-  return <div data-admin-page>{children}</div>;
+  return (
+    <div data-admin-page className="min-h-screen bg-background">
+      {children}
+    </div>
+  );
 }
 

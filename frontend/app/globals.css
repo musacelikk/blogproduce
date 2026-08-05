@@ -20,49 +20,138 @@ body:has([data-login-page]) footer {
   display: none !important;
 }
 
+/*
+ * Design tokens.
+ *
+ * Each token is defined once as an "R G B" channel triplet (`--x-rgb`), and the
+ * plain `--x` var is derived from it. Tailwind maps its color scale to
+ * `rgb(var(--x-rgb) / <alpha-value>)`, which is what makes opacity modifiers
+ * (`bg-primary/10`, `bg-foreground/40`) actually work — Tailwind v3 cannot apply
+ * an alpha channel to a var that holds a literal hex, and silently drops the
+ * modifier instead. Components that consume `var(--x)` directly keep working.
+ */
 :root {
   /* Base */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background-rgb: 248 250 252;
+  --foreground-rgb: 15 23 42;
 
   /* Card / Surface */
-  --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-rgb: 255 255 255;
+  --card-foreground-rgb: 15 23 42;
 
   /* Popover */
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-rgb: 255 255 255;
+  --popover-foreground-rgb: 15 23 42;
 
   /* Primary */
-  --primary: #203eec;
-  --primary-foreground: #ffffff;
+  --primary-rgb: 32 62 236;
+  --primary-foreground-rgb: 255 255 255;
 
   /* Secondary / Muted */
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --secondary-rgb: 241 245 249;
+  --secondary-foreground-rgb: 15 23 42;
+  --muted-rgb: 241 245 249;
+  --muted-foreground-rgb: 100 116 139;
 
   /* Accent */
-  --accent: #eff6ff;
-  --accent-foreground: #203eec;
+  --accent-rgb: 239 246 255;
+  --accent-foreground-rgb: 32 62 236;
 
-  /* Destructive */
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
+  /* Status */
+  --destructive-rgb: 220 38 38;
+  --destructive-foreground-rgb: 255 255 255;
+  --destructive-muted-rgb: 254 242 242;
+  --success-rgb: 5 150 105;
+  --success-foreground-rgb: 255 255 255;
+  --success-muted-rgb: 236 253 245;
+  --warning-rgb: 217 119 6;
+  --warning-foreground-rgb: 255 255 255;
+  --warning-muted-rgb: 255 251 235;
+  --info-rgb: 2 132 199;
+  --info-foreground-rgb: 255 255 255;
+  --info-muted-rgb: 240 249 255;
 
   /* Borders / Inputs */
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #203eec;
-
-  /* Radius */
-  --radius: 1rem;
+  --border-rgb: 226 232 240;
+  --input-rgb: 226 232 240;
+  --ring-rgb: 32 62 236;
 
   /* Brand */
-  --brand-primary: #203eec;
-  --brand-secondary: #00d4ff;
-  --brand-primary-dark: #1a32cc;
+  --brand-primary-rgb: 32 62 236;
+  --brand-secondary-rgb: 0 212 255;
+  --brand-primary-dark-rgb: 26 50 204;
+
+  /* Data-viz / stat accents — categorical series, each with a lighter
+     companion used as the second stop of stat-tile gradients. */
+  --chart-1-rgb: 32 62 236;
+  --chart-1-soft-rgb: 129 140 248;
+  --chart-2-rgb: 16 185 129;
+  --chart-2-soft-rgb: 52 211 153;
+  --chart-3-rgb: 245 158 11;
+  --chart-3-soft-rgb: 251 191 36;
+  --chart-4-rgb: 139 92 246;
+  --chart-4-soft-rgb: 167 139 250;
+  --chart-5-rgb: 59 130 246;
+  --chart-5-soft-rgb: 96 165 250;
+
+  /* Derived literal colors — for `var(--x)` consumers and arbitrary values. */
+  --background: rgb(var(--background-rgb));
+  --foreground: rgb(var(--foreground-rgb));
+  --card: rgb(var(--card-rgb));
+  --card-foreground: rgb(var(--card-foreground-rgb));
+  --popover: rgb(var(--popover-rgb));
+  --popover-foreground: rgb(var(--popover-foreground-rgb));
+  --primary: rgb(var(--primary-rgb));
+  --primary-foreground: rgb(var(--primary-foreground-rgb));
+  --secondary: rgb(var(--secondary-rgb));
+  --secondary-foreground: rgb(var(--secondary-foreground-rgb));
+  --muted: rgb(var(--muted-rgb));
+  --muted-foreground: rgb(var(--muted-foreground-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-foreground: rgb(var(--accent-foreground-rgb));
+  --destructive: rgb(var(--destructive-rgb));
+  --destructive-foreground: rgb(var(--destructive-foreground-rgb));
+  --destructive-muted: rgb(var(--destructive-muted-rgb));
+  --success: rgb(var(--success-rgb));
+  --success-foreground: rgb(var(--success-foreground-rgb));
+  --success-muted: rgb(var(--success-muted-rgb));
+  --warning: rgb(var(--warning-rgb));
+  --warning-foreground: rgb(var(--warning-foreground-rgb));
+  --warning-muted: rgb(var(--warning-muted-rgb));
+  --info: rgb(var(--info-rgb));
+  --info-foreground: rgb(var(--info-foreground-rgb));
+  --info-muted: rgb(var(--info-muted-rgb));
+  --border: rgb(var(--border-rgb));
+  --input: rgb(var(--input-rgb));
+  --ring: rgb(var(--ring-rgb));
+  --brand-primary: rgb(var(--brand-primary-rgb));
+  --brand-secondary: rgb(var(--brand-secondary-rgb));
+  --brand-primary-dark: rgb(var(--brand-primary-dark-rgb));
+  --chart-1: rgb(var(--chart-1-rgb));
+  --chart-1-soft: rgb(var(--chart-1-soft-rgb));
+  --chart-2: rgb(var(--chart-2-rgb));
+  --chart-2-soft: rgb(var(--chart-2-soft-rgb));
+  --chart-3: rgb(var(--chart-3-rgb));
+  --chart-3-soft: rgb(var(--chart-3-soft-rgb));
+  --chart-4: rgb(var(--chart-4-rgb));
+  --chart-4-soft: rgb(var(--chart-4-soft-rgb));
+  --chart-5: rgb(var(--chart-5-rgb));
+  --chart-5-soft: rgb(var(--chart-5-soft-rgb));
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  --gradient-chart-1: linear-gradient(135deg, var(--chart-1), var(--chart-1-soft));
+  --gradient-chart-2: linear-gradient(135deg, var(--chart-2), var(--chart-2-soft));
+  --gradient-chart-3: linear-gradient(135deg, var(--chart-3), var(--chart-3-soft));
+  --gradient-chart-4: linear-gradient(135deg, var(--chart-4), var(--chart-4-soft));
+  --gradient-chart-5: linear-gradient(135deg, var(--chart-5), var(--chart-5-soft));
+
+  /* Typography — many components reference these; alias them to the loaded font */
+  --font-sans: var(--font-inter-tight), 'Inter', system-ui, sans-serif;
+  --font-display: var(--font-inter-tight), 'Inter', system-ui, sans-serif;
 }
 
 @layer base {
@@ -82,7 +171,11 @@ body:has([data-login-page]) footer {
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     letter-spacing: -0.025em;
-    line-height: 1;
+    line-height: 1.2;
+  }
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
   }
 }
 
@@ -482,47 +575,28 @@ body:has([data-login-page]) footer {
   color: #1a32cc;
 }
 
-/* Dashboard refresh - homepage-inspired surfaces */
+/* Dashboard surfaces */
 .dashboard-shell {
   position: relative;
-  background:
-    radial-gradient(800px 400px at 10% -10%, rgba(32, 62, 236, 0.12), transparent 60%),
-    radial-gradient(700px 360px at 90% -5%, rgba(0, 212, 255, 0.12), transparent 60%),
-    #f7f9ff;
+  background: var(--background);
 }
 
 .dashboard-main {
   position: relative;
 }
 
-.dashboard-main::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.06) 100%);
-}
-
 .dashboard-main-inner {
   position: relative;
-  z-index: 1;
 }
 
+/* Brand accent banner — the only gradient surface in the dashboard. */
 .dashboard-hero {
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid transparent;
   background: linear-gradient(120deg, #203eec 0%, #2f6dff 45%, #00c2ff 100%);
-  box-shadow: 0 20px 40px rgba(32, 62, 236, 0.22);
 }
 
 .dashboard-footer {
-  border-top: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(10px);
-}
-
-[data-dashboard-page] .rounded-2xl,
-[data-dashboard-page] .rounded-xl {
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  border-top: 1px solid var(--border);
+  background: var(--card);
 }
 

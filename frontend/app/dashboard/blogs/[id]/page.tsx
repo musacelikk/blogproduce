@@ -34,17 +34,23 @@ import {
   BellOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { getPost, updatePost, publishPost, unpublishPost, deletePost, schedulePost, unschedulePost, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
+import { sanitizeHtml } from '@/lib/sanitize';
 
-const statusColors = {
-  draft: 'bg-gray-100 text-gray-700',
-  queued: 'bg-yellow-100 text-yellow-700',
-  generating: 'bg-blue-100 text-blue-700',
-  generated: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
-  published: 'bg-purple-100 text-purple-700',
-  scheduled: 'bg-orange-100 text-orange-700',
+const statusVariants: Record<string, BadgeProps['variant']> = {
+  draft: 'outline',
+  queued: 'warning',
+  generating: 'info',
+  generated: 'success',
+  failed: 'destructive',
+  published: 'primary',
+  scheduled: 'default',
 };
 
 const statusLabels: Record<string, string> = {
@@ -424,9 +430,9 @@ export default function BlogDetailPage() {
 
   const formatMarkdown = (content: string): string => {
     return content
-      .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-[#202020]">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#202020]">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-[#202020]">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-foreground">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-foreground">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-foreground">$1</h1>')
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
       .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
       .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2">• $1</li>')
@@ -572,8 +578,8 @@ export default function BlogDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 mx-auto mb-2 text-[#203eec] animate-spin" />
-          <p className="text-sm text-[#666666]">Yükleniyor...</p>
+          <Loader2 className="w-8 h-8 mx-auto mb-2 text-accent-foreground animate-spin" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -587,18 +593,18 @@ export default function BlogDetailPage() {
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="text-[#666666] hover:text-[#202020]"
+            
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Geri
           </Button>
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
             <div>
-              <h3 className="text-sm font-medium text-red-800 mb-1">Hata</h3>
-              <p className="text-xs text-red-600">{error || 'Blog bulunamadı'}</p>
+              <h3 className="mb-1 text-sm font-semibold text-foreground">Hata</h3>
+              <p className="text-xs text-destructive">{error || 'Blog bulunamadı'}</p>
             </div>
           </div>
         </div>
@@ -607,47 +613,26 @@ export default function BlogDetailPage() {
   }
 
   const StatusIcon = statusIcons[post.status as keyof typeof statusIcons] || FileText;
-  const statusColor = statusColors[post.status as keyof typeof statusColors] || statusColors.draft;
+  const statusVariant = statusVariants[post.status] ?? 'outline';
   const isGenerating = post.status === 'generating' || post.status === 'queued';
   const selectedRevision = post.revisions?.[selectedRevisionIndex];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard/blogs')}
-            className="text-[#666666] hover:text-[#202020]"
-          >
-            <ArrowLeft className="w-4 h-4 sm:mr-2" />
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/blogs')}>
+            <ArrowLeft />
             <span className="hidden sm:inline">Geri</span>
           </Button>
-          <h1
-            className="text-xl sm:text-2xl font-medium text-[#202020]"
-            style={{
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-            }}
-          >
-            Blog Detayı
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Blog Detayı</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium ${statusColor}`}>
-            {isGenerating ? (
-              <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
-            ) : (
-              <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            )}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Badge variant={statusVariant} className="py-1">
+            <StatusIcon className={`h-3.5 w-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
             <span>{statusLabels[post.status] ?? post.status}</span>
-          </span>
+          </Badge>
 
           {/* Publish / Unpublish / Publish Now */}
           {!isGenerating && (post.status === 'draft' || post.status === 'generated' || post.status === 'published' || post.status === 'scheduled') && (
@@ -656,27 +641,22 @@ export default function BlogDetailPage() {
               size="sm"
               onClick={handleTogglePublish}
               disabled={togglingPublish}
-              className={
-                post.status === 'published'
-                  ? 'text-orange-600 border-orange-200 hover:bg-orange-50 text-xs'
-                  : 'text-green-600 border-green-200 hover:bg-green-50 text-xs'
-              }
             >
               {togglingPublish ? (
-                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
+                <Loader2 className="animate-spin" />
               ) : post.status === 'published' ? (
                 <>
-                  <FileX className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <FileX />
                   <span className="hidden sm:inline">Taslağa Al</span>
                 </>
               ) : post.status === 'scheduled' ? (
                 <>
-                  <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Globe />
                   <span className="hidden sm:inline">Şimdi Yayınla</span>
                 </>
               ) : (
                 <>
-                  <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Globe />
                   <span className="hidden sm:inline">Yayınla</span>
                 </>
               )}
@@ -691,13 +671,12 @@ export default function BlogDetailPage() {
               size="sm"
               onClick={handlePublishSelectedRevision}
               disabled={togglingPublish}
-              className="text-green-600 border-green-200 hover:bg-green-50 text-xs"
             >
               {togglingPublish ? (
-                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
+                <Loader2 className="animate-spin" />
               ) : (
                 <>
-                  <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+                  <Globe />
                   <span className="hidden sm:inline">Bu Versiyonu Yayınla</span>
                 </>
               )}
@@ -713,69 +692,45 @@ export default function BlogDetailPage() {
                 setScheduleDateTime(getMinDateTime());
                 setShowScheduleModal(true);
               }}
-              className="text-orange-600 border-orange-200 hover:bg-orange-50 text-xs"
             >
-              <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
+              <Bell />
               <span className="hidden sm:inline">Zamanla</span>
             </Button>
           )}
 
           {/* Unschedule button */}
           {post.status === 'scheduled' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUnschedule}
-              disabled={unscheduling}
-              className="text-gray-600 border-gray-200 hover:bg-gray-50 text-xs"
-            >
-              {unscheduling ? (
-                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
-              ) : (
-                <BellOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-              )}
+            <Button variant="outline" size="sm" onClick={handleUnschedule} disabled={unscheduling}>
+              {unscheduling ? <Loader2 className="animate-spin" /> : <BellOff />}
               <span className="hidden sm:inline">İptal Et</span>
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
-          >
-            {deleting ? (
-              <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
-            ) : (
-              <FileX className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-            )}
+          <Button variant="outline" size="sm" onClick={handleDelete} disabled={deleting} className="text-destructive hover:bg-[var(--destructive-muted)] hover:text-destructive">
+            {deleting ? <Loader2 className="animate-spin" /> : <FileX />}
             <span className="hidden sm:inline">Sil</span>
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Post Info Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-white rounded-xl border border-[#e5e5e5] p-4 sm:p-6"
+        className="bg-card rounded-xl border border-border p-4 sm:p-6"
       >
         <h2
-          className="text-lg sm:text-xl font-medium text-[#202020] mb-4"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
+          className="text-lg sm:text-xl font-medium text-foreground mb-4"
         >
           {post.title}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-          <div className="flex items-center gap-2 text-sm text-[#666666]">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Hash className="w-4 h-4" />
             <span>ID: {post.id}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-[#666666]">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>
               Oluşturulma: {new Date(post.createdAt).toLocaleDateString('tr-TR', {
@@ -787,7 +742,7 @@ export default function BlogDetailPage() {
               })}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-[#666666]">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>
               Güncellenme: {new Date(post.updatedAt).toLocaleDateString('tr-TR', {
@@ -800,13 +755,13 @@ export default function BlogDetailPage() {
             </span>
           </div>
           {post.workspace && (
-            <div className="flex items-center gap-2 text-sm text-[#666666]">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Building2 className="w-4 h-4" />
               <span>Workspace: {post.workspace.name}</span>
             </div>
           )}
           {post.slug && (
-            <div className="flex items-center gap-2 text-sm text-[#666666]">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Globe className="w-4 h-4" />
               {isEditing ? (
                 <div className="flex-1">
@@ -814,7 +769,7 @@ export default function BlogDetailPage() {
                     type="text"
                     value={editedSlug}
                     onChange={(e) => setEditedSlug(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-white rounded-lg border border-[#e5e5e5] text-[#202020] text-sm focus:border-[#203eec] focus:outline-none"
+                    className="w-full px-3 py-1.5 bg-card rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     placeholder="Slug"
                   />
                 </div>
@@ -824,13 +779,13 @@ export default function BlogDetailPage() {
             </div>
           )}
           {post.language && (
-            <div className="flex items-center gap-2 text-sm text-[#666666]">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Globe className="w-4 h-4" />
               <span>Dil: {post.language}</span>
             </div>
           )}
           {post.publishedAt && (
-            <div className="flex items-center gap-2 text-sm text-purple-600">
+            <div className="flex items-center gap-2 text-sm text-success">
               <Globe className="w-4 h-4" />
               <span>
                 Yayın tarihi: {new Date(post.publishedAt).toLocaleDateString('tr-TR', {
@@ -841,7 +796,7 @@ export default function BlogDetailPage() {
             </div>
           )}
           {post.scheduledAt && post.status === 'scheduled' && (
-            <div className="flex items-center gap-2 text-sm text-orange-600 col-span-full">
+            <div className="col-span-full flex items-center gap-2 text-sm text-warning">
               <Bell className="w-4 h-4" />
               <span>
                 Zamanlanmış yayın: {new Date(post.scheduledAt).toLocaleDateString('tr-TR', {
@@ -854,7 +809,7 @@ export default function BlogDetailPage() {
                   setScheduleDateTime(new Date(post.scheduledAt!).toISOString().slice(0, 16));
                   setShowScheduleModal(true);
                 }}
-                className="ml-1 text-orange-500 underline text-xs hover:text-orange-700"
+                className="ml-1 text-xs font-medium underline transition-colors hover:text-foreground"
               >
                 Değiştir
               </button>
@@ -864,11 +819,11 @@ export default function BlogDetailPage() {
 
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Tag className="w-4 h-4 text-[#666666]" />
+            <Tag className="w-4 h-4 text-muted-foreground" />
             {post.tags.map((tag) => (
               <span
                 key={tag.id}
-                className="px-2.5 py-1 rounded-full text-xs bg-[#f5f5f5] text-[#666666]"
+                className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground"
               >
                 {tag.name}
               </span>
@@ -878,14 +833,14 @@ export default function BlogDetailPage() {
 
         {post.excerpt && (
           <div className="mb-4">
-            <p className="text-sm text-[#666666] leading-relaxed">{post.excerpt}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{post.excerpt}</p>
           </div>
         )}
 
         {/* Cover Image */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-[#202020]">
+            <label className="text-sm font-medium text-foreground">
               Kapak Resmi
             </label>
             <Button
@@ -899,7 +854,7 @@ export default function BlogDetailPage() {
             </Button>
           </div>
           {post.coverImageUrl ? (
-            <div className="relative w-full h-48 sm:h-64 rounded-lg overflow-hidden border border-[#e5e5e5]">
+            <div className="relative w-full h-48 sm:h-64 rounded-lg overflow-hidden border border-border">
               <Image
                 src={post.coverImageUrl}
                 alt={post.title}
@@ -912,7 +867,7 @@ export default function BlogDetailPage() {
                 }}
               />
               {post.coverImageCreditJson && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-xs">
+                <div className="absolute bottom-0 left-0 right-0 bg-foreground/70 text-background p-2 text-xs">
                   <a
                     href={post.coverImageCreditJson.photographerUrl}
                     target="_blank"
@@ -925,10 +880,10 @@ export default function BlogDetailPage() {
               )}
             </div>
           ) : (
-            <div className="w-full h-48 sm:h-64 rounded-lg border-2 border-dashed border-[#e5e5e5] flex items-center justify-center bg-[#fafafa]">
+            <div className="w-full h-48 sm:h-64 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary">
               <div className="text-center">
-                <ImageIcon className="w-12 h-12 text-[#999999] mx-auto mb-2" />
-                <p className="text-sm text-[#666666]">Kapak resmi yok</p>
+                <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Kapak resmi yok</p>
               </div>
             </div>
           )}
@@ -941,14 +896,11 @@ export default function BlogDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl border border-[#e5e5e5] p-6"
+          className="bg-card rounded-xl border border-border p-6"
         >
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2 mb-4">
             <h3
-              className="text-base sm:text-lg font-medium text-[#202020]"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
+              className="text-base sm:text-lg font-medium text-foreground"
             >
               Versiyonlar ({post.revisions.length})
             </h3>
@@ -959,7 +911,7 @@ export default function BlogDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsEditing(true)}
-                    className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-xs flex-1 sm:flex-initial"
+                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
                   >
                     <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                     <span className="hidden sm:inline">Düzenle</span>
@@ -969,7 +921,7 @@ export default function BlogDetailPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopyContentAs('json')}
-                      className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-[10px]"
+                      className="text-muted-foreground border-border text-[10px]"
                     >
                       <Copy className="w-3 h-3 sm:mr-1" />
                       <span className="hidden sm:inline">JSON</span>
@@ -979,7 +931,7 @@ export default function BlogDetailPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopyContentAs('markdown')}
-                      className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-[10px]"
+                      className="text-muted-foreground border-border text-[10px]"
                     >
                       <Copy className="w-3 h-3 sm:mr-1" />
                       <span className="hidden sm:inline">Markdown</span>
@@ -989,7 +941,7 @@ export default function BlogDetailPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopyContentAs('html')}
-                      className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-[10px]"
+                      className="text-muted-foreground border-border text-[10px]"
                     >
                       <Copy className="w-3 h-3 sm:mr-1" />
                       <span className="hidden sm:inline">HTML</span>
@@ -1000,7 +952,7 @@ export default function BlogDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={handleDownloadContent}
-                    className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-xs flex-1 sm:flex-initial"
+                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
                   >
                     <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                     <span className="hidden sm:inline">İndir</span>
@@ -1014,7 +966,7 @@ export default function BlogDetailPage() {
                     size="sm"
                     onClick={handleSave}
                     disabled={saving}
-                    className="text-white bg-[#203eec] border-[#203eec] hover:bg-[#1a32cc] text-xs flex-1 sm:flex-initial"
+                    className="text-xs flex-1 sm:flex-initial"
                   >
                     {saving ? (
                       <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
@@ -1031,7 +983,7 @@ export default function BlogDetailPage() {
                       setEditedContent(selectedRevision?.content || '');
                       setEditedSlug(post?.slug || '');
                     }}
-                    className="text-[#666666] border-[#e5e5e5] hover:border-[#203eec] hover:text-[#203eec] text-xs flex-1 sm:flex-initial"
+                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
                   >
                     <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
                     <span className="hidden sm:inline">İptal</span>
@@ -1047,7 +999,7 @@ export default function BlogDetailPage() {
               <select
                 value={selectedRevisionIndex}
                 onChange={(e) => setSelectedRevisionIndex(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5] text-[#202020] text-sm focus:border-[#203eec] focus:outline-none"
+                className="w-full px-3 py-2 bg-secondary rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {post.revisions.map((revision, index) => {
                   const isPublishedVersion = post.publishedRevisionId === revision.id;
@@ -1074,8 +1026,8 @@ export default function BlogDetailPage() {
 
           {/* Selected Version Info */}
           {selectedRevision && !isEditing && (
-            <div className="mb-4 p-3 sm:p-4 bg-[#f5f5f5] rounded-lg border border-[#e5e5e5]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-[#666666]">
+            <div className="mb-4 p-3 sm:p-4 bg-secondary rounded-lg border border-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-muted-foreground">
                 {selectedRevision.contentFormat && (
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
@@ -1110,30 +1062,27 @@ export default function BlogDetailPage() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#202020] mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       İçerik Düzenle
                     </label>
                     <textarea
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
-                      className="w-full h-[300px] sm:h-[500px] px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-lg border border-[#e5e5e5] text-[#202020] text-sm focus:border-[#203eec] focus:outline-none font-mono"
+                      className="w-full h-[300px] sm:h-[500px] px-3 sm:px-4 py-2 sm:py-3 bg-card rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-mono"
                       placeholder="Blog içeriğinizi buraya yazın..."
                     />
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="bg-white rounded-lg border border-[#e5e5e5] p-4 sm:p-6 lg:p-8 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
+                  <div className="bg-card rounded-lg border border-border p-4 sm:p-6 lg:p-8 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
                     <div
-                      className="prose prose-lg max-w-none text-[#202020] leading-relaxed"
-                      style={{
-                        fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                      }}
+                      className="prose prose-lg max-w-none text-foreground leading-relaxed"
                       dangerouslySetInnerHTML={{
-                        __html: renderContentHtml(
+                        __html: sanitizeHtml(renderContentHtml(
                           selectedRevision.content,
                           (selectedRevision.contentFormat as string | undefined) || undefined,
-                        ),
+                        ),)
                       }}
                     />
                   </div>
@@ -1147,28 +1096,28 @@ export default function BlogDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl border border-[#e5e5e5] p-6"
+          className="bg-card rounded-xl border border-border p-6"
         >
           <div className="text-center py-8">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-[#999999]" />
-            <p className="text-sm text-[#666666]">Henüz versiyon bulunmuyor</p>
+            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Henüz versiyon bulunmuyor</p>
           </div>
         </motion.div>
       )}
 
       {/* Preview Modal */}
       {isPreviewOpen && post && selectedRevision && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-2 sm:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl border border-[#e5e5e5] w-full max-w-4xl h-[95vh] sm:h-[90vh] flex flex-col overflow-hidden"
+            className="bg-card rounded-xl border border-border w-full max-w-4xl h-[95vh] sm:h-[90vh] flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#e5e5e5] flex-shrink-0">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div className="flex-1 min-w-0 pr-2">
-                <h2 className="text-base sm:text-lg font-medium text-[#202020] mb-1 truncate">{post.title}</h2>
-                <p className="text-xs text-[#666666]">
+                <h2 className="text-base sm:text-lg font-medium text-foreground mb-1 truncate">{post.title}</h2>
+                <p className="text-xs text-muted-foreground">
                   Versiyon: {selectedRevision.version || 1}
                 </p>
               </div>
@@ -1176,20 +1125,20 @@ export default function BlogDetailPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsPreviewOpen(false)}
-                className="text-[#666666] hover:bg-[#f5f5f5] flex-shrink-0"
+                className="text-muted-foreground hover:bg-secondary shrink-0"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-white min-h-0">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-card min-h-0">
               {(() => {
                 if (!selectedRevision.content) {
                   return (
                     <div className="text-center py-12">
-                      <FileText className="w-12 h-12 mx-auto mb-4 text-[#999999]" />
-                      <p className="text-[#666666]">İçerik bulunamadı</p>
+                      <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">İçerik bulunamadı</p>
                     </div>
                   );
                 }
@@ -1202,9 +1151,9 @@ export default function BlogDetailPage() {
                   if (!md || typeof md !== 'string') return '';
                   
                   let html = md
-                    .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-[#202020]">$1</h3>')
-                    .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#202020]">$1</h2>')
-                    .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-[#202020]">$1</h1>')
+                    .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-foreground">$1</h3>')
+                    .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-foreground">$1</h2>')
+                    .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-foreground">$1</h1>')
                     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
                     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
                     .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2">• $1</li>')
@@ -1217,7 +1166,7 @@ export default function BlogDetailPage() {
                     if (trimmed.startsWith('<h') || trimmed.startsWith('<li')) {
                       return trimmed;
                     }
-                    return `<p class="mb-4 text-[#666666] leading-relaxed">${trimmed.replace(/\n/g, '<br />')}</p>`;
+                    return `<p class="mb-4 text-muted-foreground leading-relaxed">${trimmed.replace(/\n/g, '<br />')}</p>`;
                   }).join('');
                   
                   return html;
@@ -1229,7 +1178,7 @@ export default function BlogDetailPage() {
                     let htmlContent = '';
 
                     if (parsed.title) {
-                      htmlContent += `<h1 class="text-4xl font-bold mb-6 text-[#202020]">${parsed.title}</h1>`;
+                      htmlContent += `<h1 class="text-4xl font-bold mb-6 text-foreground">${parsed.title}</h1>`;
                     }
 
                     let mainContent = '';
@@ -1249,7 +1198,7 @@ export default function BlogDetailPage() {
                     if (parsed.sections && Array.isArray(parsed.sections)) {
                       parsed.sections.forEach((section: any) => {
                         if (section.title) {
-                          mainContent += `<h2 class="text-3xl font-semibold mt-8 mb-4 text-[#202020]">${section.title}</h2>`;
+                          mainContent += `<h2 class="text-3xl font-semibold mt-8 mb-4 text-foreground">${section.title}</h2>`;
                         }
                         if (section.content && typeof section.content === 'string') {
                           mainContent += formatMarkdownToHtml(section.content);
@@ -1282,10 +1231,7 @@ export default function BlogDetailPage() {
                       return (
                         <div
                           className="prose prose-lg max-w-none"
-                          dangerouslySetInnerHTML={{ __html: htmlContent }}
-                          style={{
-                            color: '#202020',
-                          }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
                         />
                       );
                     }
@@ -1296,20 +1242,14 @@ export default function BlogDetailPage() {
                   return (
                     <div
                       className="prose prose-lg max-w-none"
-                      dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(content) }}
-                      style={{
-                        color: '#202020',
-                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatMarkdownToHtml(content)) }}
                     />
                   );
                 } else if (format === 'html') {
                   return (
                     <div 
                       className="prose prose-lg max-w-none"
-                      dangerouslySetInnerHTML={{ __html: content }}
-                      style={{
-                        color: '#202020',
-                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
                     />
                   );
                 } else {
@@ -1317,10 +1257,7 @@ export default function BlogDetailPage() {
                   return (
                     <div 
                       className="prose prose-lg max-w-none"
-                      dangerouslySetInnerHTML={{ __html: formatMarkdownToHtml(content) }}
-                      style={{
-                        color: '#202020',
-                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatMarkdownToHtml(content)) }}
                     />
                   );
                 }
@@ -1332,17 +1269,17 @@ export default function BlogDetailPage() {
 
       {/* Image Search Modal */}
       {showImageSearch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/60 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl border border-[#e5e5e5] w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-card rounded-xl border border-border w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#e5e5e5] flex-shrink-0">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div>
-                <h2 className="text-lg font-medium text-[#202020] mb-1">Kapak Resmi Seç</h2>
-                <p className="text-xs text-[#666666]">Unsplash&apos;tan resim arayın</p>
+                <h2 className="text-lg font-medium text-foreground mb-1">Kapak Resmi Seç</h2>
+                <p className="text-xs text-muted-foreground">Unsplash&apos;tan resim arayın</p>
               </div>
               <Button
                 variant="ghost"
@@ -1353,14 +1290,14 @@ export default function BlogDetailPage() {
                   setUnsplashPhotos([]);
                   setImageSearchQuery('');
                 }}
-                className="text-[#666666] hover:bg-[#f5f5f5]"
+                className="text-muted-foreground hover:bg-secondary"
               >
                 <X className="w-5 h-5" />
               </Button>
             </div>
 
             {/* Search */}
-            <div className="p-4 sm:p-6 border-b border-[#e5e5e5] flex-shrink-0">
+            <div className="p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1372,14 +1309,13 @@ export default function BlogDetailPage() {
                     }
                   }}
                   placeholder="Arama terimi (örn: technology, business)"
-                  className="flex-1 px-3 py-2 border border-[#e5e5e5] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
+                  className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
                 <Button
                   type="button"
                   onClick={() => handleImageSearch(1)}
                   disabled={isSearchingImages || !imageSearchQuery.trim()}
-                  className="bg-[#203eec] hover:bg-[#1a32cc] text-white px-4"
-                >
+                                  >
                   {isSearchingImages ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
@@ -1394,7 +1330,7 @@ export default function BlogDetailPage() {
               {unsplashPhotos.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-[#666666]">
+                    <p className="text-xs text-muted-foreground">
                       {unsplashPhotos.length} resim bulundu
                     </p>
                     <Button
@@ -1417,8 +1353,8 @@ export default function BlogDetailPage() {
                         onClick={() => setSelectedImage(photo)}
                         className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all group ${
                           selectedImage?.id === photo.id
-                            ? 'border-[#203eec] ring-2 ring-[#203eec]/30 scale-105'
-                            : 'border-transparent hover:border-[#203eec]/50'
+                            ? 'border-primary'
+                            : 'border-transparent hover:border-primary/40'
                         }`}
                       >
                         <Image
@@ -1433,36 +1369,36 @@ export default function BlogDetailPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute top-1.5 left-1.5 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute top-1.5 left-1.5 bg-black/60 hover:bg-foreground/60 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           title="Resmi Unsplash'ta incele"
                         >
                           <ExternalLink className="w-3 h-3" />
                         </a>
                         {selectedImage?.id === photo.id && (
-                          <div className="absolute inset-0 bg-[#203eec]/20 flex items-center justify-center">
-                            <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                          <div className="absolute inset-0 bg-primary/30 flex items-center justify-center">
+                            <Check className="w-6 h-6 text-primary-foreground" />
                           </div>
                         )}
                       </button>
                     ))}
                   </div>
                   {selectedImage && (
-                    <p className="text-xs text-[#666666]">
+                    <p className="text-xs text-muted-foreground">
                       Seçili: {selectedImage.user.name} tarafından
                     </p>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-[#999999]" />
-                  <p className="text-sm text-[#666666]">Resim aramak için yukarıdaki arama kutusunu kullanın</p>
+                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Resim aramak için yukarıdaki arama kutusunu kullanın</p>
                 </div>
               )}
             </div>
 
             {/* Footer */}
             {selectedImage && (
-              <div className="flex items-center justify-end gap-2 p-4 sm:p-6 border-t border-[#e5e5e5] flex-shrink-0">
+              <div className="flex items-center justify-end gap-2 p-4 sm:p-6 border-t border-border flex-shrink-0">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1477,8 +1413,7 @@ export default function BlogDetailPage() {
                 <Button
                   onClick={handleUpdateImage}
                   disabled={updatingImage}
-                  className="bg-[#203eec] hover:bg-[#1a32cc] text-white"
-                >
+                                  >
                   {updatingImage ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1501,27 +1436,27 @@ export default function BlogDetailPage() {
       {showScheduleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/45"
+            className="absolute inset-0 bg-foreground/60"
             onClick={() => !scheduling && setShowScheduleModal(false)}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative w-full max-w-sm rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-2xl"
+            className="relative w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-elevated"
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-100">
-                  <Bell className="w-4 h-4 text-orange-600" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-warning-muted">
+                  <Bell className="w-4 h-4 text-warning" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-[#202020]">Yayını Zamanla</h3>
-                  <p className="text-xs text-[#666666]">Belirtilen tarihte otomatik yayınlanır</p>
+                  <h3 className="text-base font-semibold text-foreground">Yayını Zamanla</h3>
+                  <p className="text-xs text-muted-foreground">Belirtilen tarihte otomatik yayınlanır</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-[#666666]"
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1529,7 +1464,7 @@ export default function BlogDetailPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-[#202020] mb-2 block">
+                <label className="text-sm font-medium text-foreground mb-2 block">
                   Yayın Tarihi ve Saati
                 </label>
                 <input
@@ -1537,9 +1472,9 @@ export default function BlogDetailPage() {
                   value={scheduleDateTime}
                   min={getMinDateTime()}
                   onChange={(e) => setScheduleDateTime(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-[#e5e5e5] rounded-xl text-sm text-[#202020] focus:border-[#203eec] focus:outline-none focus:ring-2 focus:ring-[#203eec]/10"
+                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
-                <p className="mt-1.5 text-[11px] text-[#999999]">
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
                   Seçilen tarih ve saatte blog otomatik olarak yayınlanacaktır.
                 </p>
               </div>
@@ -1551,7 +1486,7 @@ export default function BlogDetailPage() {
                 size="sm"
                 onClick={() => setShowScheduleModal(false)}
                 disabled={scheduling}
-                className="border-[#e5e5e5] text-[#666666]"
+                
               >
                 İptal
               </Button>
@@ -1559,7 +1494,7 @@ export default function BlogDetailPage() {
                 size="sm"
                 onClick={handleSchedule}
                 disabled={scheduling || !scheduleDateTime}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                
               >
                 {scheduling ? (
                   <>

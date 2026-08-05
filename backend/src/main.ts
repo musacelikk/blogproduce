@@ -42,6 +42,40 @@ async function bootstrap() {
     .filter((origin) => origin.length > 0);
   const allowAllOrigins = configService.get<string>('ALLOW_ALL_ORIGINS', 'false') === 'true';
 
+  // Public read-only endpoints are meant to be fetched from customers' own sites,
+  // so they get permissive CORS (without credentials) before the stricter policy below.
+  app.use((req: any, res: any, next: any) => {
+    if (req.path?.startsWith('/api/v1/public/')) {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.header('Access-Control-Max-Age', '86400');
+      if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
+      }
+    }
+    next();
+  });
+
+  // Exact-host matching. `origin.includes('example.com')` would also approve
+  // https://example.com.attacker.tld, which with credentials:true is a real bypass.
+  const trustedRootDomains = ['blogproduce.com'];
+  if (isProduction) {
+    trustedRootDomains.push('railway.app', 'vercel.app');
+  }
+
+  const isTrustedHost = (origin: string): boolean => {
+    let hostname: string;
+    try {
+      hostname = new URL(origin).hostname.toLowerCase();
+    } catch {
+      return false;
+    }
+    return trustedRootDomains.some(
+      (root) => hostname === root || hostname.endsWith(`.${root}`),
+    );
+  };
+
   app.enableCors({
     origin: (origin, callback) => {
       // Origin yoksa (Postman, mobile app vb.) izin ver
@@ -49,46 +83,40 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Production'da tüm origin'lere izin verilmesi isteniyorsa
       if (allowAllOrigins) {
         return callback(null, true);
       }
 
-      // Railway domain pattern kontrolü (railway.app veya railway.app subdomain'leri)
-      if (isProduction && origin.includes('railway.app')) {
-        return callback(null, true);
-      }
-
-      // Vercel domain pattern kontrolü
-      if (isProduction && origin.includes('vercel.app')) {
-        return callback(null, true);
-      }
-
-      // BlogProduce domain pattern kontrolü (blogproduce.com ve subdomain'leri)
-      if (origin.includes('blogproduce.com')) {
+      if (isTrustedHost(origin)) {
         return callback(null, true);
       }
 
       // Normalize origin (remove trailing slash for comparison)
       const normalizedOrigin = origin.replace(/\/$/, '');
-      
-      // İzin verilen origin'ler listesinde var mı kontrol et
+
       if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // Development'ta daha esnek, production'da sıkı
-        if (!isProduction) {
-          console.warn(`⚠️  CORS: Unallowed origin: ${origin}`);
-          callback(null, true); // Development'ta izin ver
-        } else {
-          console.error(`❌ CORS: Not allowed origin: ${origin}`);
-          callback(new Error('Not allowed by CORS'));
-        }
+        return callback(null, true);
       }
+
+      if (!isProduction) {
+        console.warn(`⚠️  CORS: Unallowed origin: ${origin}`);
+        return callback(null, true); // Development'ta esnek
+      }
+
+      console.error(`❌ CORS: Not allowed origin: ${origin}`);
+      // Deny by omitting CORS headers rather than throwing — an Error here
+      // surfaces to the client as a 500 instead of a clean browser-side block.
+      callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Request-ID',
+      'X-API-Key',
+      'Idempotency-Key',
+    ],
     exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining'],
   });
 

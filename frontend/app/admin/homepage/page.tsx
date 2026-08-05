@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Plus,
   Edit,
@@ -15,7 +14,6 @@ import {
   Search,
   CheckCircle2,
   XCircle,
-  Eye,
   Calendar,
   User,
   ArrowUp,
@@ -27,11 +25,25 @@ import {
   Link,
   ExternalLink,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   getAdminFAQs,
-  getAdminFAQById,
   createAdminFAQ,
   updateAdminFAQ,
   deleteAdminFAQ,
@@ -149,11 +161,11 @@ export default function AdminHomepagePage() {
     try {
       setPostsLoading(true);
       // Tüm blogları pagination ile çek (status filter yok, hepsini göster)
-      const result = await getAdminPosts({ 
-        page: currentPage, 
-        limit: postsPerPage 
+      const result = await getAdminPosts({
+        page: currentPage,
+        limit: postsPerPage
       });
-      
+
       // Check if result has pagination (new format) or is array (old format)
       if (result && typeof result === 'object' && 'data' in result && 'pagination' in result) {
         setPosts(result.data);
@@ -210,7 +222,7 @@ export default function AdminHomepagePage() {
     try {
       setSavingPosts(true);
       setError(null);
-      
+
       const postsToSave = [...homepagePosts];
       const saved = await saveHomepagePostsToApi(postsToSave);
       setHomepagePosts(saved);
@@ -230,8 +242,8 @@ export default function AdminHomepagePage() {
     }
   };
 
-  const filteredFAQs = selectedType === 'all' 
-    ? faqs 
+  const filteredFAQs = selectedType === 'all'
+    ? faqs
     : faqs.filter(faq => faq.type === selectedType);
 
   const filteredPosts = posts.filter((post) =>
@@ -251,7 +263,7 @@ export default function AdminHomepagePage() {
     setHomepagePosts((prev) => {
       const index = prev.indexOf(postId);
       if (index === -1) return prev;
-      
+
       const newPosts = [...prev];
       if (direction === 'up' && index > 0) {
         [newPosts[index - 1], newPosts[index]] = [newPosts[index], newPosts[index - 1]];
@@ -344,142 +356,96 @@ export default function AdminHomepagePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 mx-auto mb-3 text-[#3B82F6] animate-spin" />
-          <p className="text-xs text-[#ebebeb]">Yükleniyor...</p>
+          <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1
-          className="text-lg font-medium text-white mb-1"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          Anasayfa Yönetimi
-        </h1>
-        <p
-          className="text-xs text-[#ebebeb]"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          Ana sayfada görünecek blogları seçin ve SSS yönetimi yapın
-        </p>
-      </motion.div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        title="Anasayfa Yönetimi"
+        description="Ana sayfada görünecek blogları seçin ve SSS yönetimi yapın"
+      />
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
-            </div>
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div>
+            <p className="text-sm font-medium text-destructive">Hata</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{error}</p>
           </div>
         </div>
       )}
 
       {/* Homepage Posts Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-6"
-      >
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2
-              className="text-base font-medium text-white mb-1"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
+            <h2 className="text-base font-semibold text-foreground">
               Ana Sayfada Görünecek Bloglar
             </h2>
-            <p className="text-xs text-[#ebebeb]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Sadece seçtiğiniz bloglar ana sayfada görünür. Hiç seçmezseniz ana sayfada blog bölümü boş olur. (Maks. 10 blog)
             </p>
           </div>
-          <Button
-            onClick={saveHomepagePosts}
-            disabled={savingPosts}
-            className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm"
-          >
+          <Button onClick={saveHomepagePosts} disabled={savingPosts} className="shrink-0">
             {savingPosts ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Kaydediliyor...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="h-4 w-4" />
                 Kaydet
               </>
             )}
           </Button>
         </div>
 
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ebebeb]" />
-            <input
-              type="text"
-              placeholder="Blog ara..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none"
-            />
-          </div>
+        <div className="relative mb-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Blog ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {postsLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-[#ebebeb] opacity-50" />
-            <p className="text-[#ebebeb]">Blog bulunamadı</p>
-          </div>
+          <EmptyState icon={<FileText />} title="Blog bulunamadı" />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
+          <div className="grid max-h-[600px] grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => {
               const postIdStr = String(post.id);
               const isSelected = homepagePosts.includes(postIdStr);
               const selectedIndex = isSelected ? homepagePosts.indexOf(postIdStr) + 1 : null;
-              const latestRevision = post.revisions && post.revisions.length > 0 
-                ? post.revisions[post.revisions.length - 1] 
-                : null;
-              
+
               return (
-                <motion.div
+                <div
                   key={post.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`relative border-2 rounded-lg p-4 transition-all ${
-                    isSelected
-                      ? 'border-[#3B82F6] bg-[#3B82F6]/20 ring-2 ring-[#3B82F6]/50'
-                      : 'border-[#333333] bg-[#0f0f0f]'
-                  }`}
+                  className={cn(
+                    'relative rounded-xl border p-4 transition-colors',
+                    isSelected ? 'border-primary bg-accent' : 'border-border bg-card',
+                  )}
                 >
                   {isSelected && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1">
-                      <div className="w-6 h-6 bg-[#3B82F6] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <div className="absolute right-2 top-2 flex items-center gap-1">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                         {selectedIndex}
-                      </div>
-                      <CheckCircle2 className="w-5 h-5 text-[#3B82F6]" />
+                      </span>
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
                     </div>
                   )}
                   <div className="flex items-start gap-3">
@@ -489,38 +455,34 @@ export default function AdminHomepagePage() {
                         alt={post.title}
                         width={64}
                         height={64}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
                       />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-white mb-1 line-clamp-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="line-clamp-2 text-sm font-semibold text-foreground">
                         {post.title}
                       </h3>
                       {post.excerpt && (
-                        <p className="text-xs text-[#ebebeb] line-clamp-2 mb-2">
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                           {post.excerpt}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 text-xs text-[#ebebeb]">
-                        <span className={`px-2 py-0.5 rounded ${
-                          post.status === 'published' 
-                            ? 'bg-purple-500/20 text-purple-400' 
-                            : 'bg-green-500/20 text-green-400'
-                        }`}>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant={post.status === 'published' ? 'primary' : 'success'}>
                           {post.status === 'published' ? 'Yayınlandı' : 'Hazır'}
-                        </span>
+                        </Badge>
                         {post.author && (
-                          <div className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
+                          <span className="flex min-w-0 items-center gap-1">
+                            <User className="h-3 w-3 shrink-0" />
                             <span className="truncate">{post.author.name || post.author.email}</span>
-                          </div>
+                          </span>
                         )}
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{new Date(post.createdAt).toLocaleDateString('tr-TR')}</span>
-                        </div>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 shrink-0" />
+                          {new Date(post.createdAt).toLocaleDateString('tr-TR')}
+                        </span>
                       </div>
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -529,9 +491,9 @@ export default function AdminHomepagePage() {
                             setPreviewPost(post);
                             setIsPreviewOpen(true);
                           }}
-                          className="text-xs border-[#333333] text-[#ebebeb] hover:bg-[#0f0f0f]"
+                          className="text-xs"
                         >
-                          <EyeIcon className="w-3 h-3 mr-1" />
+                          <EyeIcon className="h-3 w-3" />
                           Önizleme
                         </Button>
                         {isSelected ? (
@@ -542,9 +504,9 @@ export default function AdminHomepagePage() {
                               e.stopPropagation();
                               handleTogglePost(post.id);
                             }}
-                            className="text-xs border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                            className="text-xs text-destructive"
                           >
-                            <XCircle className="w-3 h-3 mr-1" />
+                            <XCircle className="h-3 w-3" />
                             Ana Sayfadan Kaldır
                           </Button>
                         ) : (
@@ -559,16 +521,16 @@ export default function AdminHomepagePage() {
                               }
                               handleTogglePost(post.id);
                             }}
-                            className="text-xs border-green-500/50 text-green-400 hover:bg-green-500/10"
+                            className="text-xs text-success"
                           >
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            <CheckCircle2 className="h-3 w-3" />
                             Ana Sayfaya Ekle
                           </Button>
                         )}
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -576,19 +538,18 @@ export default function AdminHomepagePage() {
 
         {/* Pagination */}
         {!postsLoading && totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6 pt-6 border-t border-[#333333]">
-            <div className="text-xs text-[#ebebeb]">
+          <div className="mt-6 flex flex-col items-start justify-between gap-4 border-t border-border pt-6 sm:flex-row sm:items-center">
+            <p className="text-sm text-muted-foreground">
               Toplam {totalPosts} blog - Sayfa {currentPage} / {totalPages}
-            </div>
+            </p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1 || postsLoading}
-                className="border-[#333333] text-[#ebebeb] hover:bg-[#0f0f0f] disabled:opacity-50"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="h-4 w-4" />
                 Önceki
               </Button>
               <div className="flex items-center gap-1">
@@ -603,18 +564,13 @@ export default function AdminHomepagePage() {
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <Button
                       key={pageNum}
                       variant={currentPage === pageNum ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={
-                        currentPage === pageNum
-                          ? 'bg-[#3B82F6] text-white'
-                          : 'border-[#333333] text-[#ebebeb] hover:bg-[#0f0f0f]'
-                      }
                     >
                       {pageNum}
                     </Button>
@@ -626,42 +582,37 @@ export default function AdminHomepagePage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages || postsLoading}
-                className="border-[#333333] text-[#ebebeb] hover:bg-[#0f0f0f] disabled:opacity-50"
               >
                 Sonraki
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
 
         {homepagePosts.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-[#333333]">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-medium text-white mb-1">
-                  Seçili Bloglar ({homepagePosts.length} / 10)
-                </h3>
-                <p className="text-xs text-[#ebebeb]">
-                  Blog sırasını değiştirmek için yukarı/aşağı butonlarını kullanın
-                </p>
-              </div>
+          <div className="mt-6 border-t border-border pt-6">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Seçili Bloglar ({homepagePosts.length} / 10)
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Blog sırasını değiştirmek için yukarı/aşağı butonlarını kullanın
+              </p>
             </div>
             <div className="space-y-2">
               {homepagePosts.map((postId, index) => {
                 const post = posts.find((p) => p.id === postId);
                 if (!post) return null;
-                
+
                 return (
-                  <motion.div
+                  <div
                     key={postId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col gap-2 p-3 bg-[#0f0f0f] border border-[#333333] rounded-lg hover:border-[#3B82F6]/50 transition-colors"
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-secondary p-3"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 text-[#ebebeb] text-xs font-medium">
-                        <GripVertical className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <GripVertical className="h-4 w-4" />
                         <span className="w-6 text-center">{index + 1}</span>
                       </div>
                       {post.coverImageUrl && (
@@ -670,47 +621,49 @@ export default function AdminHomepagePage() {
                           alt={post.title}
                           width={40}
                           height={40}
-                          className="w-10 h-10 rounded object-cover flex-shrink-0"
+                          className="h-10 w-10 shrink-0 rounded object-cover"
                         />
                       )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-white truncate">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate text-sm font-medium text-foreground">
                           {post.title}
                         </h4>
-                        <p className="text-xs text-[#ebebeb] truncate">
+                        <p className="truncate text-xs text-muted-foreground">
                           {post.status === 'published' ? 'Yayınlandı' : 'Hazır'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMovePost(postId, 'up');
                           }}
                           disabled={index === 0}
-                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
+                          className="h-8 w-8"
                           title="Yukarı taşı"
+                          aria-label="Yukarı taşı"
                         >
-                          <ArrowUp className="w-3.5 h-3.5" />
+                          <ArrowUp className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMovePost(postId, 'down');
                           }}
                           disabled={index === homepagePosts.length - 1}
-                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white disabled:opacity-30"
+                          className="h-8 w-8"
                           title="Aşağı taşı"
+                          aria-label="Aşağı taşı"
                         >
-                          <ArrowDown className="w-3.5 h-3.5" />
+                          <ArrowDown className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingReferenceId(editingReferenceId === postId ? null : postId);
@@ -721,22 +674,27 @@ export default function AdminHomepagePage() {
                               }));
                             }
                           }}
-                          className={`h-7 w-7 p-0 hover:text-blue-300 hover:bg-blue-500/10 ${editingReferenceId === postId ? 'text-blue-400' : 'text-[#ebebeb]'}`}
+                          className={cn(
+                            'h-8 w-8',
+                            editingReferenceId === postId && 'text-accent-foreground',
+                          )}
                           title="Site linki düzenle"
+                          aria-label="Site linki düzenle"
                         >
-                          <Link className="w-3.5 h-3.5" />
+                          <Link className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleTogglePost(postId);
                           }}
-                          className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          className="h-8 w-8 text-destructive"
                           title="Kaldır"
+                          aria-label="Kaldır"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -745,8 +703,8 @@ export default function AdminHomepagePage() {
                     {editingReferenceId === postId && (
                       <div className="flex items-center gap-2 pl-12">
                         <div className="relative flex-1">
-                          <ExternalLink className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#ebebeb]" />
-                          <input
+                          <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <Input
                             type="url"
                             placeholder="https://siteadresi.com/blog/makale-adi"
                             value={referenceUrls[postId] ?? ''}
@@ -758,28 +716,29 @@ export default function AdminHomepagePage() {
                               if (e.key === 'Escape') setEditingReferenceId(null);
                             }}
                             autoFocus
-                            className="w-full pl-8 pr-3 py-1.5 bg-[#1a1a1a] rounded border border-[#444444] text-white text-xs placeholder:text-[#666666] focus:border-[#3B82F6] focus:outline-none"
+                            className="h-9 bg-card pl-9 text-sm"
                           />
                         </div>
                         <Button
                           size="sm"
                           onClick={() => handleSaveReferenceUrl(postId)}
                           disabled={savingReferenceId === postId}
-                          className="h-7 px-3 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs"
+                          aria-label="Site linkini kaydet"
                         >
                           {savingReferenceId === postId ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <Save className="w-3 h-3" />
+                            <Save className="h-3.5 w-3.5" />
                           )}
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => setEditingReferenceId(null)}
-                          className="h-7 w-7 p-0 text-[#ebebeb] hover:text-white"
+                          className="h-9 w-9"
+                          aria-label="Düzenlemeyi iptal et"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     )}
@@ -787,235 +746,215 @@ export default function AdminHomepagePage() {
                     {/* Show saved URL */}
                     {editingReferenceId !== postId && (post as Post & { canonicalUrl?: string | null }).canonicalUrl && (
                       <div className="flex items-center gap-1.5 pl-12">
-                        <ExternalLink className="w-3 h-3 text-[#3B82F6] flex-shrink-0" />
+                        <ExternalLink className="h-3 w-3 shrink-0 text-accent-foreground" />
                         <a
                           href={(post as Post & { canonicalUrl?: string | null }).canonicalUrl!}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-[#3B82F6] hover:text-blue-300 truncate"
+                          className="truncate text-xs text-accent-foreground hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {(post as Post & { canonicalUrl?: string | null }).canonicalUrl}
                         </a>
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* FAQs Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-6"
-      >
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2
-              className="text-base font-medium text-white mb-1"
-              style={{
-                fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              }}
-            >
-              SSS Yönetimi
-            </h2>
-            <p className="text-xs text-[#ebebeb]">
+            <h2 className="text-base font-semibold text-foreground">SSS Yönetimi</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               Ana sayfa ve SSS sayfası için sık sorulan soruları yönetin
             </p>
           </div>
-          <Button
-            onClick={() => handleOpenFaqModal()}
-            className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => handleOpenFaqModal()} className="shrink-0">
+            <Plus className="h-4 w-4" />
             Yeni SSS
           </Button>
         </div>
 
         {/* FAQ Filters */}
-        <div className="flex gap-2 mb-4">
-          <button
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            variant={selectedType === 'all' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setSelectedType('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedType === 'all'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-[#0f0f0f] text-[#ebebeb] hover:text-white border border-[#333333]'
-            }`}
           >
             Tümü ({faqs.length})
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={selectedType === 'homepage' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setSelectedType('homepage')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedType === 'homepage'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-[#0f0f0f] text-[#ebebeb] hover:text-white border border-[#333333]'
-            }`}
           >
             Ana Sayfa ({faqs.filter(f => f.type === 'homepage').length})
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={selectedType === 'page' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setSelectedType('page')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedType === 'page'
-                ? 'bg-[#3B82F6] text-white'
-                : 'bg-[#0f0f0f] text-[#ebebeb] hover:text-white border border-[#333333]'
-            }`}
           >
             SSS Sayfası ({faqs.filter(f => f.type === 'page').length})
-          </button>
+          </Button>
         </div>
 
         {/* FAQ List */}
         {faqsLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : filteredFAQs.length === 0 ? (
-          <div className="text-center py-12">
-            <HelpCircle className="w-12 h-12 mx-auto mb-4 text-[#ebebeb] opacity-50" />
-            <p className="text-[#ebebeb] mb-2">Henüz SSS eklenmemiş</p>
-            <button
-              onClick={() => handleOpenFaqModal()}
-              className="text-[#3B82F6] hover:text-[#2563EB] text-sm font-medium"
-            >
-              İlk SSS&apos;yi ekleyin
-            </button>
-          </div>
+          <EmptyState
+            icon={<HelpCircle />}
+            title="Henüz SSS eklenmemiş"
+            action={
+              <Button onClick={() => handleOpenFaqModal()}>
+                <Plus className="h-4 w-4" />
+                İlk SSS&apos;yi ekleyin
+              </Button>
+            }
+          />
         ) : (
-          <div className="space-y-3">
-            {filteredFAQs
-              .sort((a, b) => a.order - b.order)
-              .map((faq) => (
-                <motion.div
-                  key={faq.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-[#0f0f0f] border border-[#333333] rounded-lg p-4 hover:border-[#444444] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-1 bg-[#3B82F6]/20 text-[#3B82F6] text-xs font-medium rounded">
-                          {faq.type === 'homepage' ? 'Ana Sayfa' : 'SSS Sayfası'}
-                        </span>
-                        <span className="px-2 py-1 bg-[#333333] text-[#ebebeb] text-xs rounded">
-                          Sıra: {faq.order}
-                        </span>
-                        {faq.active ? (
-                          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
-                            Aktif
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
-                            Pasif
-                          </span>
-                        )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Soru</TableHead>
+                <TableHead className="w-36">Tip</TableHead>
+                <TableHead className="w-20">Sıra</TableHead>
+                <TableHead className="w-28">Durum</TableHead>
+                <TableHead className="w-40 text-right">İşlemler</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredFAQs
+                .sort((a, b) => a.order - b.order)
+                .map((faq) => (
+                  <TableRow key={faq.id}>
+                    <TableCell className="max-w-[420px]">
+                      <p className="font-medium text-foreground">{faq.question}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{faq.answer}</p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="default">
+                        {faq.type === 'homepage' ? 'Ana Sayfa' : 'SSS Sayfası'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{faq.order}</TableCell>
+                    <TableCell>
+                      <Badge variant={faq.active ? 'success' : 'destructive'}>
+                        {faq.active ? 'Aktif' : 'Pasif'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleToggleFaqActive(faq)}
+                          className={faq.active ? 'h-9 w-9 text-success' : 'h-9 w-9 text-destructive'}
+                          title={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
+                          aria-label={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
+                        >
+                          {faq.active ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleOpenFaqModal(faq)}
+                          className="h-9 w-9"
+                          title="Düzenle"
+                          aria-label="Düzenle"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteFaq(faq.id)}
+                          className="h-9 w-9 text-destructive"
+                          title="Sil"
+                          aria-label="Sil"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <h3 className="text-base font-medium text-white mb-2">{faq.question}</h3>
-                      <p className="text-sm text-[#ebebeb] line-clamp-2">{faq.answer}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => handleToggleFaqActive(faq)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          faq.active
-                            ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                            : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                        }`}
-                        title={faq.active ? 'Pasif Yap' : 'Aktif Yap'}
-                      >
-                        {faq.active ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleOpenFaqModal(faq)}
-                        className="p-2 rounded-lg bg-[#333333] hover:bg-[#3B82F6] text-[#ebebeb] hover:text-white transition-colors"
-                        title="Düzenle"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFaq(faq.id)}
-                        className="p-2 rounded-lg bg-[#333333] hover:bg-red-500/20 text-[#ebebeb] hover:text-red-400 transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-          </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
         )}
-      </motion.div>
+      </div>
 
       {/* FAQ Modal */}
       {isFaqModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1a1a1a] border border-[#333333] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card shadow-elevated">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-medium text-white">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">
                   {editingFaq ? 'SSS Düzenle' : 'Yeni SSS'}
                 </h2>
-                <button
-                  onClick={handleCloseFaqModal}
-                  className="p-2 rounded-lg hover:bg-[#333333] text-[#ebebeb] hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <Button variant="ghost" size="icon" onClick={handleCloseFaqModal} aria-label="Kapat">
+                  <X className="h-5 w-5" />
+                </Button>
               </div>
 
               <form onSubmit={handleSubmitFaq} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="homepage-faq-question" className="mb-2 block text-sm font-medium text-foreground">
                     Soru *
                   </label>
-                  <input
+                  <Input
+                    id="homepage-faq-question"
                     type="text"
                     value={faqFormData.question}
                     onChange={(e) => setFaqFormData({ ...faqFormData, question: e.target.value })}
                     required
-                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                     placeholder="Soru metnini girin"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">
+                  <label htmlFor="homepage-faq-answer" className="mb-2 block text-sm font-medium text-foreground">
                     Cevap *
                   </label>
-                  <textarea
+                  <Textarea
+                    id="homepage-faq-answer"
                     value={faqFormData.answer}
                     onChange={(e) => setFaqFormData({ ...faqFormData, answer: e.target.value })}
                     required
                     rows={6}
-                    className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent resize-none"
                     placeholder="Cevap metnini girin"
+                    className="resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="homepage-faq-type" className="mb-2 block text-sm font-medium text-foreground">
                       Tip *
                     </label>
                     <select
+                      id="homepage-faq-type"
                       value={faqFormData.type}
                       onChange={(e) =>
                         setFaqFormData({ ...faqFormData, type: e.target.value as 'homepage' | 'page' })
                       }
                       required
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
+                      className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       <option value="homepage">Ana Sayfa</option>
                       <option value="page">SSS Sayfası</option>
@@ -1023,10 +962,11 @@ export default function AdminHomepagePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
+                    <label htmlFor="homepage-faq-order" className="mb-2 block text-sm font-medium text-foreground">
                       Sıra *
                     </label>
-                    <input
+                    <Input
+                      id="homepage-faq-order"
                       type="number"
                       value={faqFormData.order}
                       onChange={(e) =>
@@ -1034,7 +974,6 @@ export default function AdminHomepagePage() {
                       }
                       required
                       min="0"
-                      className="w-full px-4 py-2 bg-[#0f0f0f] border border-[#333333] rounded-lg text-white placeholder:text-[#ebebeb] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -1045,64 +984,54 @@ export default function AdminHomepagePage() {
                     id="active"
                     checked={faqFormData.active}
                     onChange={(e) => setFaqFormData({ ...faqFormData, active: e.target.checked })}
-                    className="w-4 h-4 rounded border-[#333333] text-[#3B82F6] focus:ring-[#3B82F6] bg-[#0f0f0f]"
+                    className="h-4 w-4 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <label htmlFor="active" className="text-sm text-white cursor-pointer">
+                  <label htmlFor="active" className="cursor-pointer text-sm text-foreground">
                     Aktif
                   </label>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#333333]">
-                  <button
-                    type="button"
-                    onClick={handleCloseFaqModal}
-                    className="px-4 py-2 bg-[#333333] hover:bg-[#444444] text-white rounded-lg transition-colors text-sm font-medium"
-                  >
+                <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
+                  <Button type="button" variant="outline" onClick={handleCloseFaqModal}>
                     İptal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Kaydediliyor...
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4" />
+                        <Save className="h-4 w-4" />
                         {editingFaq ? 'Güncelle' : 'Oluştur'}
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Preview Modal */}
       {isPreviewOpen && previewPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1a1a1a] rounded-xl border border-[#333333] w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
+          <div className="flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[#333333] flex-shrink-0">
-              <div>
-                <h2 className="text-lg font-medium text-white mb-1">{previewPost.title}</h2>
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border p-6">
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                  {previewPost.title}
+                </h2>
                 {(() => {
-                  const latestRevision = previewPost.revisions && previewPost.revisions.length > 0 
-                    ? previewPost.revisions[previewPost.revisions.length - 1] 
+                  const latestRevision = previewPost.revisions && previewPost.revisions.length > 0
+                    ? previewPost.revisions[previewPost.revisions.length - 1]
                     : null;
                   return (
-                    <p className="text-xs text-[#ebebeb]">
-                      Format: {latestRevision?.contentFormat || 'md'} | 
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Format: {latestRevision?.contentFormat || 'md'} |
                       Versiyon: {latestRevision?.version || 1}
                     </p>
                   );
@@ -1110,31 +1039,26 @@ export default function AdminHomepagePage() {
               </div>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => {
                   setIsPreviewOpen(false);
                   setPreviewPost(null);
                 }}
-                className="text-[#ebebeb] hover:bg-[#0f0f0f]"
+                aria-label="Önizlemeyi kapat"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
               {(() => {
-                const latestRevision = previewPost.revisions && previewPost.revisions.length > 0 
-                  ? previewPost.revisions[previewPost.revisions.length - 1] 
+                const latestRevision = previewPost.revisions && previewPost.revisions.length > 0
+                  ? previewPost.revisions[previewPost.revisions.length - 1]
                   : null;
-                
+
                 if (!latestRevision || !latestRevision.content) {
-                  return (
-                    <div className="text-center py-12">
-                      <FileText className="w-12 h-12 mx-auto mb-4 text-[#ebebeb] opacity-50" />
-                      <p className="text-[#ebebeb]">İçerik bulunamadı</p>
-                    </div>
-                  );
+                  return <EmptyState icon={<FileText />} title="İçerik bulunamadı" />;
                 }
 
                 const format = latestRevision.contentFormat?.toLowerCase() || 'md';
@@ -1143,16 +1067,16 @@ export default function AdminHomepagePage() {
                 // Helper function to format markdown to HTML
                 const formatMarkdown = (md: string): string => {
                   if (!md || typeof md !== 'string') return '';
-                  
+
                   let html = md
-                    .replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold mt-6 mb-3 text-white">$1</h3>')
-                    .replace(/^## (.*$)/gim, '<h2 class="text-3xl font-semibold mt-8 mb-4 text-white">$1</h2>')
-                    .replace(/^# (.*$)/gim, '<h1 class="text-4xl font-bold mt-8 mb-4 text-white">$1</h1>')
+                    .replace(/^### (.*$)/gim, '<h3 class="mt-6 mb-3 text-xl font-semibold text-foreground">$1</h3>')
+                    .replace(/^## (.*$)/gim, '<h2 class="mt-8 mb-4 text-2xl font-semibold text-foreground">$1</h2>')
+                    .replace(/^# (.*$)/gim, '<h1 class="mt-8 mb-4 text-3xl font-semibold text-foreground">$1</h1>')
                     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
                     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
                     .replace(/^- (.*$)/gim, '<li class="ml-4 mb-2">• $1</li>')
                     .replace(/^\d+\. (.*$)/gim, '<li class="ml-4 mb-2">$1</li>');
-                  
+
                   // Paragrafları düzgün ayır
                   const paragraphs = html.split(/\n\n+/).filter(p => p.trim());
                   html = paragraphs.map(p => {
@@ -1160,9 +1084,9 @@ export default function AdminHomepagePage() {
                     if (trimmed.startsWith('<h') || trimmed.startsWith('<li')) {
                       return trimmed;
                     }
-                    return `<p class="mb-4 text-[#ebebeb] leading-relaxed">${trimmed.replace(/\n/g, '<br />')}</p>`;
+                    return `<p class="mb-4 leading-relaxed text-muted-foreground">${trimmed.replace(/\n/g, '<br />')}</p>`;
                   }).join('');
-                  
+
                   return html;
                 };
 
@@ -1171,35 +1095,35 @@ export default function AdminHomepagePage() {
                     const parsed = typeof content === 'string' ? JSON.parse(content) : content;
                     // JSON içeriğini blog formatında göster
                     let htmlContent = '';
-                    
+
                     // Başlık
                     if (parsed.title) {
-                      htmlContent += `<h1 class="text-4xl font-bold mb-6 text-white">${parsed.title}</h1>`;
+                      htmlContent += `<h1 class="mb-6 text-3xl font-semibold text-foreground">${parsed.title}</h1>`;
                     }
-                    
+
                     // İçerik alanlarını sırayla kontrol et
                     let mainContent = '';
-                    
+
                     // 1. intro varsa
                     if (parsed.intro && typeof parsed.intro === 'string') {
                       mainContent += formatMarkdown(parsed.intro);
                     }
-                    
+
                     // 2. body varsa
                     if (parsed.body && typeof parsed.body === 'string') {
                       mainContent += formatMarkdown(parsed.body);
                     }
-                    
+
                     // 3. content varsa
                     if (parsed.content && typeof parsed.content === 'string') {
                       mainContent += formatMarkdown(parsed.content);
                     }
-                    
+
                     // 4. sections varsa
                     if (parsed.sections && Array.isArray(parsed.sections)) {
                       parsed.sections.forEach((section: any) => {
                         if (section.title) {
-                          mainContent += `<h2 class="text-3xl font-semibold mt-8 mb-4 text-white">${section.title}</h2>`;
+                          mainContent += `<h2 class="mt-8 mb-4 text-2xl font-semibold text-foreground">${section.title}</h2>`;
                         }
                         if (section.content && typeof section.content === 'string') {
                           mainContent += formatMarkdown(section.content);
@@ -1215,7 +1139,7 @@ export default function AdminHomepagePage() {
                         }
                       });
                     }
-                    
+
                     // 5. paragraphs varsa
                     if (parsed.paragraphs && Array.isArray(parsed.paragraphs)) {
                       parsed.paragraphs.forEach((para: string) => {
@@ -1224,63 +1148,50 @@ export default function AdminHomepagePage() {
                         }
                       });
                     }
-                    
+
                     if (mainContent) {
-                      htmlContent += `<div class="prose prose-invert max-w-none">${mainContent}</div>`;
+                      htmlContent += `<div class="max-w-none">${mainContent}</div>`;
                     } else {
                       // Hiçbir içerik bulunamadıysa JSON'u formatlanmış olarak göster
-                      htmlContent += `<pre class="bg-[#0f0f0f] rounded-lg p-4 overflow-x-auto text-sm text-[#ebebeb] border border-[#333333]"><code>${JSON.stringify(parsed, null, 2)}</code></pre>`;
+                      htmlContent += `<pre class="overflow-x-auto rounded-lg border border-border bg-secondary p-4 text-sm text-foreground"><code>${JSON.stringify(parsed, null, 2)}</code></pre>`;
                     }
-                    
+
                     return (
-                      <div 
-                        className="prose prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: htmlContent }}
-                        style={{
-                          color: '#ebebeb',
-                        }}
+                      <div
+                        className="max-w-none text-sm leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
                       />
                     );
                   } catch (e) {
                     // Parse hatası durumunda raw content'i markdown olarak göster
                     return (
-                      <div 
-                        className="prose prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: formatMarkdown(content) }}
-                        style={{
-                          color: '#ebebeb',
-                        }}
+                      <div
+                        className="max-w-none text-sm leading-relaxed text-foreground"
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatMarkdown(content)) }}
                       />
                     );
                   }
                 } else if (format === 'html') {
                   return (
-                    <div 
-                      className="prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: content }}
-                      style={{
-                        color: '#ebebeb',
-                      }}
+                    <div
+                      className="max-w-none text-sm leading-relaxed text-foreground"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
                     />
                   );
                 } else {
                   // Markdown or default - blog sayfasında görüntüleniyormuş gibi göster
                   return (
-                    <div 
-                      className="prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: formatMarkdown(content) }}
-                      style={{
-                        color: '#ebebeb',
-                      }}
+                    <div
+                      className="max-w-none text-sm leading-relaxed text-foreground"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatMarkdown(content)) }}
                     />
                   );
                 }
               })()}
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-

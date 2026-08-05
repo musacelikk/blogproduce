@@ -18,10 +18,29 @@ export class JobsService {
   ) {}
 
   /**
-   * Get job by ID with tenant validation
+   * Get a job by id, authorizing the caller directly rather than reconstructing
+   * their tenant. A user may own several organizations (one per workspace), so
+   * resolving "the user's organization" first would 404 on perfectly valid jobs.
+   */
+  async getJobForUser(jobId: string, user: User): Promise<GenerationJob | null> {
+    const job = await this.generationJobRepository.findOne({
+      where: { id: jobId },
+      relations: ['post', 'organization'],
+    });
+
+    if (!job || job.organization?.ownerId !== user.id) {
+      return null;
+    }
+
+    return job;
+  }
+
+  /**
+   * Get job by ID with explicit tenant validation (API-key callers, where the
+   * organization and project come from the key itself).
    */
   async getJob(jobId: string, organizationId: string, projectId: string): Promise<GenerationJob | null> {
-    const job = await this.generationJobRepository.findOne({
+    return this.generationJobRepository.findOne({
       where: {
         id: jobId,
         organizationId,
@@ -29,42 +48,5 @@ export class JobsService {
       },
       relations: ['post'],
     });
-
-    return job;
-  }
-
-  /**
-   * Get user's organization and project
-   */
-  async getUserOrganizationAndProject(user: User): Promise<{ organization: Organization; project: Project }> {
-    let organization = await this.organizationRepository.findOne({
-      where: { ownerId: user.id },
-    });
-
-    if (!organization) {
-      organization = this.organizationRepository.create({
-        name: `${user.name || user.email}'s Organization`,
-        ownerId: user.id,
-      });
-      organization = await this.organizationRepository.save(organization);
-    }
-
-    // Get user's first project or create default
-    let project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id },
-      order: { createdAt: 'ASC' },
-    });
-
-    if (!project) {
-      project = this.projectRepository.create({
-        organizationId: organization.id,
-        name: 'Default Project',
-        slug: 'default-project',
-        description: 'Default project for user generated content',
-      });
-      project = await this.projectRepository.save(project);
-    }
-
-    return { organization, project };
   }
 }

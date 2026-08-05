@@ -157,46 +157,59 @@ export class WorkspacesService {
     return { message: 'Workspace deleted successfully', deletedPosts: force ? postCount : 0 };
   }
 
-  async createApiKey(workspaceId: string, user: User, dto: CreateApiKeyDto) {
-    const workspace = await this.findOne(workspaceId, user);
-    
-    // Find or create Organization for this workspace
-    // ✅ Use workspace ID to ensure uniqueness - each workspace gets its own organization
-    // First try to find by a unique identifier (we'll use workspace ID in name or create a unique name)
-    // Since organization doesn't have workspaceId field, we'll use a unique naming pattern
+  /**
+   * Resolve the Organization + Project that back a workspace on the partner-API side.
+   * The naming convention (`${name} (${id})` for the org, workspace id as the project
+   * slug) is shared with BlogService.getUserOrganizationAndProject — every caller must
+   * use this helper, or it will silently read/write a different tenant's rows.
+   */
+  private async resolveOrgAndProject(
+    workspace: Workspace,
+    user: User,
+    create: boolean,
+  ): Promise<{ organization: Organization; project: Project } | null> {
     const organizationName = `${workspace.name} (${workspace.id})`;
     let organization = await this.organizationRepository.findOne({
       where: { ownerId: user.id, name: organizationName },
     });
 
     if (!organization) {
-      organization = this.organizationRepository.create({
-        name: organizationName,
-        description: workspace.description || `Organization for ${workspace.name}`,
-        ownerId: user.id,
-        active: true,
-      });
-      organization = await this.organizationRepository.save(organization);
+      if (!create) return null;
+      organization = await this.organizationRepository.save(
+        this.organizationRepository.create({
+          name: organizationName,
+          description: workspace.description || `Organization for ${workspace.name}`,
+          ownerId: user.id,
+          active: true,
+        }),
+      );
     }
 
-    // Find or create Project for this workspace
-    // ✅ Use workspace.id as project slug to match with blog posts (posts use workspaceId as project slug)
-    const projectSlug = workspace.id; // Use workspace ID as project slug to match with posts
+    // The project slug is the workspace id so posts, API keys and webhooks all line up.
     let project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id, slug: projectSlug },
+      where: { organizationId: organization.id, slug: workspace.id },
     });
 
     if (!project) {
-      project = this.projectRepository.create({
-        organizationId: organization.id,
-        name: workspace.name,
-        slug: projectSlug, // Use workspace.id as slug to match with posts
-        description: workspace.description || `Project for ${workspace.name}`,
-        active: true,
-      });
-      project = await this.projectRepository.save(project);
+      if (!create) return null;
+      project = await this.projectRepository.save(
+        this.projectRepository.create({
+          organizationId: organization.id,
+          name: workspace.name,
+          slug: workspace.id,
+          description: workspace.description || `Project for ${workspace.name}`,
+          active: true,
+        }),
+      );
     }
-    
+
+    return { organization, project };
+  }
+
+  async createApiKey(workspaceId: string, user: User, dto: CreateApiKeyDto) {
+    const workspace = await this.findOne(workspaceId, user);
+    const { organization, project } = (await this.resolveOrgAndProject(workspace, user, true))!;
+
     // Generate API key: bg_ prefix + random 32 bytes hex
     const randomBytes = crypto.randomBytes(32);
     const apiKey = `bg_${randomBytes.toString('hex')}`;
@@ -234,27 +247,12 @@ export class WorkspacesService {
 
   async listApiKeys(workspaceId: string, user: User) {
     const workspace = await this.findOne(workspaceId, user);
-    
-    // Find Organization for this workspace
-    const organization = await this.organizationRepository.findOne({
-      where: { ownerId: user.id, name: workspace.name },
-    });
-
-    if (!organization) {
-      return []; // No organization means no API keys
+    const resolved = await this.resolveOrgAndProject(workspace, user, false);
+    if (!resolved) {
+      return []; // No organization/project yet means no API keys
     }
+    const { organization, project } = resolved;
 
-    // Find Project for this workspace
-    // ✅ Use workspace.id as project slug to match with blog posts
-    const projectSlug = workspace.id; // Use workspace ID as project slug to match with posts
-    const project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id, slug: projectSlug },
-    });
-
-    if (!project) {
-      return []; // No project means no API keys
-    }
-    
     // Find keys by organizationId and projectId
     const keys = await this.apiKeyRepository.find({
       where: { 
@@ -278,27 +276,12 @@ export class WorkspacesService {
 
   async revokeApiKey(workspaceId: string, user: User, apiKeyId: string) {
     const workspace = await this.findOne(workspaceId, user);
-    
-    // Find Organization for this workspace
-    const organization = await this.organizationRepository.findOne({
-      where: { ownerId: user.id, name: workspace.name },
-    });
-
-    if (!organization) {
+    const resolved = await this.resolveOrgAndProject(workspace, user, false);
+    if (!resolved) {
       throw new NotFoundException('API key not found');
     }
+    const { organization, project } = resolved;
 
-    // Find Project for this workspace
-    // ✅ Use workspace.id as project slug to match with blog posts
-    const projectSlug = workspace.id; // Use workspace ID as project slug to match with posts
-    const project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id, slug: projectSlug },
-    });
-
-    if (!project) {
-      throw new NotFoundException('API key not found');
-    }
-    
     // Find key by organizationId and projectId
     const apiKey = await this.apiKeyRepository.findOne({
       where: { 
@@ -320,26 +303,12 @@ export class WorkspacesService {
 
   async rotateApiKey(workspaceId: string, user: User, apiKeyId: string) {
     const workspace = await this.findOne(workspaceId, user);
-    
-    // Find Organization for this workspace
-    const organization = await this.organizationRepository.findOne({
-      where: { ownerId: user.id },
-    });
-
-    if (!organization) {
+    const resolved = await this.resolveOrgAndProject(workspace, user, false);
+    if (!resolved) {
       throw new NotFoundException('API key not found');
     }
+    const { organization, project } = resolved;
 
-    // Find Project for this workspace
-    const projectSlug = workspace.id; // Use workspace ID as project slug
-    const project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id, slug: projectSlug },
-    });
-
-    if (!project) {
-      throw new NotFoundException('API key not found');
-    }
-    
     // Verify the API key belongs to this organization/project
     const apiKey = await this.apiKeyRepository.findOne({
       where: { 
@@ -359,13 +328,14 @@ export class WorkspacesService {
 
   async createWebhook(workspaceId: string, user: User, dto: CreateWebhookDto) {
     const workspace = await this.findOne(workspaceId, user);
-    
-    // Legacy: workspaceId is kept for backward compatibility but should be migrated
-    // New webhooks should use organizationId and projectId
+    // Deliveries are looked up by the real organization/project ids (the same ones the
+    // API key binds to), so the webhook must be stored against those — not workspace.id.
+    const { organization, project } = (await this.resolveOrgAndProject(workspace, user, true))!;
+
     const webhook = this.webhooksRepository.create({
-      workspaceId: workspace.id, // Legacy field
-      organizationId: workspace.id, // Temporary: use workspace.id as organizationId
-      projectId: workspace.id, // Temporary: use workspace.id as projectId
+      workspaceId: workspace.id, // Legacy field, kept for backward compatibility
+      organizationId: organization.id,
+      projectId: project.id,
       url: dto.url,
       events: dto.events,
       secret: dto.secret || null,
@@ -388,11 +358,7 @@ export class WorkspacesService {
     
     // Legacy: Find webhooks by workspaceId (backward compatibility)
     const webhooks = await this.webhooksRepository.find({
-      where: { 
-        workspaceId: workspace.id, // Legacy field
-        organizationId: workspace.id, // Temporary: use workspace.id as organizationId
-        projectId: workspace.id, // Temporary: use workspace.id as projectId
-      },
+      where: { workspaceId: workspace.id },
       order: { createdAt: 'DESC' },
     });
 
@@ -412,12 +378,7 @@ export class WorkspacesService {
     
     // Legacy: Find webhook by workspaceId (backward compatibility)
     const webhook = await this.webhooksRepository.findOne({
-      where: { 
-        id: webhookId,
-        workspaceId: workspace.id, // Legacy field
-        organizationId: workspace.id, // Temporary: use workspace.id as organizationId
-        projectId: workspace.id, // Temporary: use workspace.id as projectId
-      },
+      where: { id: webhookId, workspaceId: workspace.id },
     });
 
     if (!webhook) {
@@ -443,12 +404,7 @@ export class WorkspacesService {
     
     // Legacy: Find webhook by workspaceId (backward compatibility)
     const webhook = await this.webhooksRepository.findOne({
-      where: { 
-        id: webhookId,
-        workspaceId: workspace.id, // Legacy field
-        organizationId: workspace.id, // Temporary: use workspace.id as organizationId
-        projectId: workspace.id, // Temporary: use workspace.id as projectId
-      },
+      where: { id: webhookId, workspaceId: workspace.id },
     });
 
     if (!webhook) {

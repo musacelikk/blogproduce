@@ -28,21 +28,14 @@ export class JobsController {
     @CurrentProject() project: Project | undefined,
     @CurrentUser() user: User | undefined,
   ) {
-    let org = organization;
-    let proj = project;
-
-    // If JWT is used, get organization and project from user
-    if (!org && user) {
-      const userOrgProj = await this.jobsService.getUserOrganizationAndProject(user);
-      org = userOrgProj.organization;
-      proj = userOrgProj.project;
-    }
-
-    if (!org || !proj) {
-      throw new NotFoundException('Organization and project are required');
-    }
-
-    const job = await this.jobsService.getJob(jobId, org.id, proj.id);
+    // API-key callers carry their tenant on the request; JWT callers are authorized
+    // against the job's owning organization instead (a user can own several).
+    const job =
+      organization && project
+        ? await this.jobsService.getJob(jobId, organization.id, project.id)
+        : user
+          ? await this.jobsService.getJobForUser(jobId, user)
+          : null;
 
     if (!job) {
       throw new NotFoundException('Job not found');

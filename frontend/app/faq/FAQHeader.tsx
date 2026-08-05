@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { MessageCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export function FAQHeader() {
   return (
@@ -9,40 +10,33 @@ export function FAQHeader() {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="text-center px-6 md:px-12 pt-28 md:pt-36 pb-16 md:pb-20 max-w-[1280px] mx-auto"
+      className="mx-auto max-w-7xl px-4 pb-16 pt-32 text-center sm:px-6 sm:pb-20 sm:pt-40 lg:px-8"
     >
-      <motion.span
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase mb-5"
-        style={{ background: 'linear-gradient(135deg,#203eec18,#00d4ff18)', color: '#203eec' }}
       >
-        <MessageCircle className="w-3.5 h-3.5" />
-        SSS
-      </motion.span>
+        <Badge className="mb-5 uppercase tracking-wide">
+          <MessageCircle className="h-3.5 w-3.5" />
+          SSS
+        </Badge>
+      </motion.div>
 
       <motion.h1
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.15 }}
-        className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground mb-5 leading-[1.1]"
+        className="mb-5 text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
       >
-        Merak ettikleriniz{' '}
-        <span style={{
-          background: 'linear-gradient(135deg,#203eec,#00d4ff)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-        }}>
-          burada
-        </span>
+        Merak ettikleriniz <span className="text-primary">burada</span>
       </motion.h1>
 
       <motion.p
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.25 }}
-        className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto"
+        className="mx-auto max-w-xl text-lg text-muted-foreground"
       >
         BlogProduce hakkında en çok sorulan sorulara hızlıca ulaşın.
       </motion.p>

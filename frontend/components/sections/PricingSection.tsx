@@ -1,5 +1,3 @@
-import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { getPublicPlans, PlanDefinition } from '@/lib/api';
 import { PricingSectionClient } from './PricingSectionClient';
 
@@ -8,18 +6,6 @@ type PlanLevel = 'starter' | 'pro' | 'enterprise';
 interface PricingFeature {
   name: string;
   included: PlanLevel | 'all';
-}
-
-function shouldShowCheck(
-  included: PricingFeature['included'],
-  level: PlanLevel,
-): boolean {
-  if (included === 'all') return true;
-  if (included === 'enterprise' && level === 'enterprise') return true;
-  if (included === 'pro' && (level === 'pro' || level === 'enterprise'))
-    return true;
-  if (included === 'starter') return true;
-  return false;
 }
 
 function formatPlanFeatures(plan: PlanDefinition): PricingFeature[] {

@@ -37,52 +37,39 @@ export function AdminHeader() {
 
   return (
     <header
-      className={`fixed top-0 right-0 left-0 z-50 bg-[#1a1a1a] border-b border-[#333333] px-4 py-3 flex items-center justify-between transition-[left] duration-300 ${isCollapsed ? 'lg:left-20' : 'lg:left-64'}`}
+      className={`fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-card px-4 py-3 transition-[left] duration-300 ${
+        isCollapsed ? 'lg:left-20' : 'lg:left-64'
+      }`}
     >
       {/* Sayfa başlığı */}
-      <div className="flex-1 min-w-0 hidden lg:block">
-        <h1
-          className="text-sm font-semibold text-white truncate"
-          style={{ fontFamily: 'var(--font-display), "Space Grotesk", sans-serif' }}
-        >
-          {pageTitle}
-        </h1>
+      <div className="hidden min-w-0 flex-1 lg:block">
+        <h1 className="truncate text-sm font-semibold text-foreground">{pageTitle}</h1>
       </div>
 
       {/* Sağ: Bildirim + Admin */}
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <button className="relative p-1.5 text-[#999999] hover:text-white transition-colors">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-[#3B82F6] rounded-full"></span>
+        <button
+          aria-label="Bildirimler"
+          className="relative rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
         </button>
 
         {/* Admin Badge */}
-        <div className="flex items-center gap-2 sm:gap-2.5 px-2 sm:px-3 py-1.5 bg-[#0f0f0f] rounded-lg border border-[#333333]">
-          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-[#3B82F6] rounded-full flex items-center justify-center flex-shrink-0">
-            {user?.name?.charAt(0)?.toUpperCase() || <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />}
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-2 py-1.5 sm:gap-2.5 sm:px-3">
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground sm:h-7 sm:w-7">
+            {user?.name?.charAt(0)?.toUpperCase() || (
+              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            )}
           </div>
-          <div className="hidden sm:block text-left">
-            <p
-              className="text-xs font-medium text-white"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
-              {user?.name || 'Admin'}
-            </p>
-            <p
-              className="text-xs text-[#666666]"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
-              {user?.email || 'Yönetici'}
-            </p>
+          <div className="hidden text-left sm:block">
+            <p className="text-xs font-medium text-foreground">{user?.name || 'Admin'}</p>
+            <p className="text-xs text-muted-foreground">{user?.email || 'Yönetici'}</p>
           </div>
         </div>
       </div>
     </header>
   );
 }
-

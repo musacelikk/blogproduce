@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Sparkles, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 type BlogPost = {
   id: string;
@@ -142,31 +144,24 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
   const displayBlogs = blogs && blogs.length > 0 ? blogs : mockBlogs;
 
   return (
-    <section className="w-full py-16 md:py-24 px-4 md:px-6 lg:px-8" style={{ background: 'var(--background)' }}>
-      <div className="max-w-[1280px] mx-auto">
+    <section className="w-full bg-background py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div ref={headerRef} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 md:mb-14">
+        <div ref={headerRef} className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={headerInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const }}
           >
-            <div
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-3"
-              style={{
-                background: 'linear-gradient(135deg,#203eec15,#00d4ff15)',
-                border: '1px solid #203eec30',
-                color: '#203eec',
-              }}
-            >
-              <Sparkles className="w-3 h-3" />
+            <Badge className="mb-3">
+              <Sparkles className="h-3 w-3" />
               AI Üretildi
-            </div>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground">
+            </Badge>
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl lg:text-4xl">
               Örnek Bloglar
             </h2>
-            <p className="mt-2 text-sm md:text-base text-muted-foreground max-w-lg">
+            <p className="mt-2 max-w-lg text-sm text-muted-foreground md:text-base">
               BlogProduce ile üretilmiş, SEO optimizasyonlu ve prompt&apos;a göre özelleştirilmiş profesyonel içerikler
             </p>
           </motion.div>
@@ -176,34 +171,35 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
             initial={{ opacity: 0 }}
             animate={headerInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="hidden md:flex items-center gap-2 flex-shrink-0"
+            className="hidden shrink-0 items-center gap-2 md:flex"
           >
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => scroll('left')}
               disabled={!canScrollLeft}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--foreground)' }}
+              className="h-9 w-9 rounded-full"
               aria-label="Önceki bloglar"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => scroll('right')}
               disabled={!canScrollRight}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--foreground)' }}
+              className="h-9 w-9 rounded-full"
               aria-label="Sonraki bloglar"
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </motion.div>
         </div>
 
         {/* Cards */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-5 overflow-x-auto overflow-y-visible pb-4"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          className="scrollbar-hide flex gap-6 overflow-x-auto overflow-y-visible pb-4"
         >
           {displayBlogs.map((blog, index) => (
             <motion.article
@@ -212,17 +208,12 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: index * 0.08, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-              className="group relative flex-shrink-0 w-[82vw] md:w-[360px] lg:w-[380px] rounded-2xl overflow-hidden cursor-pointer"
-              style={{
-                background: 'var(--card)',
-                border: '1px solid var(--border)',
-                transition: 'box-shadow 0.3s, border-color 0.3s, transform 0.3s',
-              }}
+              className="group w-[82vw] shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-card transition-colors duration-300 hover:border-primary md:w-[360px] lg:w-[380px]"
               whileHover={{ y: -4 }}
               onClick={() => { if (blog.slug) router.push(`/example-blogs/${blog.slug}`); }}
             >
               {/* Image */}
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden bg-secondary">
                 <Image
                   src={blog.coverImageUrl || blog.image || '/images/default-blog.jpg'}
                   alt={blog.title}
@@ -233,38 +224,30 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
                     (e.target as HTMLImageElement).src = '/images/default-blog.jpg';
                   }}
                 />
-                {/* Gradient overlay */}
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 60%)' }} />
 
                 {blog.category && (
-                  <div className="absolute top-3 left-3">
-                    <span
-                      className="px-2.5 py-1 text-[10px] font-semibold text-white rounded-full tracking-wide uppercase"
-                      style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-                    >
+                  <div className="absolute left-3 top-3">
+                    <Badge variant="primary" className="uppercase tracking-wide">
                       {blog.category}
-                    </span>
+                    </Badge>
                   </div>
                 )}
                 {blog.canonicalUrl && (
-                  <div className="absolute top-3 right-3">
-                    <span
-                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white rounded-full"
-                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-                    >
-                      <Globe className="w-2.5 h-2.5" />
+                  <div className="absolute right-3 top-3">
+                    <Badge variant="success">
+                      <Globe className="h-2.5 w-2.5" />
                       Yayında
-                    </span>
+                    </Badge>
                   </div>
                 )}
               </div>
 
               {/* Content */}
               <div className="p-5">
-                <h3 className="text-base font-semibold tracking-tight text-foreground mb-2 line-clamp-2 leading-snug group-hover:text-[#203eec] transition-colors duration-200">
+                <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary">
                   {blog.title}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
+                <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                   {getExcerpt(blog.excerpt)}
                 </p>
 
@@ -272,34 +255,21 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
                 <div className="flex items-center justify-between">
                   {(blog.date || blog.publishedAt) ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
                       <span>{formatDate(blog.date || blog.publishedAt)}</span>
                     </div>
                   ) : <div />}
 
-                  <span
-                    className="inline-flex items-center gap-1 text-xs font-semibold transition-all duration-200 group-hover:gap-2"
-                    style={{ color: '#203eec' }}
-                  >
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent-foreground transition-all duration-200 group-hover:gap-2">
                     Oku
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
               </div>
-
-              {/* Hover border glow */}
-              <div
-                className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ boxShadow: 'inset 0 0 0 1.5px #203eec40' }}
-              />
             </motion.article>
           ))}
         </div>
       </div>
-
-      <style jsx>{`
-        div::-webkit-scrollbar { display: none; }
-      `}</style>
     </section>
   );
 };

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Eye, FileText, Calendar, Download, Filter, Zap, Loader2, AlertCircle } from 'lucide-react';
+import { BarChart3, TrendingUp, Eye, FileText, Calendar, Download, Zap, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
 import { getCurrentUsage, getUsageHistory, getPosts, type UsageLedger, type Post } from '@/lib/api';
 
 const MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -59,11 +62,11 @@ export default function ReportsPage() {
   // Filtrelenmiş post'lar (seçilen periyoda göre)
   const filteredPosts = useMemo(() => {
     if (selectedPeriod === 'all') return posts;
-    
+
     const now = new Date();
     const periodDays = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
     const cutoffDate = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
-    
+
     return posts.filter(post => {
       const postDate = new Date(post.createdAt);
       return postDate >= cutoffDate;
@@ -73,25 +76,24 @@ export default function ReportsPage() {
   // Aylık veriler
   const monthlyData = useMemo(() => {
     const monthlyMap = new Map<string, { blogs: number; generated: number }>();
-    
+
     filteredPosts.forEach(post => {
       const date = new Date(post.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = MONTHS_TR[date.getMonth()];
       const year = date.getFullYear();
       const displayKey = `${monthName} ${year}`;
-      
+
       if (!monthlyMap.has(displayKey)) {
         monthlyMap.set(displayKey, { blogs: 0, generated: 0 });
       }
-      
+
       const data = monthlyMap.get(displayKey)!;
       data.generated += 1;
       if (post.status === 'published') {
         data.blogs += 1;
       }
     });
-    
+
     // Map'i array'e çevir ve sırala
     const data = Array.from(monthlyMap.entries())
       .map(([month, values]) => ({
@@ -107,7 +109,7 @@ export default function ReportsPage() {
         return monthIndexB - monthIndexA;
       })
       .slice(0, 6); // Son 6 ay
-    
+
     return data;
   }, [filteredPosts]);
 
@@ -121,7 +123,7 @@ export default function ReportsPage() {
         return dateB.getTime() - dateA.getTime(); // En yeni önce
       })
       .slice(0, 5)
-      .map((post, index) => ({
+      .map((post) => ({
         id: post.id,
         title: post.title,
         views: 0, // Görüntülenme sayısı backend'de yok, şimdilik 0
@@ -136,7 +138,7 @@ export default function ReportsPage() {
     const totalGenerated = filteredPosts.length;
     const totalViews = 0; // Görüntülenme sayısı backend'de yok
     const avgViews = totalBlogs > 0 ? Math.round(totalViews / totalBlogs) : 0;
-    
+
     // Önceki periyod ile karşılaştırma (basit hesaplama)
     const previousPeriodDays = selectedPeriod === '7days' ? 7 : selectedPeriod === '30days' ? 30 : 90;
     const previousCutoff = new Date(new Date().getTime() - previousPeriodDays * 2 * 24 * 60 * 60 * 1000);
@@ -146,14 +148,14 @@ export default function ReportsPage() {
     });
     const previousPublished = previousPosts.filter(post => post.status === 'published').length;
     const previousGenerated = previousPosts.length;
-    
-    const blogsGrowth = previousPublished > 0 
+
+    const blogsGrowth = previousPublished > 0
       ? Math.round(((totalBlogs - previousPublished) / previousPublished) * 100)
       : totalBlogs > 0 ? 100 : 0;
     const generatedGrowth = previousGenerated > 0
       ? Math.round(((totalGenerated - previousGenerated) / previousGenerated) * 100)
       : totalGenerated > 0 ? 100 : 0;
-    
+
     return {
       totalBlogs,
       totalViews,
@@ -165,253 +167,93 @@ export default function ReportsPage() {
     };
   }, [filteredPosts, posts, selectedPeriod]);
 
-  const totalTokensUsed = currentUsage 
+  const totalTokensUsed = currentUsage
     ? (currentUsage.tokensIn || 0) + (currentUsage.tokensOut || 0)
     : 0;
   const totalTokensIn = currentUsage?.tokensIn || 0;
   const totalTokensOut = currentUsage?.tokensOut || 0;
   const tokenUsagePercent = TOKEN_LIMIT > 0 ? Math.min((totalTokensUsed / TOKEN_LIMIT) * 100, 100) : 0;
-
-  const maxViews = Math.max(...monthlyData.map(d => d.views), 1);
-
-  const isLoading = isLoadingUsage || isLoadingPosts;
+  const tokenBarClass = tokenUsagePercent > 80 ? 'bg-destructive' : tokenUsagePercent > 50 ? 'bg-warning' : 'bg-success';
+  const tokenTextClass = tokenUsagePercent > 80 ? 'text-destructive' : tokenUsagePercent > 50 ? 'text-warning' : 'text-success';
 
   return (
-    <div className="space-y-5">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <BarChart3 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Raporlar</h1>
-            <p className="text-sm text-muted-foreground">Blog ve token kullanım analizlerinizi görüntüleyin</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value as typeof selectedPeriod)}
-            className="px-3 py-1.5 text-sm rounded-xl border focus:border-[#203eec] focus:outline-none"
-            style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
-          >
-            <option value="7days">Son 7 Gün</option>
-            <option value="30days">Son 30 Gün</option>
-            <option value="90days">Son 90 Gün</option>
-            <option value="all">Tüm Zamanlar</option>
-          </select>
-          <Button variant="outline" size="sm" className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec]">
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export
-          </Button>
-        </div>
-      </motion.div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Raporlar"
+        description="Blog ve token kullanım analizlerinizi görüntüleyin"
+        actions={
+          <>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value as typeof selectedPeriod)}
+              className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="7days">Son 7 Gün</option>
+              <option value="30days">Son 30 Gün</option>
+              <option value="90days">Son 90 Gün</option>
+              <option value="all">Tüm Zamanlar</option>
+            </select>
+            <Button variant="outline" size="sm">
+              <Download />
+              Export
+            </Button>
+          </>
+        }
+      />
 
       {/* Error Messages */}
       {(postsError || usageError) && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600"
-        >
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Hata</p>
-              {postsError && <p className="text-sm">{postsError}</p>}
-              {usageError && <p className="text-sm">{usageError}</p>}
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Hata</p>
+            {postsError && <p>{postsError}</p>}
+            {usageError && <p>{usageError}</p>}
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-xl p-5 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-muted-foreground"
-              style={{
-              }}
-            >
-              Toplam Blog
-            </span>
-            <FileText className="w-5 h-5 text-[#203eec]" />
-          </div>
-          {isLoadingPosts ? (
-            <Loader2 className="w-5 h-5 text-[#203eec] animate-spin" />
-          ) : (
-            <>
-              <p
-                className="text-xl font-semibold text-foreground mb-1"
-                style={{
-                }}
-              >
-                {stats.totalBlogs}
-              </p>
-              {stats.blogsGrowth !== 0 && (
-                <p
-                  className={`text-[10px] ${stats.blogsGrowth > 0 ? 'text-green-600' : 'text-red-600'}`}
-                  style={{
-                  }}
-                >
-                  {stats.blogsGrowth > 0 ? '+' : ''}{stats.blogsGrowth}% {stats.blogsGrowth > 0 ? 'artış' : 'azalış'}
-                </p>
-              )}
-            </>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl p-5 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-muted-foreground"
-              style={{
-              }}
-            >
-              Toplam Görüntülenme
-            </span>
-            <Eye className="w-5 h-5 text-[#10B981]" />
-          </div>
-          {isLoadingPosts ? (
-            <Loader2 className="w-5 h-5 text-[#10B981] animate-spin" />
-          ) : (
-            <>
-              <p
-                className="text-xl font-semibold text-foreground mb-1"
-                style={{
-                }}
-              >
-                {stats.totalViews.toLocaleString()}
-              </p>
-              <p
-                className="text-[10px] text-muted-foreground"
-                style={{
-                }}
-              >
-                Görüntülenme takibi yakında
-              </p>
-            </>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-xl p-5 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-muted-foreground"
-              style={{
-              }}
-            >
-              Ortalama Görüntülenme
-            </span>
-            <TrendingUp className="w-5 h-5 text-[#F59E0B]" />
-          </div>
-          {isLoadingPosts ? (
-            <Loader2 className="w-5 h-5 text-[#F59E0B] animate-spin" />
-          ) : (
-            <>
-              <p
-                className="text-xl font-semibold text-foreground mb-1"
-                style={{
-                }}
-              >
-                {stats.avgViews}
-              </p>
-              <p
-                className="text-[10px] text-muted-foreground"
-                style={{
-                }}
-              >
-                Görüntülenme takibi yakında
-              </p>
-            </>
-          )}
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-white rounded-xl p-5 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs text-muted-foreground"
-              style={{
-              }}
-            >
-              Üretilen Blog
-            </span>
-            <BarChart3 className="w-5 h-5 text-[#8B5CF6]" />
-          </div>
-          {isLoadingPosts ? (
-            <Loader2 className="w-5 h-5 text-[#8B5CF6] animate-spin" />
-          ) : (
-            <>
-              <p
-                className="text-xl font-semibold text-foreground mb-1"
-                style={{
-                }}
-              >
-                {stats.totalGenerated}
-              </p>
-              {stats.generatedGrowth !== 0 && (
-                <p
-                  className={`text-[10px] ${stats.generatedGrowth > 0 ? 'text-green-600' : 'text-red-600'}`}
-                  style={{
-                  }}
-                >
-                  {stats.generatedGrowth > 0 ? '+' : ''}{stats.generatedGrowth}% {stats.generatedGrowth > 0 ? 'artış' : 'azalış'}
-                </p>
-              )}
-            </>
-          )}
-        </motion.div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <StatCard
+          label="Toplam Blog"
+          value={isLoadingPosts ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : stats.totalBlogs}
+          icon={<FileText />}
+          trend={stats.blogsGrowth !== 0 ? { value: `${stats.blogsGrowth > 0 ? '+' : ''}${stats.blogsGrowth}% ${stats.blogsGrowth > 0 ? 'artış' : 'azalış'}`, positive: stats.blogsGrowth > 0 } : undefined}
+        />
+        <StatCard
+          label="Toplam Görüntülenme"
+          value={isLoadingPosts ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : stats.totalViews.toLocaleString()}
+          icon={<Eye />}
+          hint="Görüntülenme takibi yakında"
+        />
+        <StatCard
+          label="Ortalama Görüntülenme"
+          value={isLoadingPosts ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : stats.avgViews}
+          icon={<TrendingUp />}
+          hint="Görüntülenme takibi yakında"
+        />
+        <StatCard
+          label="Üretilen Blog"
+          value={isLoadingPosts ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : stats.totalGenerated}
+          icon={<BarChart3 />}
+          trend={stats.generatedGrowth !== 0 ? { value: `${stats.generatedGrowth > 0 ? '+' : ''}${stats.generatedGrowth}% ${stats.generatedGrowth > 0 ? 'artış' : 'azalış'}`, positive: stats.generatedGrowth > 0 } : undefined}
+        />
       </div>
 
       {/* Token Usage Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-        className="bg-white rounded-xl p-5 border border-[var(--border)]"
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2
-            className="text-lg font-medium text-foreground"
-            style={{
-            }}
-          >
-            Token Kullanımı ve Limitler
-          </h2>
-        </div>
+      <Card className="p-5 shadow-card">
+        <h2 className="mb-5 text-lg font-medium text-foreground">
+          Token Kullanımı ve Limitler
+        </h2>
         {isLoadingUsage ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 text-[#203eec] animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : usageError ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+          <div className="rounded-lg border border-border bg-[var(--destructive-muted)] p-4 text-destructive">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p className="font-medium">Hata</p>
                 <p className="text-sm">{usageError}</p>
@@ -422,98 +264,60 @@ export default function ReportsPage() {
           <div className="space-y-5">
             {/* Token Usage Progress */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-[#F59E0B]" />
-                  <span
-                    className="text-sm font-medium text-foreground"
-                    style={{
-                    }}
-                  >
+                  <Zap className="h-4 w-4 text-warning" />
+                  <span className="text-sm font-medium text-foreground">
                     Aylık Token Kullanımı
                   </span>
                 </div>
-                <span
-                  className={`text-sm font-semibold ${tokenUsagePercent > 80 ? 'text-red-600' : tokenUsagePercent > 50 ? 'text-yellow-600' : 'text-green-600'}`}
-                  style={{
-                  }}
-                >
+                <span className={`text-sm font-semibold ${tokenTextClass}`}>
                   {totalTokensUsed.toLocaleString('tr-TR')} / {TOKEN_LIMIT.toLocaleString('tr-TR')}
                 </span>
               </div>
-              <div className="w-full bg-[var(--secondary)] rounded-full h-3 overflow-hidden">
+              <div className="h-3 w-full overflow-hidden rounded-full bg-secondary">
                 <div
-                  className={`h-full transition-all duration-500 ${
-                    tokenUsagePercent > 80 ? 'bg-red-500' : tokenUsagePercent > 50 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
+                  className={`h-full rounded-full transition-all duration-500 ${tokenBarClass}`}
                   style={{ width: `${tokenUsagePercent}%` }}
                 />
               </div>
-              <p
-                className="text-xs text-muted-foreground mt-1"
-                style={{
-                }}
-              >
+              <p className="mt-1 text-xs text-muted-foreground">
                 {tokenUsagePercent.toFixed(1)}% kullanıldı
               </p>
             </div>
 
             {/* Token Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className="text-xs font-medium text-blue-600 uppercase tracking-wide"
-                    style={{
-                    }}
-                  >
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-border bg-info-muted p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-info">
                     Input Tokens
                   </span>
-                  <Zap className="w-4 h-4 text-blue-600" />
+                  <Zap className="h-4 w-4 text-info" />
                 </div>
-                <p
-                  className="text-2xl font-bold text-blue-700"
-                  style={{
-                  }}
-                >
+                <p className="text-2xl font-bold text-info">
                   {totalTokensIn.toLocaleString('tr-TR')}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className="text-xs font-medium text-green-600 uppercase tracking-wide"
-                    style={{
-                    }}
-                  >
+              <div className="rounded-lg border border-border bg-success-muted p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-success">
                     Output Tokens
                   </span>
-                  <Zap className="w-4 h-4 text-green-600" />
+                  <Zap className="h-4 w-4 text-success" />
                 </div>
-                <p
-                  className="text-2xl font-bold text-green-700"
-                  style={{
-                  }}
-                >
+                <p className="text-2xl font-bold text-success">
                   {totalTokensOut.toLocaleString('tr-TR')}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span
-                    className="text-xs font-medium text-purple-600 uppercase tracking-wide"
-                    style={{
-                    }}
-                  >
+              <div className="rounded-lg bg-accent p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-accent-foreground">
                     Toplam
                   </span>
-                  <Zap className="w-4 h-4 text-purple-600" />
+                  <Zap className="h-4 w-4 text-accent-foreground" />
                 </div>
-                <p
-                  className="text-2xl font-bold text-purple-700"
-                  style={{
-                  }}
-                >
+                <p className="text-2xl font-bold text-accent-foreground">
                   {totalTokensUsed.toLocaleString('tr-TR')}
                 </p>
               </div>
@@ -521,40 +325,24 @@ export default function ReportsPage() {
 
             {/* Usage History */}
             {usageHistory.length > 0 && (
-              <div className="mt-5 pt-5 border-t border-[var(--border)]">
-                <h3
-                  className="text-sm font-medium text-foreground mb-3"
-                  style={{
-                  }}
-                >
+              <div className="mt-5 border-t border-border pt-5">
+                <h3 className="mb-3 text-sm font-medium text-foreground">
                   Geçmiş Kullanım
                 </h3>
                 <div className="space-y-2">
                   {usageHistory.slice(0, 5).map((usage) => {
                     const usageTotal = (usage.tokensIn || 0) + (usage.tokensOut || 0);
                     return (
-                      <div key={usage.id} className="flex items-center justify-between p-3 bg-[var(--secondary)] rounded-lg">
+                      <div key={usage.id} className="flex items-center justify-between rounded-lg bg-secondary p-3">
                         <div>
-                          <p
-                            className="text-sm font-medium text-foreground"
-                            style={{
-                            }}
-                          >
+                          <p className="text-sm font-medium text-foreground">
                             {usage.month}
                           </p>
-                          <p
-                            className="text-xs text-muted-foreground"
-                            style={{
-                            }}
-                          >
+                          <p className="text-xs text-muted-foreground">
                             {usage.tokensIn || 0} in / {usage.tokensOut || 0} out
                           </p>
                         </div>
-                        <span
-                          className="text-sm font-semibold text-foreground"
-                          style={{
-                          }}
-                        >
+                        <span className="text-sm font-semibold text-foreground">
                           {usageTotal.toLocaleString('tr-TR')}
                         </span>
                       </div>
@@ -565,36 +353,25 @@ export default function ReportsPage() {
             )}
           </div>
         )}
-      </motion.div>
+      </Card>
 
       {/* Chart */}
       {monthlyData.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="bg-white rounded-xl p-5 border border-[var(--border)]"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <h2
-              className="text-lg font-medium text-foreground"
-              style={{
-              }}
-            >
-              Aylık Blog Üretim Trendi
-            </h2>
-          </div>
+        <Card className="p-5 shadow-card">
+          <h2 className="mb-5 text-lg font-medium text-foreground">
+            Aylık Blog Üretim Trendi
+          </h2>
           {isLoadingPosts ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-6 h-6 text-[#203eec] animate-spin" />
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="flex items-end justify-between gap-3 h-64">
-              {monthlyData.map((data, index) => (
-                <div key={data.month} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full flex flex-col justify-end h-full">
+            <div className="flex h-64 items-end justify-between gap-3">
+              {monthlyData.map((data) => (
+                <div key={data.month} className="flex flex-1 flex-col items-center gap-2">
+                  <div className="flex h-full w-full flex-col justify-end">
                     <div
-                      className="w-full bg-[#203eec] rounded-t-lg transition-all hover:opacity-80"
+                      className="w-full rounded-t-lg bg-primary transition-all hover:opacity-80"
                       style={{
                         height: `${Math.max((data.generated / Math.max(...monthlyData.map(d => d.generated), 1)) * 100, 5)}%`,
                         minHeight: '8px',
@@ -602,70 +379,49 @@ export default function ReportsPage() {
                       title={`${data.generated} üretim`}
                     />
                   </div>
-                  <span
-                    className="text-[10px] text-muted-foreground text-center"
-                    style={{
-                    }}
-                  >
+                  <span className="text-center text-[10px] text-muted-foreground">
                     {data.month.split(' ')[0]}
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </motion.div>
+        </Card>
       )}
 
       {/* Top Blogs */}
       {topBlogs.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="bg-white rounded-xl border border-[var(--border)] overflow-hidden"
-        >
-          <div className="p-5 border-b border-[var(--border)]">
-            <h2
-              className="text-lg font-medium text-foreground"
-              style={{
-              }}
-            >
+        <Card className="overflow-hidden shadow-card">
+          <div className="border-b border-border p-5">
+            <h2 className="text-lg font-medium text-foreground">
               Son Yayınlanan Bloglar
             </h2>
           </div>
           {isLoadingPosts ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-[#203eec] animate-spin" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="divide-y divide-[var(--border)]">
+            <div className="divide-y divide-border">
               {topBlogs.map((blog, index) => (
-                <div key={blog.id} className="p-5 hover:bg-[var(--secondary)] transition-colors">
+                <div key={blog.id} className="p-5 transition-colors hover:bg-secondary">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-8 h-8 bg-[#203eec]/10 rounded-lg flex items-center justify-center">
-                        <span
-                          className="text-sm font-semibold text-[#203eec]"
-                          style={{
-                          }}
-                        >
+                    <div className="flex flex-1 items-center gap-4">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                        <span className="text-sm font-semibold text-primary">
                           {index + 1}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <h3
-                          className="text-sm font-medium text-foreground mb-1"
-                          style={{
-                          }}
-                        >
+                        <h3 className="mb-1 text-sm font-medium text-foreground">
                           {blog.title}
                         </h3>
                         {blog.tags.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex flex-wrap items-center gap-2">
                             {blog.tags.slice(0, 3).map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 bg-[var(--secondary)] rounded text-[10px] text-muted-foreground"
+                                className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground"
                               >
                                 {tag}
                               </span>
@@ -675,12 +431,8 @@ export default function ReportsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span
-                        className="text-xs text-muted-foreground"
-                        style={{
-                        }}
-                      >
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
                         Yayınlandı
                       </span>
                     </div>
@@ -689,31 +441,15 @@ export default function ReportsPage() {
               ))}
             </div>
           )}
-        </motion.div>
+        </Card>
       )}
 
       {!isLoadingPosts && posts.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-12 border border-[var(--border)] text-center"
-        >
-          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3
-            className="text-lg font-medium text-foreground mb-2"
-            style={{
-            }}
-          >
-            Henüz blog içeriği yok
-          </h3>
-          <p
-            className="text-sm text-muted-foreground"
-            style={{
-            }}
-          >
-            İlk blog içeriğinizi oluşturduğunuzda raporlar burada görünecek.
-          </p>
-        </motion.div>
+        <EmptyState
+          icon={<FileText />}
+          title="Henüz blog içeriği yok"
+          description="İlk blog içeriğinizi oluşturduğunuzda raporlar burada görünecek."
+        />
       )}
     </div>
   );

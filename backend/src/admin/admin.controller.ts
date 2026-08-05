@@ -3,8 +3,10 @@ import { UsageService } from '../usage/usage.service';
 import { AdminService } from './admin.service';
 import { MetricsService } from '../common/services/metrics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles, Public } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/user.decorator';
-import { User } from '../entities/user.entity';
+import { User, UserRole } from '../entities/user.entity';
 import { ActivityType, ActivitySeverity } from '../entities/activity-log.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PostStatus } from '../entities/post.entity';
@@ -12,6 +14,8 @@ import { CreateUserBehaviorDto } from './dto/create-user-behavior.dto';
 import { RecordPurchaseDto } from './dto/record-purchase.dto';
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
@@ -23,6 +27,7 @@ export class AdminController {
 
   // Public Plans Endpoint (for frontend pricing page - no auth required)
   @Get('plans/public')
+  @Public()
   async getPublicPlans() {
     const plans = await this.adminService.getAllPlans();
     // Only return active plans
@@ -35,7 +40,6 @@ export class AdminController {
 
   // Dashboard Stats
   @Get('dashboard/stats')
-  @UseGuards(JwtAuthGuard)
   async getDashboardStats(@CurrentUser() user: User) {
     const stats = await this.adminService.getDashboardStats();
     return {
@@ -46,7 +50,6 @@ export class AdminController {
 
   // Activity Logs (must be before dynamic routes like users/:id to avoid route conflicts)
   @Get('activities')
-  @UseGuards(JwtAuthGuard)
   async getActivityLogs(
     @CurrentUser() user: User,
     @Query('type') type?: ActivityType,
@@ -73,7 +76,6 @@ export class AdminController {
 
   // Users Management
   @Get('users')
-  @UseGuards(JwtAuthGuard)
   async getAllUsers(@CurrentUser() user: User) {
     const users = await this.adminService.getAllUsers();
     return {
@@ -83,7 +85,6 @@ export class AdminController {
   }
 
   @Get('users/:id')
-  @UseGuards(JwtAuthGuard)
   async getUserById(@CurrentUser() user: User, @Param('id') id: string) {
     const userData = await this.adminService.getUserById(id);
     return {
@@ -93,7 +94,6 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
-  @UseGuards(JwtAuthGuard)
   async updateUserRole(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -107,7 +107,6 @@ export class AdminController {
   }
 
   @Patch('users/:id')
-  @UseGuards(JwtAuthGuard)
   async updateUser(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -121,7 +120,6 @@ export class AdminController {
   }
 
   @Delete('users/:id')
-  @UseGuards(JwtAuthGuard)
   async deleteUser(@CurrentUser() user: User, @Param('id') id: string) {
     await this.adminService.deleteUser(id);
     return {
@@ -132,7 +130,6 @@ export class AdminController {
 
   // Posts Management
   @Get('posts')
-  @UseGuards(JwtAuthGuard)
   async getAllPosts(
     @CurrentUser() user: User,
     @Query('status') status?: string,
@@ -163,7 +160,6 @@ export class AdminController {
   }
 
   @Get('posts/:id')
-  @UseGuards(JwtAuthGuard)
   async getPostById(@CurrentUser() user: User, @Param('id') id: string) {
     const post = await this.adminService.getPostById(id);
     return {
@@ -173,7 +169,6 @@ export class AdminController {
   }
 
   @Patch('posts/:id/hide')
-  @UseGuards(JwtAuthGuard)
   async hidePost(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -188,7 +183,6 @@ export class AdminController {
   }
 
   @Patch('posts/:id/unhide')
-  @UseGuards(JwtAuthGuard)
   async unhidePost(@CurrentUser() user: User, @Param('id') id: string) {
     const post = await this.adminService.unhidePost(id);
     return {
@@ -200,7 +194,6 @@ export class AdminController {
 
   // Workspaces Management
   @Get('workspaces')
-  @UseGuards(JwtAuthGuard)
   async getAllWorkspaces(
     @CurrentUser() user: User,
     @Query('ownerId') ownerId?: string,
@@ -213,7 +206,6 @@ export class AdminController {
   }
 
   @Get('workspaces/:id')
-  @UseGuards(JwtAuthGuard)
   async getWorkspaceById(@CurrentUser() user: User, @Param('id') id: string) {
     const workspace = await this.adminService.getWorkspaceById(id);
     return {
@@ -224,7 +216,6 @@ export class AdminController {
 
   // Usage Stats
   @Get('usage/stats')
-  @UseGuards(JwtAuthGuard)
   async getUsageStats(@CurrentUser() user: User, @Query('month') month?: string) {
     const stats = await this.usageService.getUsageStats(month);
     return {
@@ -234,7 +225,6 @@ export class AdminController {
   }
 
   @Get('usage/all')
-  @UseGuards(JwtAuthGuard)
   async getAllUsage(@CurrentUser() user: User, @Query('month') month?: string) {
     const usage = await this.usageService.getAllUsage(month);
     return {
@@ -245,7 +235,6 @@ export class AdminController {
 
   // Plans Management (must be before dynamic routes)
   @Get('plans')
-  @UseGuards(JwtAuthGuard)
   async getAllPlans(@CurrentUser() user: User) {
     const plans = await this.adminService.getAllPlans();
     return {
@@ -255,7 +244,6 @@ export class AdminController {
   }
 
   @Get('plans/:id')
-  @UseGuards(JwtAuthGuard)
   async getPlanById(@CurrentUser() user: User, @Param('id') id: string) {
     const plan = await this.adminService.getPlanById(id);
     return {
@@ -265,7 +253,6 @@ export class AdminController {
   }
 
   @Post('plans')
-  @UseGuards(JwtAuthGuard)
   async createPlan(@CurrentUser() user: User, @Body() planData: any) {
     const plan = await this.adminService.createPlan(planData);
     return {
@@ -275,7 +262,6 @@ export class AdminController {
   }
 
   @Patch('plans/:id')
-  @UseGuards(JwtAuthGuard)
   async updatePlan(@CurrentUser() user: User, @Param('id') id: string, @Body() updateData: any) {
     const plan = await this.adminService.updatePlan(id, updateData);
     return {
@@ -285,7 +271,6 @@ export class AdminController {
   }
 
   @Delete('plans/:id')
-  @UseGuards(JwtAuthGuard)
   async deletePlan(@CurrentUser() user: User, @Param('id') id: string) {
     await this.adminService.deletePlan(id);
     return {
@@ -295,7 +280,6 @@ export class AdminController {
   }
 
   @Patch('users/:id/plan')
-  @UseGuards(JwtAuthGuard)
   async updateUserPlan(
     @CurrentUser() user: User,
     @Param('id') id: string,
@@ -310,7 +294,6 @@ export class AdminController {
 
   // Subscriptions Management
   @Get('subscriptions')
-  @UseGuards(JwtAuthGuard)
   async getAllSubscriptions(
     @CurrentUser() user: User,
     @Query('status') status?: string,
@@ -328,7 +311,6 @@ export class AdminController {
 
   // Payments Management
   @Get('payments')
-  @UseGuards(JwtAuthGuard)
   async getAllPayments(
     @CurrentUser() user: User,
     @Query('status') status?: string,
@@ -348,7 +330,6 @@ export class AdminController {
 
   // Sales Stats
   @Get('sales/stats')
-  @UseGuards(JwtAuthGuard)
   async getSalesStats(
     @CurrentUser() user: User,
     @Query('month') month?: string,
@@ -366,7 +347,6 @@ export class AdminController {
    * Satın alındıkça kullanım süresi ve paket güncellenir.
    */
   @Post('purchases')
-  @UseGuards(JwtAuthGuard)
   async recordPurchase(
     @CurrentUser() user: User,
     @Body() body: RecordPurchaseDto,
@@ -390,6 +370,7 @@ export class AdminController {
   // Homepage Management
   /** Ana sayfada gösterilecek blog ID listesi – auth yok (public site için) */
   @Get('homepage/posts/public')
+  @Public()
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate')
   @Header('Pragma', 'no-cache')
   async getHomepagePostsPublic() {
@@ -401,7 +382,6 @@ export class AdminController {
   }
 
   @Get('homepage/posts')
-  @UseGuards(JwtAuthGuard)
   @Header('Cache-Control', 'no-store, no-cache, must-revalidate')
   @Header('Pragma', 'no-cache')
   async getHomepagePosts(@CurrentUser() user: User) {
@@ -413,7 +393,6 @@ export class AdminController {
   }
 
   @Post('homepage/posts')
-  @UseGuards(JwtAuthGuard)
   async setHomepagePosts(
     @CurrentUser() user: User,
     @Body() body: { postIds?: string[] | number[] },
@@ -439,7 +418,6 @@ export class AdminController {
 
   // Event Tracking
   @Get('events')
-  @UseGuards(JwtAuthGuard)
   async getEventTracking(
     @CurrentUser() user: User,
     @Query('eventType') eventType?: string,
@@ -489,7 +467,6 @@ export class AdminController {
   }
 
   @Get('events/stats')
-  @UseGuards(JwtAuthGuard)
   async getEventTrackingStats(
     @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
@@ -529,7 +506,6 @@ export class AdminController {
 
   // User Behavior Tracking
   @Get('behaviors')
-  @UseGuards(JwtAuthGuard)
   async getUserBehavior(
     @CurrentUser() user: User,
     @Query('behaviorType') behaviorType?: string,
@@ -582,6 +558,7 @@ export class AdminController {
 
   // Public endpoint for event tracking (no auth required)
   @Post('events/track')
+  @Public()
   async createEventTracking(
     @Body() body: {
       eventType: string;
@@ -628,6 +605,7 @@ export class AdminController {
 
   // Public endpoint for user behavior tracking (no auth required)
   @Post('behaviors/track')
+  @Public()
   async createUserBehavior(
     @Body() body: CreateUserBehaviorDto,
     @Req() req: any,
@@ -662,7 +640,6 @@ export class AdminController {
   }
 
   @Get('behaviors/stats')
-  @UseGuards(JwtAuthGuard)
   async getUserBehaviorStats(
     @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
@@ -706,7 +683,6 @@ export class AdminController {
    * Get metrics (global or customer-specific)
    */
   @Get('observability/metrics')
-  @UseGuards(JwtAuthGuard)
   async getMetrics(
     @CurrentUser() user: User,
     @Query('organizationId') organizationId?: string,
@@ -724,7 +700,6 @@ export class AdminController {
    * Get recent jobs for a customer
    */
   @Get('observability/jobs')
-  @UseGuards(JwtAuthGuard)
   async getRecentJobs(
     @CurrentUser() user: User,
     @Query('organizationId') organizationId?: string,
@@ -750,7 +725,6 @@ export class AdminController {
    * Get errors for a customer
    */
   @Get('observability/errors')
-  @UseGuards(JwtAuthGuard)
   async getErrors(
     @CurrentUser() user: User,
     @Query('organizationId') organizationId?: string,
@@ -778,7 +752,6 @@ export class AdminController {
    * Get usage graph data for a customer
    */
   @Get('observability/usage')
-  @UseGuards(JwtAuthGuard)
   async getUsageGraph(
     @CurrentUser() user: User,
     @Query('organizationId') organizationId?: string,
@@ -802,7 +775,6 @@ export class AdminController {
    * Get webhook delivery logs
    */
   @Get('observability/webhooks')
-  @UseGuards(JwtAuthGuard)
   async getWebhookLogs(
     @CurrentUser() user: User,
     @Query('organizationId') organizationId?: string,

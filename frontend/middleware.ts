@@ -83,16 +83,18 @@ export function middleware(request: NextRequest) {
       const adminDomain = process.env.NEXT_PUBLIC_ADMIN_DOMAIN || 'admin.blogproduce.com';
       
       if (isProduction && !isLocalhost) {
-        // /admin/login -> admin.blogproduce.com/login (path'ten /admin kaldır)
-        const newPath = pathname.replace(/^\/admin/, '') || '/login';
-        const url = new URL(newPath, `https://${adminDomain}`);
+        // Keep the /admin prefix: on the admin subdomain the pages live at
+        // /admin/* via natural Next routing, so stripping it would land on a
+        // public path and bounce the user to /login.
+        const url = new URL(pathname === '/admin' ? '/admin/login' : pathname, `https://${adminDomain}`);
+        url.search = request.nextUrl.search;
         return NextResponse.redirect(url);
       }
-      // Development'ta localhost'ta /admin/* path'lerini /* olarak rewrite et
-      const newPathname = pathname.replace(/^\/admin/, '') || '/login';
-      const url = request.nextUrl.clone();
-      url.pathname = newPathname;
-      return NextResponse.rewrite(url);
+      // On localhost there is no admin subdomain — serve /admin/* directly.
+      if (pathname === '/admin') {
+        return NextResponse.redirect(new URL('/admin/login', request.url));
+      }
+      return NextResponse.next();
     }
   }
 

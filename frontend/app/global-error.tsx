@@ -19,45 +19,33 @@ export default function GlobalError({
 
   return (
     <html lang="tr">
-      <body className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-2xl w-full text-center">
+      <body className="flex min-h-screen items-center justify-center bg-background px-4 font-sans text-foreground">
+        <div className="w-full max-w-xl text-center">
           <div className="mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 mb-6">
-              <AlertCircle className="w-10 h-10 text-red-600" />
+            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[var(--destructive-muted)]">
+              <AlertCircle className="h-7 w-7 text-destructive" />
             </div>
-            <h1
-              className="text-4xl font-semibold text-[#202020] mb-4"
-              style={{
-                fontFamily: '"Space Grotesk", sans-serif',
-              }}
-            >
+            <h1 className="mb-3 text-2xl font-semibold tracking-tight text-foreground">
               Kritik Hata
             </h1>
-            <p className="text-lg text-[#666666] mb-2">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Uygulamada kritik bir hata oluştu.
             </p>
             {error.message && (
-              <p className="text-sm text-[#999999] mb-8 font-mono bg-[#f5f5f5] p-3 rounded-lg inline-block">
+              <p className="mt-4 inline-block max-w-sm break-all rounded-lg border border-border bg-card px-4 py-3 font-mono text-xs text-muted-foreground shadow-card">
                 {error.message}
               </p>
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              onClick={reset}
-              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white px-6 py-3"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button onClick={reset}>
+              <RefreshCw className="h-4 w-4" />
               Tekrar Dene
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="border-[#e5e5e5] text-[#202020] hover:bg-[#f5f5f5] px-6 py-3"
-            >
+            <Button asChild variant="outline">
               <Link href="/">
-                <Home className="w-4 h-4 mr-2" />
+                <Home className="h-4 w-4" />
                 Ana Sayfaya Dön
               </Link>
             </Button>
@@ -67,4 +55,3 @@ export default function GlobalError({
     </html>
   );
 }
-

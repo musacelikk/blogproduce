@@ -3,12 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WorkerService } from './worker.service';
 import { Post } from '../entities/post.entity';
 import { PostRevision } from '../entities/post-revision.entity';
+import { PostSeo } from '../entities/post-seo.entity';
 import { GenerationJob } from '../entities/generation-job.entity';
 import { QueueModule } from '../queue/queue.module';
 import { UsageModule } from '../usage/usage.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, PostRevision, GenerationJob]), QueueModule, UsageModule],
+  imports: [TypeOrmModule.forFeature([Post, PostRevision, PostSeo, GenerationJob]), QueueModule, UsageModule, AiModule],
   providers: [WorkerService],
   exports: [WorkerService],
 })

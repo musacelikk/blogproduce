@@ -1,22 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
-  User,
-  Clock,
-  MousePointerClick,
-  Search,
-  Calendar,
-  Filter,
-  Loader2,
+  Activity,
   AlertCircle,
   BarChart3,
-  TrendingUp,
-  Eye,
-  Activity,
+  Clock,
+  Search,
+  User,
 } from 'lucide-react';
-import { AdminTableSkeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 type UserBehavior = {
   id: string;
@@ -121,144 +130,82 @@ export default function AdminBehaviorsPage() {
     return (
       <div className="space-y-6">
         <div className="mb-6">
-          <div className="h-8 w-48 bg-[#333333] animate-pulse rounded mb-2" />
-          <div className="h-4 w-96 bg-[#333333] animate-pulse rounded" />
+          <Skeleton className="mb-2 h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
         </div>
-        <AdminTableSkeleton rows={10} />
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          <div className="space-y-4">
+            {[...Array(10)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1
-          className="text-lg font-medium text-white mb-1"
-          style={{
-            fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-          }}
-        >
-          User Behavior Tracking
-        </h1>
-        <p
-          className="text-xs text-[#ebebeb]"
-          style={{
-            fontFamily: 'var(--font-sans), "Inter", sans-serif',
-          }}
-        >
-          Kullanıcı davranışlarını ve etkileşimlerini analiz edin
-        </p>
-      </motion.div>
+      <PageHeader
+        title="User Behavior Tracking"
+        description="Kullanıcı davranışlarını ve etkileşimlerini analiz edin"
+      />
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Hata</p>
+            <p className="mt-1 text-xs">{error}</p>
           </div>
         </div>
       )}
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#3B82F6] rounded-lg flex items-center justify-center">
-                <Activity className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.totalBehaviors || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Toplam Behavior</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#10B981] rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">
-                  {formatDuration(stats?.avgSessionDuration)}
-                </p>
-                <p className="text-xs text-[#ebebeb]">Ortalama Süre</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#F59E0B] rounded-lg flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.uniqueSessions || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Benzersiz Session</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333]"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-[#8B5CF6] rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-white">{stats?.behaviorsByType?.length || 0}</p>
-                <p className="text-xs text-[#ebebeb]">Behavior Tipleri</p>
-              </div>
-            </div>
-          </motion.div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <StatCard
+            label="Toplam Behavior"
+            value={stats?.totalBehaviors || 0}
+            icon={<Activity />}
+          />
+          <StatCard
+            label="Ortalama Süre"
+            value={formatDuration(stats?.avgSessionDuration)}
+            icon={<Clock />}
+          />
+          <StatCard
+            label="Benzersiz Session"
+            value={stats?.uniqueSessions || 0}
+            icon={<User />}
+          />
+          <StatCard
+            label="Behavior Tipleri"
+            value={stats?.behaviorsByType?.length || 0}
+            icon={<BarChart3 />}
+          />
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ebebeb]" />
-            <input
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
               type="text"
               placeholder="Ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#ebebeb] focus:border-[#3B82F6] focus:outline-none"
+              className="pl-9"
             />
           </div>
 
           <select
             value={behaviorTypeFilter}
             onChange={(e) => setBehaviorTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            aria-label="Behavior tipi filtresi"
+            className={SELECT_CLASS}
           >
             <option value="all">Tüm Behavior Tipleri</option>
             <option value="session_start">Session Başlangıcı</option>
@@ -276,7 +223,8 @@ export default function AdminBehaviorsPage() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            className={SELECT_CLASS}
+            aria-label="Başlangıç Tarihi"
             placeholder="Başlangıç Tarihi"
           />
 
@@ -284,68 +232,56 @@ export default function AdminBehaviorsPage() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="px-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+            className={SELECT_CLASS}
+            aria-label="Bitiş Tarihi"
             placeholder="Bitiş Tarihi"
           />
         </div>
       </div>
 
       {/* Behaviors Table */}
-      <div className="bg-[#1a1a1a] rounded-xl border border-[#333333] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#0f0f0f] border-b border-[#333333]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Tip</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Sayfa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Kullanıcı</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Süre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Session</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[#ebebeb] uppercase">Tarih</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#333333]">
-              {filteredBehaviors.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-[#ebebeb]">
-                    Henüz behavior kaydı bulunmuyor
-                  </td>
-                </tr>
-              ) : (
-                filteredBehaviors.map((behavior) => (
-                  <tr key={behavior.id} className="hover:bg-[#0f0f0f] transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-[#3B82F6]/20 text-[#3B82F6] text-xs rounded">
-                        {behavior.behaviorType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">{behavior.page || '-'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">{behavior.user?.email || 'Misafir'}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">{formatDuration(behavior.duration)}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb] font-mono text-xs">
-                        {behavior.sessionId?.substring(0, 8) || '-'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-[#ebebeb]">
-                        {new Date(behavior.createdAt).toLocaleString('tr-TR')}
-                      </p>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {filteredBehaviors.length === 0 ? (
+        <EmptyState
+          icon={<Activity />}
+          title="Henüz behavior kaydı bulunmuyor"
+          description="Seçtiğiniz filtrelere uygun bir davranış kaydı yok."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tip</TableHead>
+              <TableHead>Sayfa</TableHead>
+              <TableHead>Kullanıcı</TableHead>
+              <TableHead>Süre</TableHead>
+              <TableHead>Session</TableHead>
+              <TableHead>Tarih</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredBehaviors.map((behavior) => (
+              <TableRow key={behavior.id}>
+                <TableCell>
+                  <Badge variant="info">{behavior.behaviorType}</Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{behavior.page || '-'}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {behavior.user?.email || 'Misafir'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDuration(behavior.duration)}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {behavior.sessionId?.substring(0, 8) || '-'}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-muted-foreground">
+                  {new Date(behavior.createdAt).toLocaleString('tr-TR')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }
-

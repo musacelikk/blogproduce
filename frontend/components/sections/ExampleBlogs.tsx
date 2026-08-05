@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Calendar, User } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 type BlogPost = {
   id: number | string;
@@ -54,35 +55,24 @@ const exampleBlogs: BlogPost[] = [
 
 export const ExampleBlogs = () => {
   return (
-    <section className="w-full py-24 px-8 bg-gradient-to-b from-white to-[#fafafa]">
-      <div className="max-w-7xl mx-auto">
+    <section className="w-full bg-background py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="mb-12 text-center sm:mb-16"
         >
-          <h2
-            className="text-[40px] leading-tight font-normal text-[#202020] mb-6"
-            style={{
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-              fontWeight: '400',
-            }}
-          >
+          <h2 className="mb-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             Örnek Bloglar
           </h2>
-          <p
-            className="text-lg text-[#666666] max-w-2xl mx-auto"
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
             BlogProduce AI destekli blog üretim API&apos;si ile oluşturulmuş, prompt&apos;a göre özelleştirilmiş ve SEO optimizasyonlu profesyonel blog içeriklerinden örnekler
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {exampleBlogs.map((blog, index) => (
             <motion.article
               key={blog.id}
@@ -90,55 +80,43 @@ export const ExampleBlogs = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#e5e5e5]"
+              className="group overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:shadow-card-hover"
             >
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden bg-secondary">
                 <Image
                   src={blog.image}
                   alt={blog.title}
                   fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
-                <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 bg-[#3B82F6] text-white text-xs font-medium rounded-full">
-                    {blog.category}
-                  </span>
+                <div className="absolute left-4 top-4">
+                  <Badge variant="primary">{blog.category}</Badge>
                 </div>
               </div>
               <div className="p-6">
-                <h3
-                  className="text-xl font-medium text-[#202020] mb-3 group-hover:text-[#3B82F6] transition-colors line-clamp-2"
-                  style={{
-                    fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                  }}
-                >
+                <h3 className="mb-3 line-clamp-2 text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
                   {blog.title}
                 </h3>
-                <p
-                  className="text-base text-[#666666] mb-4 line-clamp-3"
-                  style={{
-                    fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-                  }}
-                >
+                <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                   {blog.excerpt}
                 </p>
-                <div className="flex items-center justify-between text-sm text-[#999999] mb-4">
+                <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
+                    <User className="h-4 w-4" />
                     <span>{blog.author}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="h-4 w-4" />
                     <span>{blog.date}</span>
                   </div>
                 </div>
                 <Link
                   href={`/example-blogs/${blog.slug}`}
-                  className="inline-flex items-center gap-2 text-[#3B82F6] font-medium hover:gap-3 transition-all"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-accent-foreground transition-all hover:gap-3"
                 >
                   <span>Devamını Oku</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </motion.article>

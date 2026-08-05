@@ -11,7 +11,7 @@ import type { UserPlanInfo, UsageLedger } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
 const pageMetadata: Record<string, { title: string; description: string }> = {
-  '/dashboard':            { title: 'Hoş Geldiniz 👋',         description: 'AI destekli blog üretimine devam edin' },
+  '/dashboard':            { title: 'Hoş Geldiniz',             description: 'AI destekli blog üretimine devam edin' },
   '/dashboard/generate':   { title: 'Yeni Blog Üret',           description: "Prompt'a göre özel, SEO uyumlu içerik üretin" },
   '/dashboard/usage':      { title: 'Token Kullanımı',          description: 'Workspace bazlı kullanımınızı takip edin' },
   '/dashboard/blogs':      { title: 'Bloglarım',                description: 'Tüm içeriklerinizi yönetin' },
@@ -103,31 +103,27 @@ export function DashboardHeader() {
   const showToken = total > 0 || maxNum != null;
 
   return (
-    <header
-      className="fixed top-0 right-0 left-0 flex items-center justify-between px-4 sm:px-5 h-14 z-50"
-      style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}
-    >
+    <header className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4 sm:px-5">
       {/* Left: Hamburger (mobile) + Logo + Page title */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         {/* Mobile hamburger */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="lg:hidden p-2 rounded-xl transition-colors flex-shrink-0"
-          style={{ color: 'var(--foreground)' }}
+          className="shrink-0 rounded-lg p-2 text-foreground transition-colors hover:bg-secondary lg:hidden"
           aria-label="Menüyü aç/kapat"
         >
           {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
-        <Link href="/dashboard" className="flex items-center h-full flex-shrink-0">
+        <Link href="/dashboard" className="flex h-full shrink-0 items-center">
           <Image src="/images/logo.png" alt="BlogProduce" width={120} height={32} className="h-8 w-auto object-contain" priority />
         </Link>
 
         {currentMeta && (
-          <div className="hidden lg:flex items-center gap-2 min-w-0 ml-6 pl-6" style={{ borderLeft: '1px solid var(--border)' }}>
+          <div className="ml-6 hidden min-w-0 items-center gap-2 border-l border-border pl-6 lg:flex">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate leading-tight">{currentMeta.title}</p>
-              <p className="text-[11px] text-muted-foreground truncate leading-tight">{currentMeta.description}</p>
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">{currentMeta.title}</p>
+              <p className="truncate text-[11px] leading-tight text-muted-foreground">{currentMeta.description}</p>
             </div>
           </div>
         )}
@@ -139,12 +135,7 @@ export function DashboardHeader() {
         {/* Plan badge */}
         <Link
           href="/dashboard/plans"
-          className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
-          style={{
-            background: 'linear-gradient(135deg,#203eec15,#00d4ff15)',
-            border: '1px solid #203eec30',
-            color: '#203eec',
-          }}
+          className="hidden items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground transition-colors hover:bg-secondary sm:inline-flex"
         >
           {planInfo?.currentPlan?.name ?? (planInfo?.isFree ? 'Ücretsiz' : '—')}
           <span className="text-[10px] font-normal opacity-70">
@@ -158,11 +149,10 @@ export function DashboardHeader() {
         {showToken && (
           <Link
             href="/dashboard/usage"
-            className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
+            className="hidden items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary md:inline-flex"
             title="Token kullanımı"
           >
-            <Zap className="w-3 h-3" style={{ color: '#203eec' }} />
+            <Zap className="h-3 w-3 text-accent-foreground" />
             {total >= 1000 ? `${(total / 1000).toFixed(1)}K` : total}
             {maxNum != null ? ` / ${maxNum >= 1000 ? `${(maxNum / 1000).toFixed(0)}K` : maxNum}` : ''} token
           </Link>
@@ -172,15 +162,12 @@ export function DashboardHeader() {
         <div className="relative">
           <button
             onClick={handleToggleNotifications}
-            className="relative p-2 rounded-lg transition-colors hover:bg-[var(--card)]"
-            style={{ color: 'var(--muted-foreground)' }}
+            className="relative rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            aria-label="Bildirimler"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-0.5 rounded-full text-[9px] text-white flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-              >
+              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-semibold text-primary-foreground">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -189,11 +176,8 @@ export function DashboardHeader() {
           {isNotificationsOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
-              <div
-                className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 rounded-2xl shadow-xl z-50 overflow-hidden"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-              >
-                <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-card shadow-elevated sm:w-80">
+                <div className="flex items-center justify-between border-b border-border px-4 py-3">
                   <div>
                     <p className="text-xs font-semibold text-foreground">Bildirimler</p>
                     <p className="text-[10px] text-muted-foreground">
@@ -203,12 +187,9 @@ export function DashboardHeader() {
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-colors"
-                      style={{ color: '#203eec' }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#203eec15'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                      className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-accent-foreground transition-colors hover:bg-accent"
                     >
-                      <Check className="w-3 h-3" /> Tümünü oku
+                      <Check className="h-3 w-3" /> Tümünü oku
                     </button>
                   )}
                 </div>
@@ -222,19 +203,15 @@ export function DashboardHeader() {
                       <button
                         key={n.id}
                         onClick={() => handleNotificationClick(n)}
-                        className="w-full text-left px-4 py-3 transition-colors"
-                        style={{
-                          borderBottom: '1px solid var(--border)',
-                          background: !n.isRead ? '#203eec08' : 'transparent',
-                        }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--card)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = !n.isRead ? '#203eec08' : 'transparent'; }}
+                        className={`w-full border-b border-border px-4 py-3 text-left transition-colors hover:bg-secondary ${
+                          !n.isRead ? 'bg-accent' : 'bg-card'
+                        }`}
                       >
-                        <p className={`text-xs font-medium mb-0.5 ${!n.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        <p className={`mb-0.5 text-xs font-medium ${!n.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {n.title}
                         </p>
-                        {n.message && <p className="text-[11px] text-muted-foreground line-clamp-2">{n.message}</p>}
-                        <p className="mt-1 text-[10px] text-muted-foreground opacity-60">
+                        {n.message && <p className="line-clamp-2 text-[11px] text-muted-foreground">{n.message}</p>}
+                        <p className="mt-1 text-[10px] text-muted-foreground">
                           {new Date(n.createdAt).toLocaleString('tr-TR')}
                         </p>
                       </button>
@@ -250,41 +227,31 @@ export function DashboardHeader() {
         <div className="relative">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-xl transition-colors"
-            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card py-1 pl-2 pr-1 transition-colors hover:bg-secondary"
           >
-            <div
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-            >
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
               {initials}
             </div>
-            <div className="hidden sm:block text-left pr-1">
-              <p className="text-[11px] font-semibold text-foreground leading-tight">{user?.name ?? 'Kullanıcı'}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight max-w-[100px] truncate">{user?.email ?? ''}</p>
+            <div className="hidden pr-1 text-left sm:block">
+              <p className="text-[11px] font-semibold leading-tight text-foreground">{user?.name ?? 'Kullanıcı'}</p>
+              <p className="max-w-[100px] truncate text-[10px] leading-tight text-muted-foreground">{user?.email ?? ''}</p>
             </div>
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground hidden sm:block transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`hidden h-3.5 w-3.5 text-muted-foreground transition-transform sm:block ${isProfileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isProfileOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-              <div
-                className="absolute right-0 top-full mt-2 w-52 rounded-2xl shadow-xl z-50 overflow-hidden"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-              >
+              <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
                 {/* User info */}
-                <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="border-b border-border px-4 py-3">
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}
-                    >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{user?.name ?? 'Kullanıcı'}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{user?.email ?? ''}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{user?.name ?? 'Kullanıcı'}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{user?.email ?? ''}</p>
                     </div>
                   </div>
                 </div>
@@ -292,21 +259,16 @@ export function DashboardHeader() {
                 <Link
                   href="/dashboard/settings"
                   onClick={() => setIsProfileOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground transition-colors"
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--border)'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-secondary"
                 >
-                  <Settings className="w-4 h-4 text-muted-foreground" />
+                  <Settings className="h-4 w-4 text-muted-foreground" />
                   Ayarlar
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
-                  style={{ color: '#ef4444' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#ef444415'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-[var(--destructive-muted)]"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="h-4 w-4" />
                   Çıkış Yap
                 </button>
               </div>

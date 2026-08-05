@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Search, Filter, MoreVertical, Eye, Edit, Trash2, Download, Copy, Calendar, Loader2, AlertCircle, Grid3x3, List, Globe, FileX } from 'lucide-react';
+import { FileText, Search, Filter, MoreVertical, Eye, Edit, Trash2, Calendar, AlertCircle, Grid3x3, List, Globe, FileX, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BlogCardSkeleton, StatsCardSkeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getPosts, deletePost, getWorkspaces, publishPost, unpublishPost, type Post, type Workspace } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { auth } from '@/lib/auth';
 
 interface Blog {
   id: string;
@@ -191,43 +195,30 @@ function BlogsPageContent() {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusBadge = (status: string, scheduledAt?: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      queued: { label: 'Kuyruğa Eklendi', color: 'bg-yellow-100 text-yellow-700' },
-      generating: { label: 'Üretiliyor...', color: 'bg-blue-100 text-blue-700' },
-      generated: { label: 'Hazır', color: 'bg-green-100 text-green-700' },
-      failed: { label: 'Başarısız', color: 'bg-red-100 text-red-700' },
-      draft: { label: 'Taslak', color: 'bg-gray-100 text-gray-700' },
-      published: { label: 'Yayınlandı', color: 'bg-purple-100 text-purple-700' },
-      scheduled: { label: 'Zamanlandı', color: 'bg-orange-100 text-orange-700' },
-    };
 
-    const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+  const statusMap: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'destructive' | 'info' | 'outline' }> = {
+    queued:     { label: 'Kuyruğa Eklendi', variant: 'warning' },
+    generating: { label: 'Üretiliyor...',   variant: 'info' },
+    generated:  { label: 'Hazır',           variant: 'success' },
+    failed:     { label: 'Başarısız',       variant: 'destructive' },
+    draft:      { label: 'Taslak',          variant: 'outline' },
+    published:  { label: 'Yayınlandı',      variant: 'primary' },
+    scheduled:  { label: 'Zamanlandı',      variant: 'default' },
+  };
+
+  const getStatusBadge = (status: string, scheduledAt?: string) => {
+    const statusInfo = statusMap[status] || { label: status, variant: 'outline' as const };
+    const isScheduled = status === 'scheduled' && scheduledAt;
     return (
-      <span className={`inline-flex flex-col px-2 py-0.5 rounded-full text-[10px] font-medium ${statusInfo.color}`}>
+      <Badge variant={statusInfo.variant} className={isScheduled ? 'flex-col items-start' : undefined}>
         {statusInfo.label}
-        {status === 'scheduled' && scheduledAt && (
-          <span className="font-normal opacity-80" style={{ fontSize: '9px' }}>
+        {isScheduled && (
+          <span className="text-[10px] font-normal opacity-80">
             {new Date(scheduledAt).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
-      </span>
+      </Badge>
     );
-  };
-
-  const getTagColor = (tag: string) => {
-    const colors = [
-      'bg-blue-100 text-blue-700',
-      'bg-green-100 text-green-700',
-      'bg-purple-100 text-purple-700',
-      'bg-orange-100 text-orange-700',
-      'bg-pink-100 text-pink-700',
-      'bg-indigo-100 text-indigo-700',
-      'bg-yellow-100 text-yellow-700',
-      'bg-red-100 text-red-700',
-    ];
-    const index = tag.charCodeAt(0) % colors.length;
-    return colors[index];
   };
 
   const renderContentPreview = (content: string | undefined, format: string | undefined) => {
@@ -263,7 +254,7 @@ function BlogsPageContent() {
               ? extractText(textContent)
               : (parsed.title || JSON.stringify(parsed, null, 2).substring(0, 200));
             return (
-              <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
+              <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
                 {preview}
               </div>
             );
@@ -271,7 +262,7 @@ function BlogsPageContent() {
         } catch {
           // If JSON parsing fails, treat as text
           return (
-            <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
+            <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
               {extractText(content)}
             </div>
           );
@@ -280,7 +271,7 @@ function BlogsPageContent() {
         // Strip HTML tags for preview
         const textContent = extractText(content);
         return (
-          <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
+          <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
             {textContent}
           </div>
         );
@@ -288,7 +279,7 @@ function BlogsPageContent() {
         // Markdown or other text formats
         const preview = extractText(content);
         return (
-          <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
+          <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
             {preview}
           </div>
         );
@@ -296,198 +287,185 @@ function BlogsPageContent() {
     } catch (err) {
       // If parsing fails, show raw content preview
       return (
-        <div className="text-xs text-muted-foreground line-clamp-3 bg-[#f9fafb] p-2 rounded border border-[var(--border)]">
+        <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
           {content.substring(0, 200)}
         </div>
       );
     }
   };
 
-  return (
-    <div className="space-y-5">
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-               style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <FileText className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">Bloglarım</h1>
-            <p className="text-sm text-muted-foreground">Tüm blog içeriklerinizi buradan yönetin</p>
-          </div>
-        </div>
-        <Link href="/dashboard/generate">
-          <Button className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg"
-                  style={{ background: 'linear-gradient(135deg,#203eec,#00d4ff)' }}>
-            <FileText className="w-4 h-4 mr-2" />
-            Yeni Blog Üret
-          </Button>
-        </Link>
-      </motion.div>
+  const dropdownItemClass =
+    'flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors';
 
-      {/* Search + Filter Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col gap-4"
+  const renderActionsMenu = (blog: Blog) => (
+    <div className="absolute right-0 top-full z-20 mt-1.5 w-44 overflow-hidden rounded-lg border border-border bg-card shadow-elevated">
+      <Link
+        href={`/dashboard/blogs/${blog.id}`}
+        className={`${dropdownItemClass} text-foreground hover:bg-secondary`}
       >
-        {/* Top Row: Search */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex-1 w-full sm:w-auto">
-            {/* Search Bar */}
-            {workspaceId && (
-              <div className="rounded-2xl p-4 border border-[var(--border)]">
-                <div className="flex flex-col md:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Bloglarımda ara..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:bg-white focus:outline-none transition-all"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-muted-foreground" />
-                    <select
-                      value={selectedTag}
-                      onChange={(e) => setSelectedTag(e.target.value)}
-                      className="px-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
-                    >
-                      <option value="Tümü">Tüm Etiketler</option>
-                      {allTags.map((tag) => (
-                        <option key={tag} value={tag}>
-                          {tag}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+        <Eye className="h-3.5 w-3.5" />
+        Görüntüle
+      </Link>
+      {(blog.status === 'draft' || blog.status === 'generated' || blog.status === 'scheduled') && (
+        <button
+          onClick={() => {
+            handleTogglePublish(blog.id, blog.status);
+            setSelectedBlog(null);
+          }}
+          className={`${dropdownItemClass} text-success hover:bg-success-muted`}
+        >
+          <Globe className="h-3.5 w-3.5" />
+          {blog.status === 'scheduled' ? 'Şimdi Yayınla' : 'Yayınla'}
+        </button>
+      )}
+      {blog.status === 'published' && (
+        <button
+          onClick={() => {
+            handleTogglePublish(blog.id, blog.status);
+            setSelectedBlog(null);
+          }}
+          className={`${dropdownItemClass} text-warning hover:bg-warning-muted`}
+        >
+          <FileX className="h-3.5 w-3.5" />
+          Taslağa Al
+        </button>
+      )}
+      <button
+        onClick={() => handleDelete(blog.id)}
+        className={`${dropdownItemClass} text-destructive hover:bg-[var(--destructive-muted)]`}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        Sil
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Bloglarım"
+        description="Tüm blog içeriklerinizi buradan yönetin"
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/generate">
+              <Sparkles />
+              Yeni Blog Üret
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* Filters */}
+      {workspaceId && (
+        <Card className="p-4 shadow-card">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {workspaces.length > 0 && (
+              <div className="flex items-center gap-2 lg:w-64">
+                <label htmlFor="workspaceFilter" className="whitespace-nowrap text-sm font-medium text-foreground">
+                  Workspace
+                </label>
+                <select
+                  id="workspaceFilter"
+                  value={selectedWorkspaceId || ''}
+                  onChange={(e) => {
+                    const wsId = e.target.value || null;
+                    setSelectedWorkspaceId(wsId);
+                    setWorkspaceId(wsId);
+                    if (wsId) {
+                      router.push(`/dashboard/blogs?workspaceId=${wsId}`);
+                    }
+                  }}
+                  className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {workspaces.map((ws) => (
+                    <option key={ws.id} value={ws.id}>
+                      {ws.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
-          </div>
-        </div>
-      </motion.div>
 
-      {/* Workspace Selector */}
-      {workspaces.length > 0 && workspaceId && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="rounded-2xl p-4 border border-[var(--border)]"
-        >
-          <div className="flex items-center gap-3">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <label className="text-sm font-medium text-foreground whitespace-nowrap">Workspace:</label>
-            <select
-              value={selectedWorkspaceId || ''}
-              onChange={(e) => {
-                const wsId = e.target.value || null;
-                setSelectedWorkspaceId(wsId);
-                setWorkspaceId(wsId);
-                if (wsId) {
-                  router.push(`/dashboard/blogs?workspaceId=${wsId}`);
-                }
-              }}
-              className="flex-1 px-3 py-2 text-sm bg-[var(--secondary)] rounded-lg border border-transparent focus:border-[#203eec] focus:outline-none transition-all"
-            >
-              {workspaces.map((ws) => (
-                <option key={ws.id} value={ws.id}>
-                  {ws.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Bloglarımda ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+                aria-label="Bloglarımda ara"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <select
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+                aria-label="Etikete göre filtrele"
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="Tümü">Tüm Etiketler</option>
+                {allTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </motion.div>
+        </Card>
       )}
 
       {/* Workspace Warning */}
       {workspaces.length === 0 && !isLoading && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="bg-yellow-50 border border-yellow-200 rounded-xl p-4"
-        >
+        <div className="rounded-xl border border-border bg-warning-muted p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
             <div>
-              <h3
-                className="text-sm font-medium text-yellow-900 mb-1"
-              >
-                Workspace Bulunamadı
-              </h3>
-              <p
-                className="text-xs text-yellow-700 mb-3"
-              >
+              <h3 className="mb-1 text-sm font-semibold text-foreground">Workspace Bulunamadı</h3>
+              <p className="mb-3 text-xs text-muted-foreground">
                 Blog görüntülemek için önce bir workspace oluşturmanız gerekiyor.
               </p>
-              <Link href="/dashboard/workspaces">
-                <Button className="bg-yellow-600 hover:bg-yellow-700 text-white text-xs">
-                  Workspace Oluştur
-                </Button>
-              </Link>
+              <Button asChild size="sm">
+                <Link href="/dashboard/workspaces">Workspace Oluştur</Link>
+              </Button>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
-
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Toplam Blog', value: blogs.length, icon: FileText, gradient: 'linear-gradient(135deg,#203eec,#00d4ff)', sub: `${blogs.filter(b=>b.status==='published').length} yayında` },
-          { label: 'Toplam Etiket', value: allTags.length, icon: Filter, gradient: 'linear-gradient(135deg,#10B981,#34d399)', sub: 'benzersiz etiket' },
-          { label: 'Yayınlanan', value: blogs.filter(b => b.status === 'published').length, icon: Eye, gradient: 'linear-gradient(135deg,#F59E0B,#fbbf24)', sub: 'aktif yayın' },
-        ].map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 + i * 0.07 }}
-              className="rounded-2xl p-4 relative overflow-hidden"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-            >
-              <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-[0.07] blur-xl"
-                   style={{ background: stat.gradient }} />
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                     style={{ background: stat.gradient }}>
-                  <Icon className="w-4 h-4 text-white" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</p>
-            </motion.div>
-          );
-        })}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Toplam Blog"
+          value={blogs.length}
+          icon={<FileText />}
+          hint={`${blogs.filter((b) => b.status === 'published').length} yayında`}
+        />
+        <StatCard
+          label="Toplam Etiket"
+          value={allTags.length}
+          icon={<Filter />}
+          hint="benzersiz etiket"
+        />
+        <StatCard
+          label="Yayınlanan"
+          value={blogs.filter((b) => b.status === 'published').length}
+          icon={<Eye />}
+          hint="aktif yayın"
+        />
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="font-medium">Hata</p>
+            <p className="font-semibold">Hata</p>
             <p>{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadPosts}
-              className="mt-2 border-red-200 text-red-600 hover:bg-red-100"
-            >
+            <Button variant="outline" size="sm" onClick={loadPosts} className="mt-2">
               Tekrar Dene
             </Button>
           </div>
@@ -495,88 +473,82 @@ function BlogsPageContent() {
       )}
 
       {/* Blog List */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="rounded-2xl border border-[var(--border)] overflow-hidden"
-      >
+      <Card className="overflow-hidden shadow-card">
         {/* View Mode Toggle */}
         {!isLoading && filteredBlogs.length > 0 && (
-          <div className="p-3 sm:p-4 border-b border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <h2
-              className="text-base sm:text-lg font-medium text-foreground"
-            >
+          <div className="flex flex-col items-start justify-between gap-3 border-b border-border p-4 sm:flex-row sm:items-center">
+            <h2 className="text-base font-semibold tracking-tight text-foreground">
               Bloglarım ({filteredBlogs.length})
             </h2>
-            <div className="flex items-center gap-1 border border-[var(--border)] rounded-lg p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className={viewMode === 'grid' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[var(--secondary)]'}
+                aria-label="Izgara görünümü"
+                aria-pressed={viewMode === 'grid'}
               >
-                <Grid3x3 className="w-3.5 h-3.5" />
+                <Grid3x3 />
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? 'bg-[#203eec] text-white hover:bg-[#1a32cc]' : 'hover:bg-[var(--secondary)]'}
+                aria-label="Liste görünümü"
+                aria-pressed={viewMode === 'list'}
               >
-                <List className="w-3.5 h-3.5" />
+                <List />
               </Button>
             </div>
           </div>
         )}
         {isLoading ? (
-          <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <BlogCardSkeleton key={i} />
+              <div key={i} className="rounded-xl border border-border p-5">
+                <Skeleton className="mb-3 h-5 w-full" />
+                <Skeleton className="mb-4 h-4 w-3/4" />
+                <Skeleton className="mb-2 h-3 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
             ))}
           </div>
         ) : filteredBlogs.length === 0 ? (
-          <div className="p-10 text-center">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-            <p
-              className="text-base text-muted-foreground mb-1.5"
-            >
-              {blogs.length === 0 ? 'Henüz blog oluşturulmamış' : 'Blog bulunamadı'}
-            </p>
-            <p
-              className="text-xs text-muted-foreground mb-4"
-            >
-              {blogs.length === 0
+          <EmptyState
+            className="rounded-none border-0"
+            icon={<FileText />}
+            title={blogs.length === 0 ? 'Henüz blog oluşturulmamış' : 'Blog bulunamadı'}
+            description={
+              blogs.length === 0
                 ? 'İlk blogunu oluşturmak için "Yeni Blog Oluştur" butonuna tıkla'
-                : 'Arama kriterlerinizi değiştirip tekrar deneyin'}
-            </p>
-            {blogs.length === 0 && (
-              <Link href="/dashboard/generate">
-                <Button className="bg-[#203eec] hover:bg-[#1a32cc] text-white">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Yeni Blog Oluştur
+                : 'Arama kriterlerinizi değiştirip tekrar deneyin'
+            }
+            action={
+              blogs.length === 0 ? (
+                <Button asChild>
+                  <Link href="/dashboard/generate">
+                    <FileText />
+                    Yeni Blog Oluştur
+                  </Link>
                 </Button>
-              </Link>
-            )}
-          </div>
+              ) : undefined
+            }
+          />
         ) : viewMode === 'grid' ? (
-          <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredBlogs.map((blog, index) => (
-              <motion.div
+          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredBlogs.map((blog) => (
+              <div
                 key={blog.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group relative border border-[var(--border)] rounded-xl overflow-hidden hover:shadow-lg hover:border-[#203eec] transition-all flex flex-col h-full"
+                className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-card-hover"
               >
                 {/* Cover Image */}
                 {blog.coverImageUrl && (
-                  <div className="relative w-full h-40 sm:h-48 overflow-hidden">
+                  <div className="relative h-40 w-full overflow-hidden sm:h-44">
                     <Image
                       src={blog.coverImageUrl}
                       alt={blog.title}
                       fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -585,130 +557,70 @@ function BlogsPageContent() {
                     />
                   </div>
                 )}
-                <div className="p-4 sm:p-5 flex flex-col flex-1">
-                <div className="flex items-start justify-between mb-3 sm:mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="text-sm sm:text-base font-semibold text-foreground mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors line-clamp-2"
-                    >
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="mb-4 flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold text-foreground transition-colors group-hover:text-accent-foreground">
                       {blog.title}
                     </h3>
-                  </div>
-                  <div className="relative ml-2 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-[var(--secondary)]"
-                      onClick={() => setSelectedBlog(selectedBlog === blog.id ? null : blog.id)}
-                    >
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                    </Button>
-                    {selectedBlog === blog.id && (
-                      <div className="absolute right-0 top-full mt-1.5 w-40 sm:w-48 rounded-lg shadow-lg border border-[var(--border)] z-10">
-                        <Link
-                          href={`/dashboard/blogs/${blog.id}`}
-                          className="w-full px-3 py-1.5 text-left text-xs text-foreground hover:bg-[var(--secondary)] flex items-center gap-1.5 block"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Görüntüle
-                        </Link>
-                        {(blog.status === 'draft' || blog.status === 'generated' || blog.status === 'scheduled') && (
-                          <button
-                            onClick={() => {
-                              handleTogglePublish(blog.id, blog.status);
-                              setSelectedBlog(null);
-                            }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1.5"
-                          >
-                            <Globe className="w-3.5 h-3.5" />
-                            {blog.status === 'scheduled' ? 'Şimdi Yayınla' : 'Yayınla'}
-                          </button>
-                        )}
-                        {blog.status === 'published' && (
-                          <button
-                            onClick={() => {
-                              handleTogglePublish(blog.id, blog.status);
-                              setSelectedBlog(null);
-                            }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-1.5"
-                          >
-                            <FileX className="w-3.5 h-3.5" />
-                            Taslağa Al
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(blog.id)}
-                          className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1.5"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Sil
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="space-y-2 mb-4">
-                    {/* Content Preview */}
-                    {blog.content && blog.status !== 'queued' && blog.status !== 'generating' && (
-                      <div className="mb-3">
-                        {renderContentPreview(blog.content, blog.format)}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{blog.createdAt}</span>
-                    </div>
-                    {blog.contentLength !== undefined && blog.contentLength > 0 && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
-                      </div>
-                    )}
-                    {blog.model && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="px-2 py-0.5 rounded-full bg-[#203eec]/10 text-[#203eec] font-medium">
-                          {blog.model}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-[var(--border)]">
-                    <div className="flex items-center gap-1">
-                      {getStatusBadge(blog.status, blog.scheduledAt)}
-                    </div>
-                    <Link href={`/dashboard/blogs/${blog.id}`} className="w-full sm:w-auto">
+                    <div className="relative shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-xs hover:bg-[#203eec]/10 hover:text-[#203eec] w-full sm:w-auto"
+                        className="h-7 w-7 p-0"
+                        aria-label="Blog işlemleri"
+                        onClick={() => setSelectedBlog(selectedBlog === blog.id ? null : blog.id)}
                       >
-                        <Eye className="w-3.5 h-3.5 sm:mr-1" />
-                        <span className="hidden sm:inline">Görüntüle</span>
+                        <MoreVertical className="text-muted-foreground" />
                       </Button>
-                    </Link>
+                      {selectedBlog === blog.id && renderActionsMenu(blog)}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div className="mb-4 space-y-2">
+                      {/* Content Preview */}
+                      {blog.content && blog.status !== 'queued' && blog.status !== 'generating' && (
+                        <div className="mb-3">{renderContentPreview(blog.content, blog.format)}</div>
+                      )}
+
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{blog.createdAt}</span>
+                      </div>
+                      {blog.contentLength !== undefined && blog.contentLength > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <FileText className="h-3.5 w-3.5" />
+                          <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
+                        </div>
+                      )}
+                      {blog.model && (
+                        <Badge variant="outline" className="font-mono text-[11px]">
+                          {blog.model}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+                      {getStatusBadge(blog.status, blog.scheduledAt)}
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/dashboard/blogs/${blog.id}`}>
+                          <Eye />
+                          <span className="hidden sm:inline">Görüntüle</span>
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         ) : (
-          <div className="divide-y divide-[var(--border)]">
-            {filteredBlogs.map((blog, index) => (
-              <motion.div
-                key={blog.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="p-5 hover:bg-[var(--secondary)] transition-colors group relative"
-              >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="divide-y divide-border">
+            {filteredBlogs.map((blog) => (
+              <div key={blog.id} className="group relative p-5 transition-colors hover:bg-secondary">
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                   {blog.coverImageUrl && (
-                    <div className="relative w-full sm:w-32 h-32 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 sm:mr-4">
+                    <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-lg sm:mr-4 sm:h-24 sm:w-32">
                       <Image
                         src={blog.coverImageUrl}
                         alt={blog.title}
@@ -722,119 +634,71 @@ function BlogsPageContent() {
                       />
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="text-sm sm:text-base font-medium text-foreground mb-2 sm:mb-3 group-hover:text-[#203eec] transition-colors"
-                    >
+                  <div className="min-w-0 flex-1">
+                    <h3 className="mb-2 text-base font-semibold text-foreground transition-colors group-hover:text-accent-foreground">
                       {blog.title}
                     </h3>
-                    
+
                     {/* Content Preview for List View */}
                     {blog.content && blog.status !== 'queued' && blog.status !== 'generating' && (
-                      <div className="mb-2 sm:mb-3">
-                        {renderContentPreview(blog.content, blog.format)}
-                      </div>
+                      <div className="mb-3">{renderContentPreview(blog.content, blog.format)}</div>
                     )}
-                    
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+
+                    <div className="flex flex-wrap items-center gap-3">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Calendar className="w-3.5 h-3.5" />
+                        <Calendar className="h-3.5 w-3.5" />
                         <span>{blog.createdAt}</span>
                       </div>
                       {blog.contentLength !== undefined && blog.contentLength > 0 && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <FileText className="w-3.5 h-3.5" />
+                          <FileText className="h-3.5 w-3.5" />
                           <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
                         </div>
                       )}
                       {blog.model && (
-                        <span className="px-2 py-0.5 rounded-full bg-[#203eec]/10 text-[#203eec] font-medium text-xs">
+                        <Badge variant="outline" className="font-mono text-[11px]">
                           {blog.model}
-                        </span>
+                        </Badge>
                       )}
                       {getStatusBadge(blog.status, blog.scheduledAt)}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <Link href={`/dashboard/blogs/${blog.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
-                        title="Görüntüle"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
-                    <Link href={`/dashboard/blogs/${blog.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0 hidden sm:flex"
-                        title="Düzenle"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </Button>
-                    </Link>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Button asChild variant="outline" size="sm" className="h-9 w-9 p-0" title="Görüntüle">
+                      <Link href={`/dashboard/blogs/${blog.id}`} aria-label="Görüntüle">
+                        <Eye />
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="hidden h-9 w-9 p-0 sm:inline-flex"
+                      title="Düzenle"
+                    >
+                      <Link href={`/dashboard/blogs/${blog.id}`} aria-label="Düzenle">
+                        <Edit />
+                      </Link>
+                    </Button>
                     <div className="relative">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-[var(--border)] hover:border-[#203eec] hover:text-[#203eec] h-8 w-8 p-0"
+                        className="h-9 w-9 p-0"
+                        aria-label="Blog işlemleri"
                         onClick={() => setSelectedBlog(selectedBlog === blog.id ? null : blog.id)}
                       >
-                        <MoreVertical className="w-3.5 h-3.5" />
+                        <MoreVertical />
                       </Button>
-                      {selectedBlog === blog.id && (
-                        <div className="absolute right-0 top-full mt-1.5 w-48 rounded-lg shadow-lg border border-[var(--border)] z-10">
-                          <Link
-                            href={`/dashboard/blogs/${blog.id}`}
-                            className="w-full px-3 py-1.5 text-left text-xs text-foreground hover:bg-[var(--secondary)] flex items-center gap-1.5 block"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            Görüntüle
-                          </Link>
-                          {(blog.status === 'draft' || blog.status === 'generated' || blog.status === 'scheduled') && (
-                            <button
-                              onClick={() => {
-                                handleTogglePublish(blog.id, blog.status);
-                                setSelectedBlog(null);
-                              }}
-                              className="w-full px-3 py-1.5 text-left text-xs text-green-600 hover:bg-green-50 flex items-center gap-1.5"
-                            >
-                              <Globe className="w-3.5 h-3.5" />
-                              {blog.status === 'scheduled' ? 'Şimdi Yayınla' : 'Yayınla'}
-                            </button>
-                          )}
-                          {blog.status === 'published' && (
-                            <button
-                              onClick={() => {
-                                handleTogglePublish(blog.id, blog.status);
-                                setSelectedBlog(null);
-                              }}
-                              className="w-full px-3 py-1.5 text-left text-xs text-orange-600 hover:bg-orange-50 flex items-center gap-1.5"
-                            >
-                              <FileX className="w-3.5 h-3.5" />
-                              Taslağa Al
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(blog.id)}
-                            className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1.5"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Sil
-                          </button>
-                        </div>
-                      )}
+                      {selectedBlog === blog.id && renderActionsMenu(blog)}
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
-      </motion.div>
+      </Card>
     </div>
   );
 }
@@ -842,14 +706,15 @@ function BlogsPageContent() {
 export default function BlogsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[var(--background)] p-8">
-        <div className="max-w-7xl mx-auto">
-          <BlogCardSkeleton />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-80" />
         </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     }>
       <BlogsPageContent />
     </Suspense>
   );
 }
-

@@ -1,4 +1,16 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { BlogService } from '../blog.service';
 import { GenerateBlogDto } from '../dto/generate-blog.dto';
 import { ApiKeyOrJwtGuard } from '../../auth/guards/api-key-or-jwt.guard';
@@ -49,14 +61,15 @@ export class BlogV1Controller {
     }
 
     if (!org || !proj) {
-      throw new Error('Organization and project are required');
+      throw new UnauthorizedException('Organization and project could not be resolved for this credential');
     }
 
     // Parse limit (max 100, default 50)
-    const limitNum = limit ? Math.min(parseInt(limit, 10), 100) : 50;
-    if (limitNum < 1) {
-      throw new Error('Limit must be at least 1');
+    const parsedLimit = limit ? parseInt(limit, 10) : 50;
+    if (limit && (Number.isNaN(parsedLimit) || parsedLimit < 1)) {
+      throw new BadRequestException('limit must be a positive integer');
     }
+    const limitNum = Math.min(parsedLimit, 100);
 
     // ✅ Always use cursor-based pagination for v1 endpoint
     // Cursor is optional - if not provided, it means this is the first page
@@ -92,7 +105,7 @@ export class BlogV1Controller {
     }
 
     if (!org || !proj) {
-      throw new Error('Organization and project are required');
+      throw new UnauthorizedException('Organization and project could not be resolved for this credential');
     }
 
     const result = await this.blogService.getBlog(org, proj, id, format);
@@ -121,7 +134,7 @@ export class BlogV1Controller {
     }
 
     if (!org || !proj) {
-      throw new Error('Organization and project are required');
+      throw new UnauthorizedException('Organization and project could not be resolved for this credential');
     }
 
     const result = await this.blogService.getBlogBySlug(org, proj, slug, format);

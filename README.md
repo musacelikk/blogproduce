@@ -1,6 +1,9 @@
-# Blog Generator
+# BlogProduce
 
-AI-powered blog post generator using Next.js and NestJS with ChatGPT API integration.
+AI-powered blog generation platform: a Next.js frontend, a NestJS API, and an SQS-driven
+worker that runs a multi-stage content pipeline (outline → draft → editorial pass) across
+OpenAI and Anthropic models. Customers integrate the generated content into their own sites
+through a REST API.
 
 ## Project Structure
 
@@ -12,16 +15,18 @@ BlogProduce/
 
 ## Features
 
-- 🤖 AI-powered blog generation using OpenAI GPT-4
+- 🤖 Multi-stage AI generation across OpenAI and Anthropic (Claude) models
 - 📝 Customizable blog parameters (topic, tone, target audience)
 - 🎨 Modern, responsive UI with Tailwind CSS
+- 🔌 Public REST API with cursor pagination, idempotent writes and webhooks
 - 🔒 Type-safe API with TypeScript
 - ✅ Form validation with Zod
 
 ## Prerequisites
 
-- Node.js 18+ and npm/yarn
-- OpenAI API key
+- Node.js 18+ and npm
+- PostgreSQL
+- OpenAI API key (an Anthropic API key is optional and enables the premium tier)
 
 ## Setup Instructions
 
@@ -47,6 +52,7 @@ CORS_ORIGIN=http://localhost:3000
 DATABASE_URL=postgresql://user:password@localhost:5432/blogproduce
 
 # JWT Configuration
+# Required. Minimum 32 characters - the app refuses to start without it.
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_SECRET=your-super-secret-refresh-token-key-change-this-in-production
@@ -55,6 +61,9 @@ REFRESH_TOKEN_SECRET=your-super-secret-refresh-token-key-change-this-in-producti
 ADMIN_EMAIL=admin@admin.com
 ADMIN_PASSWORD=admin123
 ADMIN_NAME=Admin User
+
+# Anthropic (Optional - enables the "premium" quality tier with Claude)
+ANTHROPIC_API_KEY=sk-ant-...
 
 # Unsplash API (Optional - for cover images)
 UNSPLASH_ACCESS_KEY=your-unsplash-access-key
@@ -110,33 +119,26 @@ The frontend will run on `http://localhost:3000`
 4. Click "Generate Blog Post"
 5. View your generated blog content
 
-## API Endpoints
+## API
 
-### POST `/api/blog/generate`
+The customer-facing REST API is documented in [API_DOCUMENTATION.md](./API_DOCUMENTATION.md), and
+the canonical, always-current reference (with runnable examples and key management) lives in the
+product at `/dashboard/api-docs`.
 
-Generate a blog post based on the provided parameters.
+Generation is asynchronous: `POST /api/v1/posts:generate` returns a `jobId`, you poll
+`GET /api/v1/jobs/{jobId}` until it succeeds, then publish and fetch the article.
 
-**Request Body:**
-```json
-{
-  "topic": "The Future of AI",
-  "additionalContext": "Focus on ethical considerations",
-  "tone": "Professional",
-  "targetAudience": "Developers"
-}
+## Running in production
+
+Two processes share one build:
+
+```bash
+npm run build        # builds the backend
+npm run start:api    # HTTP API
+npm run start:worker # SQS consumer that runs the AI pipeline
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Blog generated successfully",
-  "data": {
-    "title": "The Future of AI",
-    "content": "# The Future of AI\n\n..."
-  }
-}
-```
+The frontend deploys separately (`cd frontend && npm run build && npm run start`).
 
 ## Tech Stack
 
@@ -186,6 +188,7 @@ CORS_ORIGIN=https://your-frontend-domain.com,https://your-frontend-domain.vercel
 DATABASE_URL=postgresql://user:password@host:port/database
 
 # JWT Configuration
+# Required. Minimum 32 characters - the app refuses to start without it.
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_SECRET=your-super-secret-refresh-token-key-change-this-in-production

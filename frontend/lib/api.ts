@@ -1,7 +1,21 @@
 import { GenerateBlogRequest, GenerateBlogResponse } from '@/types/blog';
-import { auth } from './auth';
+import { auth, decodeJwtPayload } from './auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+function resolveApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured;
+
+  // NEXT_PUBLIC_* values are inlined at build time — a production bundle built
+  // without this variable would silently call localhost on every user's machine.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL is not set. Configure it before building for production.',
+    );
+  }
+  return 'http://localhost:3001';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 // Auth API
 export async function login(email: string, password: string) {
@@ -33,7 +47,26 @@ export async function login(email: string, password: string) {
   }
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Refresh the access token. The backend rotates (and revokes) the refresh token on
+ * every call, so concurrent requests must share a single in-flight refresh —
+ * otherwise the second one presents an already-revoked token and logs the user out.
+ */
 export async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = performTokenRefresh().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function performTokenRefresh(): Promise<string | null> {
   try {
     const refreshToken = auth.getRefreshToken();
     if (!refreshToken) {
@@ -428,7 +461,8 @@ export async function apiRequest(
     } else {
       // Check if token will expire soon (within 5 minutes) and refresh proactively
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = decodeJwtPayload(token);
+        if (!payload?.exp) throw new Error('Unreadable token');
         const exp = payload.exp * 1000; // Convert to milliseconds
         const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
         
@@ -690,7 +724,6 @@ export async function generatePost(data: GeneratePostRequest): Promise<GenerateP
 }
 
 export async function getPublicPosts(limit?: number, postIds?: string[]): Promise<Post[]> {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
@@ -807,7 +840,8 @@ export async function uploadAsset(
     } else {
       // Check if token will expire soon (within 5 minutes) and refresh proactively
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = decodeJwtPayload(token);
+        if (!payload?.exp) throw new Error('Unreadable token');
         const exp = payload.exp * 1000;
         const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
         
@@ -1364,7 +1398,6 @@ export async function getAdminSalesStats(month?: string): Promise<SalesStats> {
 // Public plans endpoint (no auth required, for SSR)
 export async function getPublicPlans(): Promise<PlanDefinition[]> {
   try {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const response = await fetch(`${API_BASE_URL}/admin/plans/public`, {
       method: 'GET',
       headers: {
@@ -1481,7 +1514,6 @@ export interface FAQ {
 
 export async function getPublicFAQs(type?: 'homepage' | 'page'): Promise<FAQ[]> {
   try {
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     
@@ -1549,7 +1581,6 @@ export async function deleteAdminFAQ(id: string): Promise<void> {
 export async function getHomepagePosts(): Promise<string[]> {
   try {
     // Public endpoint kullan (authentication gerektirmez)
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const response = await fetch(`${API_BASE_URL}/admin/homepage/posts/public`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
@@ -1681,7 +1712,6 @@ export interface CreateContactRequest {
 }
 
 export async function createContact(contactData: CreateContactRequest): Promise<Contact> {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const response = await fetch(`${API_BASE_URL}/contact`, {
     method: 'POST',
     headers: {

@@ -22,11 +22,7 @@ function AdminContent({ children }: { children: React.ReactNode }) {
     const navbar = document.querySelector('body > nav') as HTMLElement | null;
     const footer = document.querySelector('body > footer') as HTMLElement | null;
     const main = document.querySelector('body > main') as HTMLElement | null;
-    
-    // Force black background immediately (before paint)
-    document.body.style.backgroundColor = '#0f0f0f';
-    document.documentElement.style.backgroundColor = '#0f0f0f';
-    
+
     // Hidden class ekle veya style uygula
     if (navbar) {
       navbar.style.cssText = 'display: none !important;';
@@ -35,15 +31,13 @@ function AdminContent({ children }: { children: React.ReactNode }) {
       footer.style.cssText = 'display: none !important;';
     }
     if (main) {
-      main.style.cssText = 'padding: 0 !important; background-color: #0f0f0f !important;';
+      main.style.cssText = 'padding: 0 !important;';
     }
-    
+
     return () => {
       if (navbar) navbar.style.cssText = '';
       if (footer) footer.style.cssText = '';
       if (main) main.style.cssText = '';
-      document.body.style.backgroundColor = '';
-      document.documentElement.style.backgroundColor = '';
     };
   }, []);
 
@@ -73,15 +67,6 @@ function AdminContent({ children }: { children: React.ReactNode }) {
       auth.logout();
       router.push('/login');
     }
-
-    // Force black background for admin pages
-    document.body.style.backgroundColor = '#0f0f0f';
-    document.documentElement.style.backgroundColor = '#0f0f0f';
-    
-    return () => {
-      document.body.style.backgroundColor = '';
-      document.documentElement.style.backgroundColor = '';
-    };
   }, [router, isLoginPage, pathname]);
 
   // Login sayfasında sadece children render et
@@ -91,16 +76,16 @@ function AdminContent({ children }: { children: React.ReactNode }) {
 
   // Diğer admin sayfalarında sidebar ve header ile render et
   return (
-    <div className="min-h-screen bg-[#0f0f0f]" data-admin-page>
+    <div className="min-h-screen bg-background" data-admin-page>
       <AdminSidebar />
       <div
-        className={`flex flex-col min-h-screen relative z-10 transition-all duration-300 ${
+        className={`relative z-10 flex min-h-screen flex-col transition-all duration-300 ${
           isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}
       >
         <AdminHeader />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto mt-16 lg:mt-16 bg-[#0f0f0f]">
-          {children}
+        <main className="mt-16 flex-1 overflow-auto bg-background p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
@@ -118,4 +103,3 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-

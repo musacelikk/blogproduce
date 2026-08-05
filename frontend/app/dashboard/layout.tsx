@@ -57,17 +57,21 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }`}
       >
         <DashboardHeader />
-        <main className="dashboard-main flex-1 mt-14 px-4 sm:px-5 lg:px-8 pb-6">
+        <main className="dashboard-main mt-14 flex-1 p-6 lg:p-8">
           <div className="dashboard-main-inner mx-auto w-full max-w-7xl">
             {!isDashboardHome && (
-              <div className="dashboard-hero mb-5 rounded-3xl p-5 sm:p-6">
+              <div className="dashboard-hero mb-6 rounded-xl px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-white/20">
-                    <Sparkles className="h-5 w-5 text-white" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/20">
+                    <Sparkles className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/75">BlogProduce Studio</p>
-                    <p className="text-white font-semibold">İçerik operasyonlarını tek panelden yönetin</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">
+                      BlogProduce Studio
+                    </p>
+                    <p className="text-sm font-semibold text-primary-foreground">
+                      İçerik operasyonlarını tek panelden yönetin
+                    </p>
                   </div>
                 </div>
               </div>
@@ -76,54 +80,31 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </main>
         {/* Footer */}
-        <footer className="dashboard-footer px-5 lg:px-8 py-3 mt-auto">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3">
-            <p
-              className="text-[9px] text-[#999999]"
-              style={{
-                fontFamily: 'var(--font-sans), "Inter", sans-serif',
-              }}
-            >
+        <footer className="dashboard-footer mt-auto px-6 py-4 lg:px-8">
+          <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-2 text-xs text-muted-foreground md:flex-row md:gap-3">
+            <p>
               © 2026{' '}
               <a
                 href="https://bilalorhanlar.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-[#666666] transition-colors"
+                className="transition-colors hover:text-foreground"
               >
                 Bilal ORHANLAR
               </a>
               {' '}Tüm hakları saklıdır.
             </p>
-            <span className="hidden md:inline text-[#e5e5e5] text-[9px]">•</span>
-            <div className="flex items-center gap-2.5">
-              <Link
-                href="/terms"
-                className="text-[9px] text-[#999999] hover:text-[#666666] transition-colors"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
+            <span className="hidden text-border md:inline">•</span>
+            <div className="flex items-center gap-3">
+              <Link href="/terms" className="transition-colors hover:text-foreground">
                 Kullanım Şartları
               </Link>
-              <span className="text-[#e5e5e5] text-[9px]">•</span>
-              <Link
-                href="/privacy"
-                className="text-[9px] text-[#999999] hover:text-[#666666] transition-colors"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
+              <span className="text-border">•</span>
+              <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Gizlilik
               </Link>
-              <span className="text-[#e5e5e5] text-[9px]">•</span>
-              <Link
-                href="/cookie"
-                className="text-[9px] text-[#999999] hover:text-[#666666] transition-colors"
-                style={{
-                  fontFamily: 'var(--font-sans), "Inter", sans-serif',
-                }}
-              >
+              <span className="text-border">•</span>
+              <Link href="/cookie" className="transition-colors hover:text-foreground">
                 Çerezler
               </Link>
             </div>

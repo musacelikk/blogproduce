@@ -131,6 +131,42 @@ export class SeoService {
     };
   }
 
+  /**
+   * Lightweight cover image lookup (prompt generation + Unsplash search) without
+   * the full SEO pass — the AI pipeline already produces meta/faq/toc natively.
+   */
+  async findCoverImage(title: string, topic: string): Promise<{
+    prompt: string;
+    altText: string;
+    url?: string;
+    credit?: { name: string; photographerUrl: string; photoUrl: string };
+  }> {
+    const meta = await this.generateCoverImageMetadata(title, topic);
+    let url: string | undefined;
+    let credit: { name: string; photographerUrl: string; photoUrl: string } | undefined;
+
+    try {
+      const searchQuery = this.extractSearchQueryFromPrompt(meta.prompt, topic);
+      const photos = await this.unsplashService.searchPhotos(searchQuery, 1, 1);
+      if (photos && photos.length > 0) {
+        const photo = photos[0];
+        url = photo.urls.regular || photo.urls.full;
+        credit = {
+          name: photo.user.name,
+          photographerUrl: photo.user.links.html,
+          photoUrl: photo.links.html,
+        };
+        this.unsplashService.triggerDownload(photo.id).catch(() => {
+          // Ignore errors
+        });
+      }
+    } catch (error) {
+      console.error('Error searching cover image from Unsplash:', error);
+    }
+
+    return { prompt: meta.prompt, altText: meta.altText, url, credit };
+  }
+
   private async generateMetaTags(title: string, content: string): Promise<{ title: string; description: string }> {
     if (!this.openai) {
       return {
@@ -311,7 +347,7 @@ export class SeoService {
     };
   }
 
-  private async suggestInternalLinks(
+  async suggestInternalLinks(
     content: string,
     topic: string,
     workspaceId?: string,
@@ -380,7 +416,7 @@ export class SeoService {
     return [];
   }
 
-  private generateSlug(title: string): string {
+  generateSlug(title: string): string {
     return title
       .toLowerCase()
       .normalize('NFD')
@@ -458,7 +494,7 @@ export class SeoService {
     };
   }
 
-  private async analyzeReadability(content: string): Promise<number> {
+  async analyzeReadability(content: string): Promise<number> {
     const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     const words = content.split(/\s+/).filter((w) => w.length > 0);
     const paragraphs = content.split(/\n\n/).filter((p) => p.trim().length > 0);

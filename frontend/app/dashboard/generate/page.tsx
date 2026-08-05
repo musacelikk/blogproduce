@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,10 +9,58 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2, Download, Copy, Check, AlertCircle, Briefcase, Users, PartyPopper, BookOpen, Settings, Sparkles as SparklesIcon, Book, Search, Rocket, Zap, Gem, Image as ImageIcon, Eye, RefreshCw, ExternalLink } from 'lucide-react';
-import { generatePost, getPost, getWorkspaces, createWorkspace, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Sparkles, Loader2, Download, Copy, Check, AlertCircle, Briefcase, Users, PartyPopper, BookOpen, Settings, Sparkles as SparklesIcon, Book, Search, Rocket, Zap, Gem, RefreshCw, ExternalLink, X } from 'lucide-react';
+import { generatePost, getPost, getWorkspaces, createWorkspace, searchUnsplashPhotos, triggerUnsplashDownload, type UnsplashPhoto } from '@/lib/api';
 import { trackBlogGeneration, trackFormSubmit, trackButtonClick, trackCustomEvent } from '@/lib/analytics';
+import { sanitizeHtml } from '@/lib/sanitize';
+
+/** Workspace avatar identity colors — index order must match the workspaces screen. */
+const WORKSPACE_COLORS = [
+  { value: 'blue',   class: 'bg-blue-600' },
+  { value: 'purple', class: 'bg-violet-600' },
+  { value: 'pink',   class: 'bg-pink-600' },
+  { value: 'indigo', class: 'bg-indigo-600' },
+  { value: 'green',  class: 'bg-emerald-600' },
+  { value: 'yellow', class: 'bg-amber-500' },
+  { value: 'red',    class: 'bg-red-600' },
+  { value: 'teal',   class: 'bg-teal-600' },
+  { value: 'orange', class: 'bg-orange-600' },
+  { value: 'cyan',   class: 'bg-cyan-600' },
+  { value: 'gray',   class: 'bg-muted-foreground' },
+  { value: 'black',  class: 'bg-foreground' },
+];
+
+/** Consistent form field label used across this screen. */
+function FieldLabel({
+  htmlFor,
+  children,
+  hint,
+  required,
+}: {
+  htmlFor?: string;
+  children: React.ReactNode;
+  hint?: string;
+  required?: boolean;
+}) {
+  return (
+    <label htmlFor={htmlFor} className="mb-2 block text-sm font-medium text-foreground">
+      {children}
+      {required && <span className="ml-0.5 text-destructive">*</span>}
+      {hint && <span className="ml-2 text-xs font-normal text-muted-foreground">{hint}</span>}
+    </label>
+  );
+}
+
+const selectClass =
+  'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+const checkboxClass =
+  'h-4 w-4 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 const blogSchema = z.object({
   workspaceId: z.string().uuid('Geçerli bir workspace seçin'),
@@ -426,54 +473,39 @@ function GenerateBlogPageContent() {
 
   return (
     <div className="space-y-6">
-      {/* Üst başlık */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-            Yeni Blog Üret
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Konu, ton ve hedef kitlenizi belirleyin; BlogProduce sizin için SEO uyumlu tam bir blog yazısı üretsin.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {postStatus && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--secondary)] text-[11px] font-medium text-muted-foreground">
-              <SparklesIcon className="w-3.5 h-3.5 text-[#203eec]" />
-              Durum: {postStatus === 'queued' ? 'Kuyrukta' : postStatus === 'generating' ? 'Üretiliyor' : postStatus}
-            </span>
-          )}
-          {isLoading && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--secondary)] text-[11px] font-medium text-muted-foreground">
-              <Loader2 className="w-3 h-3 animate-spin text-[#203eec]" />
-              AI blog üretiyor…
-            </span>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Yeni Blog Üret"
+        description="Konu, ton ve hedef kitlenizi belirleyin; BlogProduce sizin için SEO uyumlu tam bir blog yazısı üretsin."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {postStatus && (
+              <Badge variant="outline" className="gap-1.5 py-1">
+                <SparklesIcon className="h-3.5 w-3.5 text-accent-foreground" />
+                Durum: {postStatus === 'queued' ? 'Kuyrukta' : postStatus === 'generating' ? 'Üretiliyor' : postStatus}
+              </Badge>
+            )}
+            {isLoading && (
+              <Badge variant="info" className="gap-1.5 py-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                AI blog üretiyor…
+              </Badge>
+            )}
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
         {/* Form */}
-        <Card style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <CardHeader className="px-5 pt-5 pb-3">
-            <CardTitle
-              className="flex items-center gap-2 text-base"
-              style={{
-              }}
-            >
-              <Sparkles className="w-4 h-4 text-[#203eec]" />
+        <Card className="shadow-card">
+          <CardHeader className="p-5 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-4 w-4 text-accent-foreground" />
               Blog Parametreleri
             </CardTitle>
-            <CardDescription
-              className="text-xs"
-              style={{
-              }}
-            >
-              Blog içeriğinizi özelleştirin
-            </CardDescription>
+            <CardDescription className="text-sm">Blog içeriğinizi özelleştirin</CardDescription>
           </CardHeader>
-          <CardContent className="px-5 pb-5 pt-2">
-            <form 
+          <CardContent className="p-5 pt-0">
+            <form
               onSubmit={handleSubmit(onSubmit, (errors) => {
                 console.log('Form validation errors:', errors);
                 console.log('Form values:', watch());
@@ -487,24 +519,22 @@ function GenerateBlogPageContent() {
                   setError('Formu doldurun.');
                 }
               })}
-              className="space-y-4"
+              className="space-y-6"
             >
+              {/* Workspace */}
               <div>
-                <label
+                <FieldLabel
                   htmlFor="workspaceId"
-                  className="text-sm font-medium text-foreground mb-2 block"
+                  required
+                  hint="(Bloglarınızı organize etmek için çalışma alanı)"
                 >
-                  Workspace <span className="text-red-500">*</span>
-                  <span className="text-xs text-muted-foreground ml-2 font-normal">
-                    (Bloglarınızı organize etmek için çalışma alanı)
-                  </span>
-                </label>
+                  Workspace
+                </FieldLabel>
                 {workspaces.length > 0 ? (
                   <div className="flex flex-wrap gap-3">
                     {workspaces.map((ws) => {
                       const selectedWorkspaceId = watch('workspaceId');
                       const isSelected = selectedWorkspaceId === ws.id;
-                      // Get initials from workspace name
                       const getInitials = (name: string) => {
                         const words = name.trim().split(/\s+/);
                         if (words.length >= 2) {
@@ -513,55 +543,41 @@ function GenerateBlogPageContent() {
                         return name.substring(0, 2).toUpperCase();
                       };
                       const initials = getInitials(ws.name);
-                      // Available colors for workspace
-                      const workspaceColors = [
-                        { value: 'blue', label: 'Mavi', class: 'bg-gradient-to-br from-blue-500 to-blue-600' },
-                        { value: 'purple', label: 'Mor', class: 'bg-gradient-to-br from-purple-500 to-purple-600' },
-                        { value: 'pink', label: 'Pembe', class: 'bg-gradient-to-br from-pink-500 to-pink-600' },
-                        { value: 'indigo', label: 'İndigo', class: 'bg-gradient-to-br from-indigo-500 to-indigo-600' },
-                        { value: 'green', label: 'Yeşil', class: 'bg-gradient-to-br from-green-500 to-green-600' },
-                        { value: 'yellow', label: 'Sarı', class: 'bg-gradient-to-br from-yellow-500 to-yellow-600' },
-                        { value: 'red', label: 'Kırmızı', class: 'bg-gradient-to-br from-red-500 to-red-600' },
-                        { value: 'teal', label: 'Teal', class: 'bg-gradient-to-br from-teal-500 to-teal-600' },
-                        { value: 'orange', label: 'Turuncu', class: 'bg-gradient-to-br from-orange-500 to-orange-600' },
-                        { value: 'cyan', label: 'Cyan', class: 'bg-gradient-to-br from-cyan-500 to-cyan-600' },
-                        { value: 'gray', label: 'Gri', class: 'bg-gradient-to-br from-slate-500 to-slate-600' },
-                        { value: 'black', label: 'Siyah', class: 'bg-gradient-to-br from-slate-900 to-slate-900' },
-                      ];
-                      // Use saved color or fallback to hash-based color
-                      let bgColor = 'bg-gradient-to-br from-blue-500 to-blue-600';
+                      let bgColor = WORKSPACE_COLORS[0].class;
                       if (ws.color) {
-                        const colorOption = workspaceColors.find(c => c.value === ws.color);
+                        const colorOption = WORKSPACE_COLORS.find((c) => c.value === ws.color);
                         if (colorOption) {
                           bgColor = colorOption.class;
                         }
                       } else {
-                        // Fallback to hash-based color
-                        const colors = workspaceColors.map(c => c.class);
+                        const colors = WORKSPACE_COLORS.map((c) => c.class);
                         let hash = 0;
                         for (let i = 0; i < ws.name.length; i++) {
                           hash = ws.name.charCodeAt(i) + ((hash << 5) - hash);
                         }
                         bgColor = colors[Math.abs(hash) % colors.length];
                       }
-                      
+
                       return (
                         <button
                           key={ws.id}
                           type="button"
                           onClick={() => setValue('workspaceId', ws.id)}
-                          className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                          aria-pressed={isSelected}
+                          className={`flex w-28 flex-col items-center gap-2 rounded-xl border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                             isSelected
-                              ? 'border-[#203eec] bg-[#203eec0f] shadow-md scale-105'
-                              : 'border-[var(--border)] bg-[var(--card)] hover:border-[#203eec]/50 hover:shadow-sm'
+                              ? 'border-primary bg-accent'
+                              : 'border-border bg-card hover:border-primary/40 hover:bg-secondary'
                           }`}
                         >
-                          <div className={`w-16 h-16 ${bgColor} rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md`}>
-                            {initials}
-                          </div>
                           <span
-                            className={`text-xs font-medium text-center max-w-[80px] ${
-                              isSelected ? 'text-[#203eec]' : 'text-foreground'
+                            className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-semibold text-primary-foreground ${bgColor}`}
+                          >
+                            {initials}
+                          </span>
+                          <span
+                            className={`w-full truncate text-center text-xs font-medium ${
+                              isSelected ? 'text-accent-foreground' : 'text-foreground'
                             }`}
                           >
                             {ws.name}
@@ -571,99 +587,70 @@ function GenerateBlogPageContent() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg text-sm" style={{ background: 'var(--secondary)', border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>
+                  <div className="rounded-lg border border-border bg-secondary p-3 text-sm text-muted-foreground">
                     <p>Workspace oluşturuluyor, lütfen bekleyin...</p>
                   </div>
                 )}
                 {errors.workspaceId && (
-                  <p className="text-xs text-red-500 mt-1">{errors.workspaceId.message}</p>
+                  <p className="mt-1.5 text-xs text-destructive">{errors.workspaceId.message}</p>
                 )}
               </div>
-              
+
+              {/* Konu */}
               <div>
-                <label
-                  htmlFor="topic"
-                  className="text-sm font-medium text-foreground mb-2 block"
-                >
-                  Konu <span className="text-red-500">*</span>
-                  <span className="text-xs text-muted-foreground ml-2 font-normal">
-                    (5-200 karakter)
-                  </span>
-                </label>
+                <FieldLabel htmlFor="topic" required hint="(5-200 karakter)">
+                  Konu
+                </FieldLabel>
                 <Input
                   id="topic"
                   {...register('topic')}
                   placeholder="Örn: Yapay Zeka ve Blog İçerik Üretimi"
-                  className="border-[var(--border)] focus:border-[#203eec]"
                   maxLength={200}
                 />
-                <div className="flex items-center justify-between mt-1">
-                {errors.topic && (
-                  <p
-                      className="text-xs text-red-500"
-                    style={{
-                    }}
-                  >
-                    {errors.topic.message}
-                  </p>
-                )}
-                  <p className="text-xs text-muted-foreground ml-auto">
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                  {errors.topic && (
+                    <p className="text-xs text-destructive">{errors.topic.message}</p>
+                  )}
+                  <p className="ml-auto text-xs text-muted-foreground">
                     {watch('topic')?.length || 0}/200
                   </p>
                 </div>
               </div>
 
+              {/* Ek bağlam */}
               <div>
-                <label
+                <FieldLabel
                   htmlFor="additionalContext"
-                  className="text-sm font-medium text-foreground mb-2 block"
+                  hint="Opsiyonel (Maksimum 1000 karakter)"
                 >
                   Ek Bağlam
-                  <span className="text-xs text-muted-foreground ml-2 font-normal">
-                  Opsiyonel (Maksimum 1000 karakter)
-                  </span>
-                </label>
+                </FieldLabel>
                 <Textarea
                   id="additionalContext"
                   {...register('additionalContext')}
                   placeholder="Blog hakkında ek bilgiler, odaklanılacak noktalar..."
                   rows={3}
-                  className="border-[var(--border)] focus:border-[#203eec]"
                   maxLength={1000}
                 />
                 {errors.additionalContext && (
-                  <p
-                    className="text-xs text-red-500 mt-1"
-                    style={{
-                    }}
-                  >
-                    {errors.additionalContext.message}
-                  </p>
+                  <p className="mt-1.5 text-xs text-destructive">{errors.additionalContext.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-1 text-right">
+                <p className="mt-1.5 text-right text-xs text-muted-foreground">
                   {watch('additionalContext')?.length || 0}/1000
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="tone"
-                    className="text-sm font-medium text-foreground mb-3 block"
-                    style={{
-                    }}
-                  >
-                    Ton
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
+              {/* Ton */}
+              <div>
+                <FieldLabel htmlFor="tone">Ton</FieldLabel>
+                {selectedTones.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
                     {selectedTones.map((tone) => (
-                      <span
-                        key={tone}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#203eec]/10 text-[#203eec] rounded-full text-sm font-medium"
-                      >
+                      <Badge key={tone} className="gap-1.5 py-1 pr-1.5 text-xs">
                         {tone}
                         <button
                           type="button"
+                          aria-label={`${tone} tonunu kaldır`}
                           onClick={() => {
                             const newTones = selectedTones.filter((t) => t !== tone);
                             setSelectedTones(newTones);
@@ -678,249 +665,190 @@ function GenerateBlogPageContent() {
                               : tonesWithoutOther;
                             setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
                           }}
-                          className="hover:text-[#1a32cc] transition-colors"
+                          className="rounded-full p-0.5 transition-colors hover:bg-primary/10"
                         >
-                          x
+                          <X className="h-3 w-3" />
                         </button>
-                      </span>
+                      </Badge>
                     ))}
                   </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {[
-                      { value: 'Profesyonel', label: 'Profesyonel', Icon: Briefcase },
-                      { value: 'Samimi', label: 'Samimi', Icon: Users },
-                      { value: 'Eğlenceli', label: 'Eğlenceli', Icon: PartyPopper },
-                      { value: 'Ciddi', label: 'Ciddi', Icon: BookOpen },
-                      { value: 'Teknik', label: 'Teknik', Icon: Settings },
-                      { value: 'Yaratıcı', label: 'Yaratıcı', Icon: SparklesIcon },
-                      { value: 'Bilgilendirici', label: 'Bilgilendirici', Icon: Book },
-                      { value: 'Diğer', label: 'Diğer', Icon: Search },
-                    ].map((toneOption) => {
-                      const isSelected = selectedTones.includes(toneOption.value);
-                      const IconComponent = toneOption.Icon;
-                      return (
-                        <button
-                          key={toneOption.value}
-                          type="button"
-                          onClick={() => {
-                            let newTones: string[];
-                            if (isSelected) {
-                              // Remove if already selected
-                              newTones = selectedTones.filter((t) => t !== toneOption.value);
-                            } else {
-                              // Add if not selected
-                              newTones = [...selectedTones, toneOption.value];
-                            }
-                            setSelectedTones(newTones);
-                            // If "Diğer" is removed, clear custom tone input
-                            if (!newTones.includes('Diğer')) {
-                              setCustomToneInput('');
-                            }
-                            // Update form value: exclude "Diğer" and include custom tone if "Diğer" is selected
-                            const tonesWithoutOther = newTones.filter((t) => t !== 'Diğer');
-                            const allTones = customToneInput.trim() && newTones.includes('Diğer')
-                              ? [...tonesWithoutOther, customToneInput.trim()].filter(Boolean)
-                              : tonesWithoutOther;
-                            setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
-                          }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
-                            isSelected
-                              ? 'border-[#203eec] bg-[#203eec]/10 text-[#203eec] font-medium shadow-sm'
-                              : 'border-[var(--border)] bg-white hover:border-[#203eec]/50 hover:bg-[var(--secondary)] text-foreground'
-                          }`}
-                        >
-                          <IconComponent className={`w-4 h-4 ${isSelected ? 'text-[#203eec]' : 'text-muted-foreground'}`} />
-                          <span>{toneOption.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedTones.length > 0 && (
-                    <p
-                      className="text-xs text-muted-foreground mt-2"
-                      style={{
-                      }}
-                    >
-                      {selectedTones.length} ton seçildi
-                    </p>
-                  )}
-                  {selectedTones.includes('Diğer') && (
-                    <div className="mt-3">
-                      <label
-                        htmlFor="customTone"
-                        className="text-xs font-medium text-muted-foreground mb-1.5 block"
-                        style={{
-                        }}
-                      >
-                        Özel Ton Yazın
-                  </label>
-                  <Input
-                        id="customTone"
-                        value={customToneInput}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          setCustomToneInput(newValue);
-                          // Update form value with selected tones (excluding "Diğer") + custom tone
-                          const tonesWithoutOther = selectedTones.filter((t) => t !== 'Diğer');
-                          const allTones = newValue.trim() 
-                            ? [...tonesWithoutOther, newValue.trim()].filter(Boolean)
-                            : tonesWithoutOther;
-                          setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
-                        }}
-                        onBlur={() => {
-                          // Update form value when input loses focus
-                          const tonesWithoutOther = selectedTones.filter((t) => t !== 'Diğer');
-                          const allTones = customToneInput.trim() 
+                )}
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {[
+                    { value: 'Profesyonel', label: 'Profesyonel', Icon: Briefcase },
+                    { value: 'Samimi', label: 'Samimi', Icon: Users },
+                    { value: 'Eğlenceli', label: 'Eğlenceli', Icon: PartyPopper },
+                    { value: 'Ciddi', label: 'Ciddi', Icon: BookOpen },
+                    { value: 'Teknik', label: 'Teknik', Icon: Settings },
+                    { value: 'Yaratıcı', label: 'Yaratıcı', Icon: SparklesIcon },
+                    { value: 'Bilgilendirici', label: 'Bilgilendirici', Icon: Book },
+                    { value: 'Diğer', label: 'Diğer', Icon: Search },
+                  ].map((toneOption) => {
+                    const isSelected = selectedTones.includes(toneOption.value);
+                    const IconComponent = toneOption.Icon;
+                    return (
+                      <button
+                        key={toneOption.value}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => {
+                          let newTones: string[];
+                          if (isSelected) {
+                            // Remove if already selected
+                            newTones = selectedTones.filter((t) => t !== toneOption.value);
+                          } else {
+                            // Add if not selected
+                            newTones = [...selectedTones, toneOption.value];
+                          }
+                          setSelectedTones(newTones);
+                          // If "Diğer" is removed, clear custom tone input
+                          if (!newTones.includes('Diğer')) {
+                            setCustomToneInput('');
+                          }
+                          // Update form value: exclude "Diğer" and include custom tone if "Diğer" is selected
+                          const tonesWithoutOther = newTones.filter((t) => t !== 'Diğer');
+                          const allTones = customToneInput.trim() && newTones.includes('Diğer')
                             ? [...tonesWithoutOther, customToneInput.trim()].filter(Boolean)
                             : tonesWithoutOther;
                           setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
                         }}
-                        placeholder="Özel bir ton yazın (örn: Mizahi, Akademik...)"
-                    className="border-[var(--border)] focus:border-[#203eec]"
-                        maxLength={100}
-                      />
-                      {customToneInput && (
-                        <p
-                          className="text-xs text-muted-foreground mt-1 text-right"
-                          style={{
-                          }}
-                        >
-                          {customToneInput.length}/100
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {errors.tone && (
-                    <p
-                      className="text-xs text-red-500 mt-1"
-                      style={{
-                      }}
-                    >
-                      {errors.tone.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label
-                    htmlFor="targetAudience"
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Hedef Kitle
-                    <span className="text-xs text-muted-foreground ml-2 font-normal">
-                      (Enter&apos;a basarak ekleyin)
-                    </span>
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {targetAudienceTags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#203eec]/10 text-[#203eec] rounded-full text-sm font-medium"
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                          isSelected
+                            ? 'border-primary bg-accent font-medium text-accent-foreground'
+                            : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-secondary'
+                        }`}
                       >
+                        <IconComponent
+                          className={`h-4 w-4 shrink-0 ${isSelected ? 'text-accent-foreground' : 'text-muted-foreground'}`}
+                        />
+                        <span className="truncate">{toneOption.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedTones.length > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {selectedTones.length} ton seçildi
+                  </p>
+                )}
+                {selectedTones.includes('Diğer') && (
+                  <div className="mt-3">
+                    <label
+                      htmlFor="customTone"
+                      className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                    >
+                      Özel Ton Yazın
+                    </label>
+                    <Input
+                      id="customTone"
+                      value={customToneInput}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setCustomToneInput(newValue);
+                        // Update form value with selected tones (excluding "Diğer") + custom tone
+                        const tonesWithoutOther = selectedTones.filter((t) => t !== 'Diğer');
+                        const allTones = newValue.trim()
+                          ? [...tonesWithoutOther, newValue.trim()].filter(Boolean)
+                          : tonesWithoutOther;
+                        setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
+                      }}
+                      onBlur={() => {
+                        // Update form value when input loses focus
+                        const tonesWithoutOther = selectedTones.filter((t) => t !== 'Diğer');
+                        const allTones = customToneInput.trim()
+                          ? [...tonesWithoutOther, customToneInput.trim()].filter(Boolean)
+                          : tonesWithoutOther;
+                        setValue('tone', allTones.length > 0 ? allTones.join(', ') : '');
+                      }}
+                      placeholder="Özel bir ton yazın (örn: Mizahi, Akademik...)"
+                      maxLength={100}
+                    />
+                    {customToneInput && (
+                      <p className="mt-1.5 text-right text-xs text-muted-foreground">
+                        {customToneInput.length}/100
+                      </p>
+                    )}
+                  </div>
+                )}
+                {errors.tone && <p className="mt-1.5 text-xs text-destructive">{errors.tone.message}</p>}
+              </div>
+
+              {/* Hedef kitle */}
+              <div>
+                <FieldLabel htmlFor="targetAudience" hint="(Enter'a basarak ekleyin)">
+                  Hedef Kitle
+                </FieldLabel>
+                {targetAudienceTags.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {targetAudienceTags.map((tag, index) => (
+                      <Badge key={index} className="gap-1.5 py-1 pr-1.5 text-xs">
                         {tag}
                         <button
                           type="button"
+                          aria-label={`${tag} etiketini kaldır`}
                           onClick={() => {
                             const newTags = targetAudienceTags.filter((_, i) => i !== index);
                             setTargetAudienceTags(newTags);
                             setValue('targetAudience', newTags.join(', '));
                           }}
-                          className="hover:text-[#1a32cc] transition-colors"
+                          className="rounded-full p-0.5 transition-colors hover:bg-primary/10"
                         >
-                          ×
+                          <X className="h-3 w-3" />
                         </button>
-                      </span>
+                      </Badge>
                     ))}
                   </div>
-                  <Input
-                    id="targetAudience"
-                    value={targetAudienceInput}
-                    onChange={(e) => setTargetAudienceInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const trimmed = targetAudienceInput.trim();
-                        if (trimmed && !targetAudienceTags.includes(trimmed)) {
-                          const newTags = [...targetAudienceTags, trimmed];
-                          setTargetAudienceTags(newTags);
-                          setValue('targetAudience', newTags.join(', '));
-                          setTargetAudienceInput('');
-                        }
+                )}
+                <Input
+                  id="targetAudience"
+                  value={targetAudienceInput}
+                  onChange={(e) => setTargetAudienceInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const trimmed = targetAudienceInput.trim();
+                      if (trimmed && !targetAudienceTags.includes(trimmed)) {
+                        const newTags = [...targetAudienceTags, trimmed];
+                        setTargetAudienceTags(newTags);
+                        setValue('targetAudience', newTags.join(', '));
+                        setTargetAudienceInput('');
                       }
-                    }}
-                    placeholder="Geliştiriciler, Pazarlamacılar... (Enter'a basın)"
-                    className="border-[var(--border)] focus:border-[#203eec]"
-                    maxLength={100}
-                  />
-                  {errors.targetAudience && (
-                    <p
-                      className="text-xs text-red-500 mt-1"
-                      style={{
-                      }}
-                    >
-                      {errors.targetAudience.message}
-                    </p>
-                  )}
-                  <p
-                    className="text-xs text-muted-foreground mt-1"
-                    style={{
-                    }}
-                  >
-                    {targetAudienceTags.length} etiket eklendi
-                  </p>
-                </div>
+                    }
+                  }}
+                  placeholder="Geliştiriciler, Pazarlamacılar... (Enter'a basın)"
+                  maxLength={100}
+                />
+                {errors.targetAudience && (
+                  <p className="mt-1.5 text-xs text-destructive">{errors.targetAudience.message}</p>
+                )}
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {targetAudienceTags.length} etiket eklendi
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Uzunluk + dil */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="contentLength"
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    İçerik Uzunluğu
-                  </label>
-                  <select
-                    id="contentLength"
-                    {...register('contentLength')}
-                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
-                  >
+                  <FieldLabel htmlFor="contentLength">İçerik Uzunluğu</FieldLabel>
+                  <select id="contentLength" {...register('contentLength')} className={selectClass}>
                     <option value="kısa">Kısa (300-500 kelime)</option>
                     <option value="orta">Orta (500-1000 kelime)</option>
                     <option value="uzun">Uzun (1000+ kelime)</option>
                   </select>
                 </div>
                 <div>
-                  <label
-                    htmlFor="language"
-                    className="text-sm font-medium text-foreground mb-2 block"
-                    style={{
-                    }}
-                  >
-                    Dil
-                  </label>
-                  <select
-                    id="language"
-                    {...register('language')}
-                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
-                  >
+                  <FieldLabel htmlFor="language">Dil</FieldLabel>
+                  <select id="language" {...register('language')} className={selectClass}>
                     <option value="tr">Türkçe</option>
                     <option value="en">English</option>
                   </select>
                 </div>
               </div>
 
+              {/* Model seviyesi */}
               <div>
-                <label
-                  className="text-sm font-medium text-foreground mb-3 block"
-                  style={{
-                  }}
-                >
-                  Model Seviyesi
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <FieldLabel>Model Seviyesi</FieldLabel>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   {[
                     {
                       value: 'gpt-4o-mini',
@@ -930,8 +858,6 @@ function GenerateBlogPageContent() {
                       price: '$0.15 / $0.60',
                       description: 'Yüksek hacim içerik',
                       useCases: 'Kategori açıklaması, kısa blog, ürün metni',
-                      color: 'border-[#10B981] bg-green-50',
-                      selectedColor: 'border-[#10B981] bg-green-100',
                     },
                     {
                       value: 'gpt-4.1-mini',
@@ -941,8 +867,6 @@ function GenerateBlogPageContent() {
                       price: '$0.40 / $1.60',
                       description: 'Default SEO blog',
                       useCases: 'SEO kaliteli blog (önerilen)',
-                      color: 'border-[#203eec] bg-blue-50',
-                      selectedColor: 'border-[#203eec] bg-blue-100',
                       recommended: true,
                     },
                     {
@@ -953,8 +877,6 @@ function GenerateBlogPageContent() {
                       price: '$2.00 / $8.00',
                       description: 'Premium/Pillar content',
                       useCases: 'Ana sayfa rehber, pillar content',
-                      color: 'border-[#8B5CF6] bg-purple-50',
-                      selectedColor: 'border-[#8B5CF6] bg-purple-100',
                     },
                   ].map((model) => {
                     const selectedModel = watch('model') || 'gpt-4.1-mini';
@@ -963,105 +885,73 @@ function GenerateBlogPageContent() {
                     return (
                       <label
                         key={model.value}
-                        className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                        className={`relative cursor-pointer rounded-xl border p-4 transition-colors ${
                           isSelected
-                            ? `${model.selectedColor} shadow-md`
-                            : `${model.color} hover:shadow-sm`
+                            ? 'border-primary bg-accent'
+                            : 'border-border bg-card hover:border-primary/40 hover:bg-secondary'
                         }`}
                       >
-                        <input
-                          type="radio"
-                          value={model.value}
-                          {...register('model')}
-                          className="sr-only"
-                        />
-                        {model.recommended && (
-                          <span className="absolute top-2 right-2 text-xs font-medium text-[#203eec] bg-white px-2 py-0.5 rounded-full">
-                            Önerilen
+                        <input type="radio" value={model.value} {...register('model')} className="sr-only" />
+                        <div className="flex items-start justify-between gap-2">
+                          <span
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-secondary text-muted-foreground'
+                            }`}
+                          >
+                            <IconComponent className="h-4 w-4" />
                           </span>
-                        )}
-                        <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 ${isSelected ? 'text-[#203eec]' : 'text-muted-foreground'}`}>
-                            <IconComponent className="w-6 h-6" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4
-                                className="text-sm font-semibold text-foreground"
-                                style={{
-                                }}
-                              >
-                                {model.title}
-                              </h4>
-                              {isSelected && (
-                                <div className="w-4 h-4 rounded-full bg-[#203eec] flex items-center justify-center">
-                                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                                </div>
-                              )}
-                            </div>
-                            <p
-                              className="text-xs text-muted-foreground mb-1"
-                              style={{
-                              }}
-                            >
-                              {model.description}
-                            </p>
-                          </div>
+                          {model.recommended && (
+                            <Badge variant="outline" className="bg-card">
+                              Önerilen
+                            </Badge>
+                          )}
+                          {isSelected && !model.recommended && (
+                            <Check className="h-4 w-4 text-accent-foreground" />
+                          )}
                         </div>
+                        <p className="mt-3 text-sm font-semibold text-foreground">{model.title}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{model.description}</p>
+                        <p className="mt-2 font-mono text-[11px] text-muted-foreground">{model.subtitle}</p>
+                        <p className="text-[11px] text-muted-foreground">{model.price}</p>
                       </label>
                     );
                   })}
                 </div>
               </div>
 
+              {/* SEO */}
               <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    {...register('seoMode')}
-                    className="w-4 h-4 text-[#203eec] border-[var(--border)] rounded focus:ring-[#203eec]"
-                  />
-                  <span
-                    className="text-sm text-foreground"
-                    style={{
-                    }}
-                  >
-                    SEO Optimizasyonu
-                  </span>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="checkbox" {...register('seoMode')} className={checkboxClass} />
+                  <span className="text-sm text-foreground">SEO Optimizasyonu</span>
                 </label>
               </div>
 
               {/* Image Search Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-[var(--border)]/50">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showImageSearch}
-                      onChange={(e) => {
-                        setShowImageSearch(e.target.checked);
-                        if (!e.target.checked) {
-                          setSelectedImage(null);
-                          setUnsplashPhotos([]);
-                          setImageSearchQuery('');
-                        }
-                      }}
-                      className="w-4 h-4 text-[#203eec] border-[var(--border)] rounded focus:ring-[#203eec]"
-                    />
-                    <span
-                      className="text-sm font-medium text-foreground"
-                      style={{
-                      }}
-                    >
-                      Kapak Fotoğrafı Ekle
-                    </span>
-                  </label>
-                </div>
+              <div className="rounded-xl border border-border bg-secondary/50 p-4">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={showImageSearch}
+                    onChange={(e) => {
+                      setShowImageSearch(e.target.checked);
+                      if (!e.target.checked) {
+                        setSelectedImage(null);
+                        setUnsplashPhotos([]);
+                        setImageSearchQuery('');
+                      }
+                    }}
+                    className={checkboxClass}
+                  />
+                  <span className="text-sm font-medium text-foreground">Kapak Fotoğrafı Ekle</span>
+                </label>
 
                 {showImageSearch && (
-                  <div className="space-y-3">
+                  <div className="mt-3 space-y-3">
                     <div className="flex gap-2">
-                      <input
+                      <Input
                         type="text"
                         value={imageSearchQuery}
                         onChange={(e) => setImageSearchQuery(e.target.value)}
@@ -1071,25 +961,26 @@ function GenerateBlogPageContent() {
                           }
                         }}
                         placeholder="Arama terimi (örn: cyber security, technology)"
-                        className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:border-[#203eec] focus:outline-none"
+                        className="flex-1 bg-card"
                       />
                       <Button
                         type="button"
                         onClick={() => handleImageSearch(1)}
                         disabled={isSearchingImages || !imageSearchQuery.trim()}
-                        className="bg-[#203eec] hover:bg-[#1a32cc] text-white px-4"
+                        size="icon"
+                        aria-label="Görsel ara"
                       >
                         {isSearchingImages ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="animate-spin" />
                         ) : (
-                          <Search className="w-4 h-4" />
+                          <Search />
                         )}
                       </Button>
                     </div>
 
                     {unsplashPhotos.length > 0 && (
                       <div>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="mb-2 flex items-center justify-between">
                           <p className="text-xs text-muted-foreground">
                             {unsplashPhotos.length} resim bulundu
                           </p>
@@ -1099,22 +990,22 @@ function GenerateBlogPageContent() {
                             size="sm"
                             onClick={handleRefreshImages}
                             disabled={isSearchingImages}
-                            className="text-xs"
+                            className="bg-card text-xs"
                           >
-                            <RefreshCw className={`w-3 h-3 mr-1 ${isSearchingImages ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={isSearchingImages ? 'animate-spin' : ''} />
                             Yenile
                           </Button>
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {unsplashPhotos.map((photo) => (
                             <button
                               key={photo.id}
                               type="button"
                               onClick={() => setSelectedImage(photo)}
-                              className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all group ${
+                              className={`group relative aspect-video overflow-hidden rounded-lg border-2 transition-colors ${
                                 selectedImage?.id === photo.id
-                                  ? 'border-[#203eec] ring-2 ring-[#203eec]/30 scale-105'
-                                  : 'border-transparent hover:border-[#203eec]/50'
+                                  ? 'border-primary'
+                                  : 'border-transparent hover:border-primary/40'
                               }`}
                             >
                               <Image
@@ -1130,21 +1021,21 @@ function GenerateBlogPageContent() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="absolute top-1.5 left-1.5 bg-black/60 hover:bg-black/80 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                className="absolute left-1.5 top-1.5 z-10 rounded-lg bg-foreground/70 p-1.5 text-background opacity-0 transition-opacity hover:bg-foreground group-hover:opacity-100"
                                 title="Resmi Unsplash'ta incele"
                               >
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="h-3 w-3" />
                               </a>
                               {selectedImage?.id === photo.id && (
-                                <div className="absolute inset-0 bg-[#203eec]/20 flex items-center justify-center">
-                                  <Check className="w-6 h-6 text-white drop-shadow-lg" />
-                                </div>
+                                <span className="absolute inset-0 flex items-center justify-center bg-primary/30">
+                                  <Check className="h-6 w-6 text-primary-foreground" />
+                                </span>
                               )}
                             </button>
                           ))}
                         </div>
                         {selectedImage && (
-                          <p className="text-xs text-muted-foreground mt-2">
+                          <p className="mt-2 text-xs text-muted-foreground">
                             Seçili: {selectedImage.user.name} tarafından
                           </p>
                         )}
@@ -1154,136 +1045,101 @@ function GenerateBlogPageContent() {
                 )}
               </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading || isPolling || !watch('workspaceId') || !watch('topic')}
-                className="w-full bg-[#203eec] hover:bg-[#1a32cc] text-white rounded-full py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                }}
-                onClick={(e) => {
-                  console.log('Button clicked');
-                  console.log('Form values:', watch());
-                  console.log('Form errors:', errors);
-                  if (!watch('workspaceId')) {
-                    e.preventDefault();
-                    setError('Lütfen bir workspace seçin.');
-                    return;
-                  }
-                  if (!watch('topic') || watch('topic').trim().length < 5) {
-                    e.preventDefault();
-                    setError('Konu en az 5 karakter olmalı.');
-                    return;
-                  }
-                }}
-              >
-                {(isLoading || isPolling) ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    {postStatus === 'queued' && 'Kuyruğa eklendi...'}
-                    {postStatus === 'generating' && 'Blog üretiliyor...'}
-                    {!postStatus && 'Gönderiliyor...'}
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                    Blog Üret
-                  </>
+              <div>
+                <Button
+                  type="submit"
+                  disabled={isLoading || isPolling || !watch('workspaceId') || !watch('topic')}
+                  className="w-full"
+                  onClick={(e) => {
+                    console.log('Button clicked');
+                    console.log('Form values:', watch());
+                    console.log('Form errors:', errors);
+                    if (!watch('workspaceId')) {
+                      e.preventDefault();
+                      setError('Lütfen bir workspace seçin.');
+                      return;
+                    }
+                    if (!watch('topic') || watch('topic').trim().length < 5) {
+                      e.preventDefault();
+                      setError('Konu en az 5 karakter olmalı.');
+                      return;
+                    }
+                  }}
+                >
+                  {(isLoading || isPolling) ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      {postStatus === 'queued' && 'Kuyruğa eklendi...'}
+                      {postStatus === 'generating' && 'Blog üretiliyor...'}
+                      {!postStatus && 'Gönderiliyor...'}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles />
+                      Blog Üret
+                    </>
+                  )}
+                </Button>
+                {(!watch('workspaceId') || !watch('topic')) && (
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    {!watch('workspaceId') && 'Workspace seçin • '}
+                    {!watch('topic') && 'Konu girin'}
+                  </p>
                 )}
-              </Button>
-              {(!watch('workspaceId') || !watch('topic')) && (
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  {!watch('workspaceId') && 'Workspace seçin • '}
-                  {!watch('topic') && 'Konu girin'}
-                </p>
-              )}
+              </div>
             </form>
           </CardContent>
         </Card>
 
         {/* Result */}
-        <Card className="border-[var(--border)]">
-          <CardHeader className="p-5">
-            <CardTitle
-              className="text-base"
-              style={{
-              }}
-            >
-              Üretilen Blog
-            </CardTitle>
+        <Card className="shadow-card">
+          <CardHeader className="p-5 pb-4">
+            <CardTitle className="text-base">Üretilen Blog</CardTitle>
           </CardHeader>
-          <CardContent className="p-5 pt-0">
+          <CardContent className="space-y-4 p-5 pt-0">
             {error && (
-              <div
-                className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2"
-                style={{
-                }}
-              >
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {isPolling && postStatus && (
-              <div
-                className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-600 text-sm mb-4"
-                style={{
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>
-                    {postStatus === 'queued' && 'Post kuyruğa eklendi, işlenmeyi bekliyor...'}
-                    {postStatus === 'generating' && 'AI blog içeriğini üretiyor, lütfen bekleyin...'}
-                    {postStatus === 'generated' && 'Blog başarıyla üretildi!'}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-info-muted p-4 text-sm text-info">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                <span>
+                  {postStatus === 'queued' && 'Post kuyruğa eklendi, işlenmeyi bekliyor...'}
+                  {postStatus === 'generating' && 'AI blog içeriğini üretiyor, lütfen bekleyin...'}
+                  {postStatus === 'generated' && 'Blog başarıyla üretildi!'}
+                </span>
               </div>
             )}
 
             {generatedBlog ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3
-                    className="text-lg font-semibold text-foreground"
-                    style={{
-                    }}
-                  >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h3 className="text-lg font-semibold tracking-tight text-foreground">
                     {generatedBlog.title}
                   </h3>
-                  <div className="flex gap-2">
+                  <div className="flex shrink-0 gap-2">
                     {postId && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => router.push(`/dashboard/blogs/${postId}`)}
-                        className="border-[var(--border)]"
                       >
                         Detay
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopy}
-                      className="border-[var(--border)]"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <Button variant="outline" size="sm" onClick={handleCopy} aria-label="İçeriği kopyala">
+                      {copied ? <Check /> : <Copy />}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownload}
-                      className="border-[var(--border)]"
-                    >
-                      <Download className="w-4 h-4" />
+                    <Button variant="outline" size="sm" onClick={handleDownload} aria-label="İçeriği indir">
+                      <Download />
                     </Button>
                   </div>
                 </div>
-                <div
-                  className="prose prose-lg max-w-none p-4 bg-[var(--secondary)] rounded-xl border border-[var(--border)] max-h-[600px] overflow-y-auto"
-                  style={{
-                  }}
-                >
+                <div className="prose prose-lg max-h-[600px] max-w-none overflow-y-auto rounded-xl border border-border bg-secondary p-4 text-foreground">
                   {(() => {
                     const raw = generatedBlog.content || '';
                     const stripped = stripCodeFences(raw);
@@ -1384,8 +1240,8 @@ function GenerateBlogPageContent() {
                         if (htmlContent) {
                           return (
                             <div
-                              dangerouslySetInnerHTML={{ __html: htmlContent }}
-                              style={{ color: '#202020' }}
+                              className="text-foreground"
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }}
                             />
                           );
                         }
@@ -1397,26 +1253,17 @@ function GenerateBlogPageContent() {
                     // Fallback: treat as markdown and render as blog
                     return (
                       <div
+                        className="text-foreground"
                         dangerouslySetInnerHTML={{
-                          __html: formatMarkdownToHtml(raw),
+                          __html: sanitizeHtml(formatMarkdownToHtml(raw),)
                         }}
-                        style={{ color: '#202020' }}
                       />
                     );
                   })()}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p
-                  className="text-sm"
-                  style={{
-                  }}
-                >
-                  Blog üretmek için formu doldurun
-                </p>
-              </div>
+              <EmptyState icon={<Sparkles />} title="Blog üretmek için formu doldurun" />
             )}
           </CardContent>
         </Card>
@@ -1428,12 +1275,14 @@ function GenerateBlogPageContent() {
 export default function GenerateBlogPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[var(--background)] p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-[var(--card)] rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-[var(--card)] rounded"></div>
-          </div>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Skeleton className="h-96 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
         </div>
       </div>
     }>
@@ -1441,4 +1290,3 @@ export default function GenerateBlogPage() {
     </Suspense>
   );
 }
-

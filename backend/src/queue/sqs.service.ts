@@ -14,6 +14,8 @@ export interface GeneratePostMessage {
   model?: string; // 'gpt-4o-mini' | 'gpt-4.1-mini' | 'gpt-4.1'
   additionalContext?: string;
   targetAudience?: string;
+  keywords?: string[];
+  outline?: string;
   format?: string; // 'md' | 'html' | 'json'
   targetId?: string;
   retryCount?: number; // Track retry attempts

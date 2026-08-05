@@ -2,6 +2,22 @@ const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'user_data';
 
+/**
+ * Decode a JWT payload. JWTs use base64url ('-' and '_' instead of '+' and '/'),
+ * which atob() rejects — decoding the raw segment throws for many real tokens.
+ */
+export function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const segment = token.split('.')[1];
+    if (!segment) return null;
+    const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
 export const auth = {
   setToken: (token: string) => {
     if (typeof window !== 'undefined') {
@@ -65,15 +81,12 @@ export const auth = {
     const token = auth.getToken();
     if (!token) return true;
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const exp = payload.exp * 1000; // Convert to milliseconds
-      const now = Date.now();
-      // Add a small buffer (30 seconds) to account for clock skew
-      return now >= (exp - 30000);
-    } catch {
-      return true;
-    }
+    const payload = decodeJwtPayload(token);
+    if (!payload?.exp) return true;
+
+    const exp = payload.exp * 1000; // Convert to milliseconds
+    // Add a small buffer (30 seconds) to account for clock skew
+    return Date.now() >= exp - 30000;
   },
 
   getTokenExpirationTime: (): number | null => {
@@ -81,7 +94,8 @@ export const auth = {
     if (!token) return null;
 
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeJwtPayload(token);
+      if (!payload?.exp) return null;
       return payload.exp * 1000; // Convert to milliseconds
     } catch {
       return null;

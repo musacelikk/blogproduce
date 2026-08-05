@@ -1,47 +1,49 @@
-import { PageHeaderSkeleton, Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (
-    <div className="space-y-5">
-      <PageHeaderSkeleton />
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-80" />
+      </div>
 
-      <div className="bg-white rounded-xl border border-[#e5e5e5] p-1.5">
+      <div className="rounded-xl border border-border bg-card p-2">
         <div className="flex flex-wrap gap-1.5">
           {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-24 rounded-lg" />
+            <Skeleton key={i} className="h-9 w-24 rounded-lg" />
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#e5e5e5] p-5 lg:p-6">
-        <div className="flex items-center gap-2.5 mb-5 pb-5 border-b border-[#e5e5e5]">
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-center gap-3 border-b border-border pb-5">
           <Skeleton className="h-9 w-9 rounded-lg" />
-          <div className="flex-1">
-            <Skeleton className="h-6 w-32 mb-2" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-32" />
             <Skeleton className="h-3 w-48" />
           </div>
         </div>
 
         <div className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {[...Array(4)].map((_, i) => (
-              <div key={i}>
-                <Skeleton className="h-4 w-24 mb-2" />
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-10 w-full rounded-lg" />
               </div>
             ))}
           </div>
-          <div>
-            <Skeleton className="h-4 w-24 mb-2" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
             <Skeleton className="h-24 w-full rounded-lg" />
           </div>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-[#e5e5e5] flex justify-end">
-          <Skeleton className="h-10 w-40 rounded-full" />
+        <div className="mt-6 flex justify-end border-t border-border pt-5">
+          <Skeleton className="h-10 w-40 rounded-lg" />
         </div>
       </div>
     </div>
   );
 }
-

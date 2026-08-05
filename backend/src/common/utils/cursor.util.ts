@@ -33,7 +33,13 @@ export function decodeCursor(cursor: string): CursorData | null {
     if (!data.timestamp || !data.id) {
       return null;
     }
-    
+
+    // A malformed timestamp would otherwise reach the query as `Invalid Date`
+    // and surface as a 500 from the database driver.
+    if (Number.isNaN(new Date(data.timestamp).getTime())) {
+      return null;
+    }
+
     return data;
   } catch (error) {
     return null;

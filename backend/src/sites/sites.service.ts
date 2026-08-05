@@ -33,8 +33,6 @@ export class SitesService {
   }
 
   async findAll(user: User, workspaceId?: string) {
-    const where: any = {};
-    
     if (workspaceId) {
       const workspace = await this.workspacesRepository.findOne({
         where: { id: workspaceId, ownerId: user.id },
@@ -42,11 +40,16 @@ export class SitesService {
       if (!workspace) {
         throw new NotFoundException('Workspace not found');
       }
-      where.workspaceId = workspaceId;
+      return this.sitesRepository.find({
+        where: { workspaceId },
+        relations: ['workspace'],
+      });
     }
 
+    // Without an explicit workspace, return only the caller's own sites —
+    // an unscoped find() would return every tenant's sites.
     return this.sitesRepository.find({
-      where,
+      where: { workspace: { ownerId: user.id } },
       relations: ['workspace'],
     });
   }

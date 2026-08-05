@@ -87,60 +87,53 @@ export function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-[#1a1a1a] rounded-lg shadow-md text-white"
+        aria-label={isMobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
+        className="fixed left-4 top-4 z-50 rounded-lg border border-border bg-card p-2 text-foreground shadow-card transition-colors hover:bg-secondary lg:hidden"
       >
-        {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 bg-[#1a1a1a] border-r border-[#333333] flex flex-col transition-all duration-300 ${
+        className={`fixed bottom-0 left-0 top-16 z-40 flex flex-col border-r border-border bg-card transition-all duration-300 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${isCollapsed ? 'lg:w-20 w-64' : 'lg:w-64 w-64'}`}
+        } ${isCollapsed ? 'w-64 lg:w-20' : 'w-64 lg:w-64'}`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-[#333333] relative flex-shrink-0">
+        <div className="relative flex-shrink-0 border-b border-border p-4">
           <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#3B82F6] rounded-lg flex items-center justify-center flex-shrink-0">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary">
+              <Shield className="h-4 w-4 text-primary-foreground" />
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <span
-                  className="text-sm font-bold text-white block truncate"
-                  style={{ fontFamily: 'var(--font-display), "Space Grotesk", sans-serif' }}
-                >
+                <span className="block truncate text-sm font-semibold text-foreground">
                   Admin Panel
                 </span>
-                <span className="text-xs text-[#666666] block truncate" style={{ fontFamily: 'var(--font-sans), "Inter", sans-serif' }}>
-                  BlogProduce
-                </span>
+                <span className="block truncate text-xs text-muted-foreground">BlogProduce</span>
               </div>
             )}
           </Link>
           {/* Toggle - Desktop */}
           <button
             onClick={toggleSidebar}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#333333] hover:bg-[#3B82F6] rounded-full items-center justify-center border border-[#444444] transition-colors z-10"
+            className="absolute -right-3 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-card transition-colors hover:bg-accent hover:text-accent-foreground lg:flex"
             aria-label={isCollapsed ? 'Menüyü aç' : 'Menüyü daralt'}
           >
             {isCollapsed ? (
-              <ChevronRight className="w-3.5 h-3.5 text-white" />
+              <ChevronRight className="h-3.5 w-3.5" />
             ) : (
-              <ChevronLeft className="w-3.5 h-3.5 text-white" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             )}
           </button>
         </div>
 
         {/* Menu Items - gruplu */}
-        <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
           {sidebarGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               {!isCollapsed && (
-                <p
-                  className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#666666]"
-                  style={{ fontFamily: 'var(--font-sans), "Inter", sans-serif' }}
-                >
+                <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {group.label}
                 </p>
               )}
@@ -153,14 +146,15 @@ export function AdminSidebar() {
                       key={item.href}
                       href={item.href}
                       onClick={() => setIsMobileOpen(false)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 ${
-                        isActive ? 'bg-[#3B82F6] text-white shadow-sm' : 'text-[#999999] hover:bg-[#252525] hover:text-white'
+                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                        isActive
+                          ? 'bg-accent font-medium text-accent-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                       } ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}
-                      style={{ fontFamily: 'var(--font-sans), "Inter", sans-serif' }}
                       title={isCollapsed ? item.name : undefined}
                     >
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="text-sm font-medium truncate">{item.name}</span>}
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span className="truncate text-sm font-medium">{item.name}</span>}
                     </Link>
                   );
                 })}
@@ -170,16 +164,15 @@ export function AdminSidebar() {
         </div>
 
         {/* Logout */}
-        <div className="p-3 border-t border-[#333333] flex-shrink-0">
+        <div className="flex-shrink-0 border-t border-border p-3">
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-[#999999] hover:bg-[#252525] hover:text-white transition-all duration-200 ${
+            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${
               isCollapsed ? 'lg:justify-center lg:px-2' : ''
             }`}
-            style={{ fontFamily: 'var(--font-sans), "Inter", sans-serif' }}
             title={isCollapsed ? 'Çıkış Yap' : undefined}
           >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
+            <LogOut className="h-4 w-4 flex-shrink-0" />
             {!isCollapsed && <span className="text-sm font-medium">Çıkış Yap</span>}
           </button>
         </div>
@@ -188,11 +181,10 @@ export function AdminSidebar() {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/70 z-30"
+          className="fixed inset-0 z-30 bg-foreground/20 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
     </>
   );
 }
-

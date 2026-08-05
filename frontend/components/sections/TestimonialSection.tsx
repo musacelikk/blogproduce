@@ -1,94 +1,93 @@
 "use client"
 
-import { useState } from "react"
 import { SectionTitle } from "@/components/ui/section-title"
 
-const testimonials = [
-  { id: 1, quote: "İçerik üreticisi olarak bloglar ve tanıtım metinleri için sürekli metin yazıyordum. BlogProduce tam da aradığım tek duraklı çözüm oldu. Haftalarca süren işi günler içinde yapıyorum.", author: "Ayşe K.", role: "Pazarlama Müdürü", company: "TechStartup", blurColor: "bg-blue-500" },
-  { id: 2, quote: "API ile kendi sitemize entegre ettik. Dakikalar içinde SEO uyumlu, özgün bloglar üretiyoruz. Ekip olarak hem zaman hem maliyet kazandık. Kesinlikle tavsiye ederim.", author: "Mehmet Y.", role: "Teknik Lead", company: "DevAgency", blurColor: "bg-purple-500" },
-  { id: 3, quote: "50+ dil desteği harika. Uluslararası pazarlarda içerik üretmek artık çok kolay. SEO meta verileri otomatik oluşturuluyor, zamandan büyük tasarruf.", author: "Zeynep A.", role: "Dijital Pazarlama Uzmanı", company: "GrowthCo", blurColor: "bg-emerald-500" },
-  { id: 4, quote: "Workspace yönetimi çok pratik. Her müşteri için ayrı çalışma alanı, ayrı API anahtarı. Ajans olarak çalışırken bu özellik hayat kurtarıyor.", author: "Burak D.", role: "Kurucu", company: "ContentAgency", blurColor: "bg-orange-500" },
-  { id: 5, quote: "Token kullanım raporları sayesinde maliyetleri tam olarak takip edebiliyoruz. Şeffaf fiyatlandırma ve gerçek zamanlı analitik — mükemmel bir ürün.", author: "Selin T.", role: "Ürün Yöneticisi", company: "SaaSCo", blurColor: "bg-pink-500" },
-  { id: 6, quote: "Görsel destekli blog üretimi özelliği bizi çok etkiledi. Yazı ve görsel birlikte çıkıyor, içeriği doğrudan yayınlayabiliyoruz. Süper pratik.", author: "Deniz M.", role: "İçerik Direktörü", company: "MediaHouse", blurColor: "bg-cyan-500" },
-  { id: 7, quote: "RESTful API dökümanı çok temiz ve anlaşılır. Entegrasyon sadece birkaç saat sürdü. Destek ekibi de çok yardımsever. Harika deneyim.", author: "Can Ö.", role: "Backend Geliştirici", company: "TechFirm", blurColor: "bg-rose-500" },
+type Testimonial = {
+  id: number
+  quote: string
+  author: string
+  role: string
+  company: string
+}
+
+const testimonials: Testimonial[] = [
+  { id: 1, quote: "İçerik üreticisi olarak bloglar ve tanıtım metinleri için sürekli metin yazıyordum. BlogProduce tam da aradığım tek duraklı çözüm oldu. Haftalarca süren işi günler içinde yapıyorum.", author: "Ayşe K.", role: "Pazarlama Müdürü", company: "TechStartup" },
+  { id: 2, quote: "API ile kendi sitemize entegre ettik. Dakikalar içinde SEO uyumlu, özgün bloglar üretiyoruz. Ekip olarak hem zaman hem maliyet kazandık. Kesinlikle tavsiye ederim.", author: "Mehmet Y.", role: "Teknik Lead", company: "DevAgency" },
+  { id: 3, quote: "50+ dil desteği harika. Uluslararası pazarlarda içerik üretmek artık çok kolay. SEO meta verileri otomatik oluşturuluyor, zamandan büyük tasarruf.", author: "Zeynep A.", role: "Dijital Pazarlama Uzmanı", company: "GrowthCo" },
+  { id: 4, quote: "Workspace yönetimi çok pratik. Her müşteri için ayrı çalışma alanı, ayrı API anahtarı. Ajans olarak çalışırken bu özellik hayat kurtarıyor.", author: "Burak D.", role: "Kurucu", company: "ContentAgency" },
+  { id: 5, quote: "Token kullanım raporları sayesinde maliyetleri tam olarak takip edebiliyoruz. Şeffaf fiyatlandırma ve gerçek zamanlı analitik — mükemmel bir ürün.", author: "Selin T.", role: "Ürün Yöneticisi", company: "SaaSCo" },
+  { id: 6, quote: "Görsel destekli blog üretimi özelliği bizi çok etkiledi. Yazı ve görsel birlikte çıkıyor, içeriği doğrudan yayınlayabiliyoruz. Süper pratik.", author: "Deniz M.", role: "İçerik Direktörü", company: "MediaHouse" },
+  { id: 7, quote: "RESTful API dökümanı çok temiz ve anlaşılır. Entegrasyon sadece birkaç saat sürdü. Destek ekibi de çok yardımsever. Harika deneyim.", author: "Can Ö.", role: "Backend Geliştirici", company: "TechFirm" },
 ]
 
+function TestimonialCard({ testimonial, className = "" }: { testimonial: Testimonial; className?: string }) {
+  return (
+    <article
+      className={`rounded-xl border border-border bg-card p-6 shadow-card transition-shadow hover:shadow-card-hover md:p-8 ${className}`}
+    >
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
+          {testimonial.author.charAt(0)}
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground">{testimonial.author}</div>
+          <div className="text-xs text-muted-foreground">
+            {testimonial.role} · {testimonial.company}
+          </div>
+        </div>
+      </div>
+      <blockquote className="text-base font-medium leading-relaxed text-foreground">
+        &ldquo;{testimonial.quote}&rdquo;
+      </blockquote>
+    </article>
+  )
+}
+
 export const TestimonialSection = () => {
-  const [isPaused, setIsPaused] = useState(false)
   const duplicated = [...testimonials, ...testimonials]
   const duplicatedReverse = [...testimonials.slice().reverse(), ...testimonials.slice().reverse()]
   const mobileList = testimonials.slice(0, 6)
 
   return (
-    <section id="testimonials" className="py-20 overflow-hidden md:py-32 relative" style={{ paddingBottom: 0 }}>
-      <div className="absolute bottom-0 left-0 right-0 h-96 pointer-events-none z-20 hidden lg:block" style={{ background: "linear-gradient(to top, var(--background), rgba(255,255,255,0.8), transparent)" }} />
-
-      <div className="hidden lg:block pl-6 md:pl-12">
-        <div className="mb-12 md:mb-16 max-w-[1280px]">
-          <SectionTitle className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight">
+    <section id="testimonials" className="relative overflow-hidden py-16 sm:py-24">
+      {/* Desktop — dual marquee */}
+      <div className="hidden lg:block">
+        <div className="mx-auto mb-12 max-w-7xl px-4 sm:px-6 lg:mb-16 lg:px-8">
+          <SectionTitle className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
             Müşterilerimiz ne diyor?
           </SectionTitle>
         </div>
-        <div className="relative mb-6">
-          <div className="flex gap-6 animate-scroll-left" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} style={{ animationPlayState: isPaused ? "paused" : "running" }}>
-            {duplicated.map((t, i) => (
-              <article key={`${t.id}-${i}`} className="relative flex-shrink-0 w-[400px] p-6 md:p-8 overflow-hidden rounded-3xl hover:shadow-lg transition-shadow" style={{ border: "1px solid #f0f0f0", backgroundColor: "var(--card)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0" style={{ background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)" }}>{t.author.charAt(0)}</div>
-                  <div>
-                    <div className="font-semibold text-sm">{t.author}</div>
-                    <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t.role} · {t.company}</div>
-                  </div>
-                </div>
-                <blockquote className="text-base leading-relaxed font-semibold relative z-10" style={{ color: "#0a0a0a" }}>&ldquo;{t.quote}&rdquo;</blockquote>
-                <div className={`absolute -bottom-12 -right-12 w-48 h-48 ${t.blurColor} rounded-full opacity-10`} style={{ filter: "blur(72px)" }} />
-              </article>
-            ))}
-          </div>
+        <div className="mb-6 flex animate-scroll-left gap-6 hover:[animation-play-state:paused]">
+          {duplicated.map((t, i) => (
+            <TestimonialCard key={`${t.id}-${i}`} testimonial={t} className="w-[400px] shrink-0" />
+          ))}
         </div>
-        <div className="relative">
-          <div className="flex gap-6 animate-scroll-right" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} style={{ animationPlayState: isPaused ? "paused" : "running" }}>
-            {duplicatedReverse.map((t, i) => (
-              <article key={`r-${t.id}-${i}`} className="relative flex-shrink-0 w-[400px] p-6 md:p-8 overflow-hidden rounded-3xl hover:shadow-lg transition-shadow" style={{ border: "1px solid #f0f0f0", backgroundColor: "var(--card)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0" style={{ background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)" }}>{t.author.charAt(0)}</div>
-                  <div>
-                    <div className="font-semibold text-sm">{t.author}</div>
-                    <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t.role} · {t.company}</div>
-                  </div>
-                </div>
-                <blockquote className="text-base leading-relaxed font-semibold relative z-10" style={{ color: "#0a0a0a" }}>&ldquo;{t.quote}&rdquo;</blockquote>
-                <div className={`absolute -bottom-12 -right-12 w-48 h-48 ${t.blurColor} rounded-full opacity-10`} style={{ filter: "blur(72px)" }} />
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="lg:hidden max-w-[1280px] mx-auto px-6 md:px-12">
-        <div className="mb-12 md:mb-16">
-          <SectionTitle className="text-3xl md:text-4xl font-semibold tracking-tight">Müşterilerimiz ne diyor?</SectionTitle>
-        </div>
-        <div className="relative">
-          {mobileList.map((t, index) => (
-            <div key={t.id} className="sticky pt-10" style={{ top: `${80 + index * 10}px`, zIndex: index + 1 }}>
-              <article className="relative p-6 overflow-hidden rounded-3xl" style={{ border: "1px solid #f0f0f0", backgroundColor: "var(--card)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0" style={{ background: "linear-gradient(135deg, #203eec 0%, #00d4ff 100%)" }}>{t.author.charAt(0)}</div>
-                  <div>
-                    <div className="font-semibold text-sm">{t.author}</div>
-                    <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t.role} · {t.company}</div>
-                  </div>
-                </div>
-                <blockquote className="text-base leading-relaxed font-semibold relative z-10" style={{ color: "#0a0a0a" }}>&ldquo;{t.quote}&rdquo;</blockquote>
-                <div className={`absolute -bottom-12 -right-12 w-48 h-48 ${t.blurColor} rounded-full opacity-10`} style={{ filter: "blur(72px)" }} />
-              </article>
-            </div>
+        <div className="flex animate-scroll-right gap-6 hover:[animation-play-state:paused]">
+          {duplicatedReverse.map((t, i) => (
+            <TestimonialCard key={`r-${t.id}-${i}`} testimonial={t} className="w-[400px] shrink-0" />
           ))}
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-64 pointer-events-none z-10 lg:hidden" style={{ background: "linear-gradient(to top, var(--background), rgba(255,255,255,0.9), transparent)" }} />
+      {/* Mobile — stacked cards */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:hidden lg:px-8">
+        <div className="mb-12">
+          <SectionTitle className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Müşterilerimiz ne diyor?
+          </SectionTitle>
+        </div>
+        <div className="relative">
+          {mobileList.map((t, index) => (
+            <div
+              key={t.id}
+              className="sticky pt-10"
+              style={{ top: `${80 + index * 10}px`, zIndex: index + 1 }}
+            >
+              <TestimonialCard testimonial={t} />
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   )
 }

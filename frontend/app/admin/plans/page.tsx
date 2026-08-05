@@ -1,30 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
+  AlertCircle,
+  BarChart3,
   CreditCard,
   Edit,
-  Trash2,
-  Plus,
-  Save,
-  X,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Users,
-  Zap,
-  Infinity as InfinityIcon,
   FileText,
   Globe,
   Headphones,
-  Settings,
-  Webhook,
+  Infinity as InfinityIcon,
+  Loader2,
   Palette,
-  BarChart3,
+  Plus,
+  Save,
   Search,
+  Settings,
+  Trash2,
+  Users,
+  Webhook,
+  X,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   getAdminPlans,
   createAdminPlan,
@@ -32,6 +35,14 @@ import {
   deleteAdminPlan,
   type PlanDefinition,
 } from '@/lib/api';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+const CHECKBOX_CLASS =
+  'h-4 w-4 shrink-0 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+
+const LABEL_CLASS = 'mb-1.5 block text-xs font-medium text-muted-foreground';
 
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<PlanDefinition[]>([]);
@@ -161,10 +172,10 @@ export default function AdminPlansPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 mx-auto mb-2 text-[#3B82F6] animate-spin" />
-          <p className="text-xs text-[#999999]">Yükleniyor...</p>
+          <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -172,121 +183,105 @@ export default function AdminPlansPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-          <h1
-            className="text-lg font-medium text-white mb-1"
-            style={{
-              fontFamily: 'var(--font-display), "Space Grotesk", sans-serif',
-            }}
-          >
-            Plan Yönetimi
-          </h1>
-          <p
-            className="text-xs text-[#999999]"
-            style={{
-              fontFamily: 'var(--font-sans), "Inter", sans-serif',
-            }}
-          >
-            Kullanıcı planlarını ve tarifeleri yönetin
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white px-4 py-2 rounded-lg transition-colors text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Plan Ekle
-        </Button>
-      </motion.div>
+      <PageHeader
+        title="Plan Yönetimi"
+        description="Kullanıcı planlarını ve tarifeleri yönetin"
+        actions={
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4" />
+            Plan Ekle
+          </Button>
+        }
+      />
 
       {/* Search */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333]"
-      >
+      <div className="rounded-xl border border-border bg-card p-5 shadow-card">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
-          <input
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="Plan ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm placeholder:text-[#666666] focus:border-[#3B82F6] focus:outline-none"
+            className="pl-9"
           />
         </div>
-      </motion.div>
+      </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-red-400">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-sm">Hata</p>
-              <p className="text-xs">{error}</p>
-            </div>
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">Hata</p>
+            <p className="mt-1 text-xs">{error}</p>
           </div>
         </div>
       )}
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {filteredPlans.map((plan, index) => (
-          <motion.div
-            key={plan.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-5 hover:border-[#3B82F6]/50 transition-colors relative"
-          >
-            {plan.popular && (
-              <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#3B82F6] text-white px-3 py-0.5 rounded-full text-xs">
-                Popüler
-              </span>
-            )}
+      {filteredPlans.length === 0 ? (
+        <EmptyState
+          icon={<CreditCard />}
+          title="Plan bulunamadı"
+          description="Arama kriterlerinize uygun bir plan yok. Yeni bir plan ekleyebilirsiniz."
+          action={
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4" />
+              Plan Ekle
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {filteredPlans.map((plan) => (
+            <div
+              key={plan.id}
+              className="relative rounded-xl border border-border bg-card p-6 shadow-card transition-shadow hover:shadow-card-hover"
+            >
+              {plan.popular && (
+                <Badge
+                  variant="primary"
+                  className="absolute -top-2.5 left-1/2 -translate-x-1/2 shadow-card"
+                >
+                  Popüler
+                </Badge>
+              )}
 
-            {editingPlan === plan.id ? (
-              <PlanEditForm
-                plan={editedPlan!}
-                setPlan={setEditedPlan}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-            ) : (
-              <PlanDisplay
-                plan={plan}
-                onEdit={() => handleEdit(plan)}
-                onDelete={() => handleDelete(plan.id)}
-              />
-            )}
-          </motion.div>
-        ))}
-      </div>
+              {editingPlan === plan.id ? (
+                <PlanEditForm
+                  plan={editedPlan!}
+                  setPlan={setEditedPlan}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              ) : (
+                <PlanDisplay
+                  plan={plan}
+                  onEdit={() => handleEdit(plan)}
+                  onDelete={() => handleDelete(plan.id)}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Add Plan Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1a1a1a] rounded-xl border border-[#333333] p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-white">Yeni Plan Ekle</h2>
-              <button
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-elevated">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                Yeni Plan Ekle
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Kapat"
                 onClick={() => setShowAddModal(false)}
-                className="text-[#666666] hover:text-white"
               >
-                <X className="w-5 h-5" />
-              </button>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <PlanEditForm
               plan={newPlan as PlanDefinition}
@@ -295,7 +290,7 @@ export default function AdminPlansPage() {
               onCancel={() => setShowAddModal(false)}
               isNew
             />
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
@@ -313,34 +308,34 @@ function PlanDisplay({
 }) {
   return (
     <>
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-medium text-white">{plan.name}</h3>
-          {!plan.active && (
-            <span className="text-xs text-red-400 bg-red-500/20 px-2 py-0.5 rounded">Pasif</span>
-          )}
+      <div className="mb-5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-foreground">{plan.name}</h3>
+          {!plan.active && <Badge variant="destructive">Pasif</Badge>}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-semibold text-white">${plan.price.monthly}</span>
-          <span className="text-xs text-[#666666]">/ay</span>
+          <span className="text-3xl font-semibold tracking-tight text-foreground">
+            ${plan.price.monthly}
+          </span>
+          <span className="text-xs text-muted-foreground">/ay</span>
         </div>
-        <div className="flex items-baseline gap-1 mt-1">
-          <span className="text-lg font-medium text-[#666666]">${plan.price.yearly}</span>
-          <span className="text-xs text-[#666666]">/yıl</span>
+        <div className="mt-1 flex items-baseline gap-1">
+          <span className="text-base font-medium text-muted-foreground">${plan.price.yearly}</span>
+          <span className="text-xs text-muted-foreground">/yıl</span>
         </div>
         {plan.description && (
-          <p className="text-xs text-[#666666] mt-2">{plan.description}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{plan.description}</p>
         )}
       </div>
 
-      <div className="space-y-2 mb-4">
+      <div className="mb-5 space-y-2">
         <FeatureItem
           icon={FileText}
           label="Maksimum Blog"
           value={
             plan.features.maxBlogs === 'unlimited' ? (
               <span className="flex items-center gap-1">
-                <InfinityIcon className="w-3 h-3" />
+                <InfinityIcon className="h-3 w-3" />
                 Sınırsız
               </span>
             ) : (
@@ -354,7 +349,7 @@ function PlanDisplay({
           value={
             plan.features.maxTokensPerMonth === 'unlimited' ? (
               <span className="flex items-center gap-1">
-                <InfinityIcon className="w-3 h-3" />
+                <InfinityIcon className="h-3 w-3" />
                 Sınırsız
               </span>
             ) : (
@@ -368,7 +363,7 @@ function PlanDisplay({
           value={
             plan.features.maxWorkspaces === 'unlimited' ? (
               <span className="flex items-center gap-1">
-                <InfinityIcon className="w-3 h-3" />
+                <InfinityIcon className="h-3 w-3" />
                 Sınırsız
               </span>
             ) : (
@@ -412,23 +407,19 @@ function PlanDisplay({
         )}
       </div>
 
-      <div className="flex items-center gap-2 pt-4 border-t border-[#333333]">
-        <Button
-          onClick={onEdit}
-          size="sm"
-          variant="outline"
-          className="flex-1 border-[#333333] hover:border-[#3B82F6] text-[#ebebeb] hover:text-[#3B82F6] text-xs"
-        >
-          <Edit className="w-3 h-3 mr-1 text-[#ebebeb] hover:text-[#3B82F6]" />
+      <div className="flex items-center gap-2 border-t border-border pt-4">
+        <Button onClick={onEdit} size="sm" variant="outline" className="flex-1">
+          <Edit className="h-3.5 w-3.5" />
           Düzenle
         </Button>
         <Button
           onClick={onDelete}
           size="sm"
           variant="outline"
-          className="border-[#333333] hover:border-red-500 text-[#ebebeb] hover:text-red-400 text-xs"
+          aria-label="Planı sil"
+          className="text-destructive hover:bg-[var(--destructive-muted)] hover:text-destructive"
         >
-          <Trash2 className="w-3 h-3 text-[#ebebeb] hover:text-red-400" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </>
@@ -451,21 +442,20 @@ function PlanEditForm({
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-xs text-[#999999] mb-1.5 block">Plan Adı</label>
-        <input
+        <label className={LABEL_CLASS}>Plan Adı</label>
+        <Input
           type="text"
           value={plan.name}
           onChange={(e) => setPlan({ ...plan, name: e.target.value })}
-          className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="text-xs text-[#999999] mb-1.5 block">Seviye</label>
+        <label className={LABEL_CLASS}>Seviye</label>
         <select
           value={plan.level}
           onChange={(e) => setPlan({ ...plan, level: e.target.value as 'starter' | 'pro' | 'enterprise' })}
-          className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+          className={SELECT_CLASS}
         >
           <option value="starter">Başlangıç</option>
           <option value="pro">Profesyonel</option>
@@ -473,43 +463,40 @@ function PlanEditForm({
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-[#999999] mb-1.5 block">Aylık Fiyat ($)</label>
-          <input
+          <label className={LABEL_CLASS}>Aylık Fiyat ($)</label>
+          <Input
             type="number"
             value={plan.price.monthly}
             onChange={(e) => setPlan({ ...plan, price: { ...plan.price, monthly: Number(e.target.value) } })}
-            className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
           />
         </div>
         <div>
-          <label className="text-xs text-[#999999] mb-1.5 block">Yıllık Fiyat ($)</label>
-          <input
+          <label className={LABEL_CLASS}>Yıllık Fiyat ($)</label>
+          <Input
             type="number"
             value={plan.price.yearly}
             onChange={(e) => setPlan({ ...plan, price: { ...plan.price, yearly: Number(e.target.value) } })}
-            className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
           />
         </div>
       </div>
 
       <div>
-        <label className="text-xs text-[#999999] mb-1.5 block">Açıklama</label>
-        <textarea
+        <label className={LABEL_CLASS}>Açıklama</label>
+        <Textarea
           value={plan.description || ''}
           onChange={(e) => setPlan({ ...plan, description: e.target.value })}
-          className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
           rows={2}
         />
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-white">Özellikler</h4>
+        <h4 className="text-sm font-semibold text-foreground">Özellikler</h4>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-[#999999] mb-1.5 block">Maksimum Blog</label>
+            <label className={LABEL_CLASS}>Maksimum Blog</label>
             <select
               value={plan.features.maxBlogs === 'unlimited' ? 'unlimited' : 'limited'}
               onChange={(e) =>
@@ -521,7 +508,7 @@ function PlanEditForm({
                   },
                 })
               }
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+              className={SELECT_CLASS}
             >
               <option value="limited">Sınırlı</option>
               <option value="unlimited">Sınırsız</option>
@@ -529,8 +516,8 @@ function PlanEditForm({
           </div>
           {plan.features.maxBlogs !== 'unlimited' && (
             <div>
-              <label className="text-xs text-[#999999] mb-1.5 block">Blog Sayısı</label>
-              <input
+              <label className={LABEL_CLASS}>Blog Sayısı</label>
+              <Input
                 type="number"
                 value={typeof plan.features.maxBlogs === 'number' ? plan.features.maxBlogs : 0}
                 onChange={(e) =>
@@ -539,15 +526,14 @@ function PlanEditForm({
                     features: { ...plan.features, maxBlogs: Number(e.target.value) },
                   })
                 }
-                className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
               />
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-[#999999] mb-1.5 block">Token Limiti</label>
+            <label className={LABEL_CLASS}>Token Limiti</label>
             <select
               value={plan.features.maxTokensPerMonth === 'unlimited' ? 'unlimited' : 'limited'}
               onChange={(e) =>
@@ -559,7 +545,7 @@ function PlanEditForm({
                   },
                 })
               }
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+              className={SELECT_CLASS}
             >
               <option value="limited">Sınırlı</option>
               <option value="unlimited">Sınırsız</option>
@@ -567,8 +553,8 @@ function PlanEditForm({
           </div>
           {plan.features.maxTokensPerMonth !== 'unlimited' && (
             <div>
-              <label className="text-xs text-[#999999] mb-1.5 block">Token Sayısı</label>
-              <input
+              <label className={LABEL_CLASS}>Token Sayısı</label>
+              <Input
                 type="number"
                 value={typeof plan.features.maxTokensPerMonth === 'number' ? plan.features.maxTokensPerMonth : 0}
                 onChange={(e) =>
@@ -577,15 +563,14 @@ function PlanEditForm({
                     features: { ...plan.features, maxTokensPerMonth: Number(e.target.value) },
                   })
                 }
-                className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
               />
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-[#999999] mb-1.5 block">Workspace Limiti</label>
+            <label className={LABEL_CLASS}>Workspace Limiti</label>
             <select
               value={plan.features.maxWorkspaces === 'unlimited' ? 'unlimited' : 'limited'}
               onChange={(e) =>
@@ -597,7 +582,7 @@ function PlanEditForm({
                   },
                 })
               }
-              className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
+              className={SELECT_CLASS}
             >
               <option value="limited">Sınırlı</option>
               <option value="unlimited">Sınırsız</option>
@@ -605,8 +590,8 @@ function PlanEditForm({
           </div>
           {plan.features.maxWorkspaces !== 'unlimited' && (
             <div>
-              <label className="text-xs text-[#999999] mb-1.5 block">Workspace Sayısı</label>
-              <input
+              <label className={LABEL_CLASS}>Workspace Sayısı</label>
+              <Input
                 type="number"
                 value={typeof plan.features.maxWorkspaces === 'number' ? plan.features.maxWorkspaces : 1}
                 onChange={(e) =>
@@ -615,15 +600,16 @@ function PlanEditForm({
                     features: { ...plan.features, maxWorkspaces: Number(e.target.value) },
                   })
                 }
-                className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
               />
             </div>
           )}
         </div>
 
         <div>
-          <label className="text-xs text-[#999999] mb-1.5 block">Diller (virgülle ayırın, &apos;all&apos; tüm diller için)</label>
-          <input
+          <label className={LABEL_CLASS}>
+            Diller (virgülle ayırın, &apos;all&apos; tüm diller için)
+          </label>
+          <Input
             type="text"
             value={Array.isArray(plan.features.languages) ? plan.features.languages.join(', ') : plan.features.languages}
             onChange={(e) =>
@@ -635,14 +621,13 @@ function PlanEditForm({
                 },
               })
             }
-            className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
             placeholder="tr, en, de, fr"
           />
         </div>
 
         <div>
-          <label className="text-xs text-[#999999] mb-1.5 block">Destek Türü</label>
-          <input
+          <label className={LABEL_CLASS}>Destek Türü</label>
+          <Input
             type="text"
             value={plan.features.support}
             onChange={(e) =>
@@ -651,12 +636,11 @@ function PlanEditForm({
                 features: { ...plan.features, support: e.target.value },
               })
             }
-            className="w-full px-3 py-2 bg-[#0f0f0f] rounded-lg border border-[#333333] text-white text-sm focus:border-[#3B82F6] focus:outline-none"
             placeholder="E-posta desteği"
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 rounded-lg border border-border bg-secondary/60 p-3">
           {[
             { key: 'apiAccess', label: 'API Erişimi' },
             { key: 'webhookAccess', label: 'Webhook Erişimi' },
@@ -667,7 +651,7 @@ function PlanEditForm({
             { key: 'advancedSeo', label: 'Gelişmiş SEO' },
             { key: 'analytics', label: 'Analytics' },
           ].map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer">
+            <label key={key} className="flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={plan.features[key as keyof typeof plan.features] as boolean}
@@ -677,51 +661,42 @@ function PlanEditForm({
                     features: { ...plan.features, [key]: e.target.checked },
                   })
                 }
-                className="w-4 h-4 rounded border-[#333333] bg-[#0f0f0f] text-[#3B82F6] focus:ring-[#3B82F6]"
+                className={CHECKBOX_CLASS}
               />
-              <span className="text-xs text-[#999999]">{label}</span>
+              <span className="text-xs text-foreground">{label}</span>
             </label>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="flex items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={plan.popular || false}
               onChange={(e) => setPlan({ ...plan, popular: e.target.checked })}
-              className="w-4 h-4 rounded border-[#333333] bg-[#0f0f0f] text-[#3B82F6] focus:ring-[#3B82F6]"
+              className={CHECKBOX_CLASS}
             />
-            <span className="text-xs text-[#999999]">Popüler Plan</span>
+            <span className="text-xs text-foreground">Popüler Plan</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={plan.active}
               onChange={(e) => setPlan({ ...plan, active: e.target.checked })}
-              className="w-4 h-4 rounded border-[#333333] bg-[#0f0f0f] text-[#3B82F6] focus:ring-[#3B82F6]"
+              className={CHECKBOX_CLASS}
             />
-            <span className="text-xs text-[#999999]">Aktif</span>
+            <span className="text-xs text-foreground">Aktif</span>
           </label>
         </div>
       </div>
 
       <div className="flex items-center gap-2 pt-2">
-        <Button
-          onClick={onSave}
-          size="sm"
-          className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs"
-        >
-          <Save className="w-3 h-3 mr-1" />
+        <Button onClick={onSave} size="sm" className="flex-1">
+          <Save className="h-3.5 w-3.5" />
           {isNew ? 'Oluştur' : 'Kaydet'}
         </Button>
-        <Button
-          onClick={onCancel}
-          size="sm"
-          variant="outline"
-          className="flex-1 border-[#333333] text-white text-xs"
-        >
-          <X className="w-3 h-3 mr-1" />
+        <Button onClick={onCancel} size="sm" variant="outline" className="flex-1">
+          <X className="h-3.5 w-3.5" />
           İptal
         </Button>
       </div>
@@ -739,9 +714,9 @@ function FeatureItem({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-[#999999]">
-      <Icon className="w-3.5 h-3.5" />
-      <span className="text-[#666666]">{label}:</span>
+    <div className="flex items-center gap-2 text-xs text-foreground">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      <span className="text-muted-foreground">{label}:</span>
       <span>{value}</span>
     </div>
   );
