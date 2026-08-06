@@ -17,6 +17,7 @@ import {
   Zap,
   Building2,
   EyeOff,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,13 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { getAdminPosts, hideAdminPost, unhideAdminPost, type Post } from '@/lib/api';
+import {
+  deleteAdminPost,
+  getAdminPosts,
+  hideAdminPost,
+  unhideAdminPost,
+  type Post,
+} from '@/lib/api';
 
 type StatusVariant = NonNullable<BadgeProps['variant']>;
 
@@ -73,6 +80,7 @@ export default function AdminBlogsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -113,6 +121,36 @@ export default function AdminBlogsPage() {
       await loadPosts();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Blog gizlenirken bir hata oluştu');
+    }
+  };
+
+  /**
+   * Permanent delete. The confirmation asks the admin to see the title they are
+   * about to destroy, because this row belongs to a customer and there is no
+   * undo — hiding is the reversible option and stays one click away.
+   */
+  const handleDeletePost = async (post: Post) => {
+    const owner = post.workspace?.owner?.email ?? post.author?.email ?? 'bilinmeyen kullanıcı';
+    if (
+      !confirm(
+        `"${post.title}" kalıcı olarak silinecek.\n\n` +
+          `Sahibi: ${owner}\n\n` +
+          'Blog, tüm revizyonları ve SEO verileri geri alınamaz biçimde silinir. ' +
+          'Sadece yayından kaldırmak istiyorsanız "gizle" seçeneğini kullanın.\n\n' +
+          'Silmek istediğinizden emin misiniz?',
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(post.id);
+    try {
+      await deleteAdminPost(post.id);
+      await loadPosts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Blog silinirken bir hata oluştu');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -330,12 +368,27 @@ export default function AdminBlogsPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 border-t border-border pt-4">
-                    <Button asChild variant="outline" size="sm" className="w-full">
+                  <div className="mt-4 flex gap-2 border-t border-border pt-4">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
                       <Link href={`/admin/blogs/${post.id}`}>
                         <Eye className="h-4 w-4" />
                         Görüntüle
                       </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeletePost(post)}
+                      disabled={deletingId === post.id}
+                      className="h-9 w-9 shrink-0 text-destructive"
+                      title="Blog'u kalıcı olarak sil"
+                      aria-label={`"${post.title}" blogunu kalıcı olarak sil`}
+                    >
+                      {deletingId === post.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -459,6 +512,21 @@ export default function AdminBlogsPage() {
                           <EyeOff className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeletePost(post)}
+                        disabled={deletingId === post.id}
+                        className="h-9 w-9 text-destructive"
+                        title="Blog'u kalıcı olarak sil"
+                        aria-label="Blog'u kalıcı olarak sil"
+                      >
+                        {deletingId === post.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                       <Button
                         asChild
                         variant="ghost"

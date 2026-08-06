@@ -6,6 +6,7 @@ import { Post } from '../entities/post.entity';
 import { PostRevision } from '../entities/post-revision.entity';
 import { Organization } from '../entities/organization.entity';
 import { Project } from '../entities/project.entity';
+import { Workspace } from '../entities/workspace.entity';
 import { Webhook } from '../entities/webhook.entity';
 import { ApiKey } from '../entities/api-key.entity';
 import { ApiKeySecret } from '../entities/api-key-secret.entity';
@@ -29,6 +30,7 @@ import { AuthModule } from '../auth/auth.module';
       GenerationJob,
       UsageEvent,
       IdempotencyKey,
+      Workspace,
     ]),
     PostsModule,
     QueueModule,

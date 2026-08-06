@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PostsService } from '../posts/posts.service';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../entities/user.entity';
@@ -48,6 +49,7 @@ export class AdminService {
     private webhookRepository: Repository<Webhook>,
     @InjectRepository(Settings)
     private settingsRepository: Repository<Settings>,
+    private postsService: PostsService,
   ) {}
 
   async getAllUsers() {
@@ -248,6 +250,14 @@ export class AdminService {
     }
 
     return post;
+  }
+
+  /**
+   * Permanently delete any user's post. Irreversible — the admin UI confirms
+   * first, and `hidePost` exists for the reversible case.
+   */
+  async deletePost(id: string) {
+    return this.postsService.removeAsAdmin(id);
   }
 
   async hidePost(id: string, reason?: string) {

@@ -16,12 +16,16 @@ import { EventTracking } from '../entities/event-tracking.entity';
 import { UserBehavior } from '../entities/user-behavior.entity';
 import { Webhook } from '../entities/webhook.entity';
 import { Settings } from '../entities/settings.entity';
+import { PostsModule } from '../posts/posts.module';
 import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UsageLedger, User, Post, PostRevision, Workspace, ActivityLog, PlanDefinition, Subscription, Payment, EventTracking, UserBehavior, Webhook, Settings]),
     CommonModule,
+    // Post deletion lives in PostsService so admin and dashboard share one
+    // definition of what deleting a post entails (see removeAsAdmin).
+    PostsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, UsageService],

@@ -1188,6 +1188,14 @@ export async function unhideAdminPost(id: string): Promise<Post> {
   return response.data || response;
 }
 
+/**
+ * Permanently delete any user's post. Irreversible and admin-only — prefer
+ * `hideAdminPost` when the intent is to take content down but keep it.
+ */
+export async function deleteAdminPost(id: string): Promise<void> {
+  await apiRequest(`/admin/posts/${id}`, { method: 'DELETE' });
+}
+
 export interface Workspace {
   id: string;
   name: string;

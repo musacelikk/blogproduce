@@ -11,6 +11,7 @@ import { Repository, In, MoreThan } from 'typeorm';
 import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
 import { Organization } from '../entities/organization.entity';
 import { Project } from '../entities/project.entity';
+import { Workspace } from '../entities/workspace.entity';
 import { PostRevision, ContentFormat, ContentEditor } from '../entities/post-revision.entity';
 import { Webhook, WebhookEvent } from '../entities/webhook.entity';
 import { GenerationJob, JobStatus } from '../entities/generation-job.entity';
@@ -26,6 +27,9 @@ import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import { getPublishedRevision } from '../common/utils/revision.util';
 import { decodeCursor, encodeCursor } from '../common/utils/cursor.util';
 import * as crypto from 'crypto';
+
+/** Guards the workspace lookup: a non-uuid slug makes Postgres throw, not return empty. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class ApiService {
@@ -48,9 +52,31 @@ export class ApiService {
     private usageEventsRepository: Repository<UsageEvent>,
     @InjectRepository(IdempotencyKey)
     private idempotencyKeysRepository: Repository<IdempotencyKey>,
+    @InjectRepository(Workspace)
+    private workspacesRepository: Repository<Workspace>,
     private sqsService: SqsService,
     private postsService: PostsService,
   ) {}
+
+  /**
+   * The workspace behind an API project, so a post lands in both tenancy models
+   * at once.
+   *
+   * The two are bridged by convention — `project.slug` holds the workspace id
+   * (see `BlogService.getUserOrganizationAndProject`) — but the slug is a plain
+   * string, so it is verified against `workspaces` rather than trusted. A
+   * project created outside that convention yields null, which is the old
+   * behaviour and strictly no worse.
+   */
+  private async resolveWorkspaceId(project: Project): Promise<string | null> {
+    if (!project?.slug || !UUID_PATTERN.test(project.slug)) return null;
+
+    const workspace = await this.workspacesRepository.findOne({
+      where: { id: project.slug },
+      select: ['id'],
+    });
+    return workspace?.id ?? null;
+  }
 
   async generate(
     organization: Organization,
@@ -133,6 +159,10 @@ export class ApiService {
         slug,
         organizationId: organization.id,
         projectId: project.id,
+        // Without this the post is invisible in the dashboard: that surface
+        // filters on workspaceId alone, so an API-created post scoped only by
+        // organization/project silently never appears for its own owner.
+        workspaceId: await this.resolveWorkspaceId(project),
         authorId: organization.ownerId,
         language: dto.language || PostLanguage.TR,
         status: PostStatus.QUEUED,

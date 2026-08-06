@@ -706,29 +706,63 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
-    // Use transaction to ensure all deletions succeed or fail together
-    await this.postsRepository.manager.transaction(async (transactionalEntityManager) => {
-      // Remove generation jobs first (no cascade)
-      await transactionalEntityManager
+    await this.deleteWithRelations(post);
+    return { message: 'Post deleted successfully' };
+  }
+
+  /**
+   * Delete any post, skipping the ownership check. Admin-only — the caller is
+   * responsible for having verified the ADMIN role.
+   *
+   * Kept here rather than reimplemented in AdminService so there is a single
+   * description of what "deleting a post" means: a second copy would drift, and
+   * the failure mode is orphaned generation_jobs / post_tags rows that block the
+   * delete with a foreign-key error.
+   */
+  async removeAsAdmin(id: string): Promise<{ message: string }> {
+    const post = await this.postsRepository.findOne({
+      where: { id },
+      relations: ['workspace', 'workspace.owner'],
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    await this.deleteWithRelations(post);
+
+    this.logger.warn(
+      `Admin deleted post ${id} ("${post.title}") owned by workspace ${post.workspaceId ?? 'none'}`,
+    );
+    return { message: 'Post deleted successfully' };
+  }
+
+  /**
+   * Remove a post and everything that points at it.
+   *
+   * `generation_jobs` and `post_tags` have no cascade, so they must go first or
+   * the delete fails on a foreign-key violation; revisions, seo and postAssets
+   * are handled by CASCADE. All of it in one transaction so a partial failure
+   * cannot leave a post with half its relations gone.
+   */
+  private async deleteWithRelations(post: Post): Promise<void> {
+    await this.postsRepository.manager.transaction(async (manager) => {
+      await manager
         .createQueryBuilder()
         .delete()
         .from('generation_jobs')
-        .where('"post_id" = :postId', { postId: id })
+        .where('"post_id" = :postId', { postId: post.id })
         .execute();
 
-      // Remove many-to-many relations (tags) first
-      await transactionalEntityManager
+      await manager
         .createQueryBuilder()
         .delete()
         .from('post_tags')
-        .where('"post_id" = :postId', { postId: id })
+        .where('"post_id" = :postId', { postId: post.id })
         .execute();
 
-      // Delete post - revisions, seo, and postAssets will be deleted by CASCADE
-      await transactionalEntityManager.remove(Post, post);
+      await manager.remove(Post, post);
     });
-
-    return { message: 'Post deleted successfully' };
   }
 
   /**

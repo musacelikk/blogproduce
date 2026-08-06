@@ -154,6 +154,13 @@ This is the codebase's biggest trap. There are **two parallel tenancy models**:
 
 They are bridged lazily: `createApiKey` and the generate flow auto-create an `Organization` named `` `${workspace.name} (${workspace.id})` `` and a `Project` whose **`slug` is the workspace id**. Any code that looks up the org/project for a workspace must use that exact naming convention, or it will silently create a second org and read an empty result set. `BlogService.getUserOrganizationAndProject()` is the canonical implementation.
 
+**A post must carry both scopes.** The API used to set only `organizationId`/`projectId`, leaving
+`workspace_id` null — and since the dashboard filters on `workspace_id` alone, API-generated posts
+were invisible to the user who paid for them. `api.service.ts` now resolves the workspace from
+`project.slug` at creation (verifying it against `workspaces` rather than trusting the string), and
+migration 003 backfills the rows that predate the fix. Any new write path that creates a post has
+to populate both, or it reintroduces exactly this class of bug.
+
 ### Content storage and formats
 
 Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. `content_html` is always sanitized through `HtmlSanitizerService` before leaving the backend.

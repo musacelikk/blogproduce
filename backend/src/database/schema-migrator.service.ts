@@ -4,9 +4,14 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { BILLING_SCHEMA_001 } from './migrations/001-billing-schema';
 import { TRY_AND_BANK_TRANSFER_002 } from './migrations/002-try-and-bank-transfer';
+import { LINK_API_POSTS_003 } from './migrations/003-link-api-posts-to-workspace';
 
 /** Applied in order on every boot. Append new files here; never reorder. */
-export const ALL_MIGRATIONS = [...BILLING_SCHEMA_001, ...TRY_AND_BANK_TRANSFER_002];
+export const ALL_MIGRATIONS = [
+  ...BILLING_SCHEMA_001,
+  ...TRY_AND_BANK_TRANSFER_002,
+  ...LINK_API_POSTS_003,
+];
 
 export interface SchemaStatement {
   sql: string;

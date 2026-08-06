@@ -168,6 +168,25 @@ export class AdminController {
     };
   }
 
+  /**
+   * Permanently delete any user's post, regardless of owner.
+   *
+   * The controller carries `@Roles(UserRole.ADMIN)` at class level, but it is
+   * repeated here deliberately: this is the most destructive route on the
+   * surface, and a future refactor that loosens the class-level guard must not
+   * silently expose it.
+   */
+  @Delete('posts/:id')
+  @Roles(UserRole.ADMIN)
+  async deletePost(@CurrentUser() admin: User, @Param('id') id: string) {
+    this.logger.warn(`Admin ${admin.email} is deleting post ${id}`);
+    await this.adminService.deletePost(id);
+    return {
+      success: true,
+      message: 'Blog kalıcı olarak silindi',
+    };
+  }
+
   @Patch('posts/:id/hide')
   async hidePost(
     @CurrentUser() user: User,
