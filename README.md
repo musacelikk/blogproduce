@@ -146,11 +146,19 @@ monthly allowance runs out.
 Premium → `claude-opus-5`. A plan can only generate with the tiers it includes.
 
 Every new signup automatically gets the 7-day trial. Plans and token packs live in the database
-and are editable from the admin panel; seed a fresh install with:
+and are editable from the admin panel.
+
+**Deploying the billing release to an existing database** — schema auto-sync is off in production,
+so the new columns and tables must be applied once:
 
 ```bash
-cd backend && npm run seed:catalog
+cd backend
+npm run migrate:billing   # adds trial/token columns + token_packs, token_purchases
+npm run seed:catalog      # writes the plans and token packs
 ```
+
+The migration is additive and idempotent: it only ever adds columns, tables and indexes, never
+drops or retypes anything, and it is safe to re-run.
 
 The admin panel's **Maliyet Analizi** screen shows real provider cost per model, per-plan margins
 at full allowance usage, token-pack margins, and a what-if calculator for pricing a new plan.
