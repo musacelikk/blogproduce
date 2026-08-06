@@ -148,17 +148,19 @@ Premium → `claude-opus-5`. A plan can only generate with the tiers it includes
 Every new signup automatically gets the 7-day trial. Plans and token packs live in the database
 and are editable from the admin panel.
 
-**Deploying the billing release to an existing database** — schema auto-sync is off in production,
-so the new columns and tables must be applied once:
+**Schema changes apply themselves at boot.** `SchemaMigratorService` runs the additive statements
+in `src/database/migrations/` every time the app starts, guarded by a Postgres advisory lock so the
+API and worker processes cannot race. Nothing is ever dropped or retyped, so a restart is safe.
+Set `AUTO_MIGRATE=false` to manage the schema yourself.
+
+After deploying the billing release, seed the catalog once:
 
 ```bash
-cd backend
-npm run migrate:billing   # adds trial/token columns + token_packs, token_purchases
-npm run seed:catalog      # writes the plans and token packs
+cd backend && npm run seed:catalog
 ```
 
-The migration is additive and idempotent: it only ever adds columns, tables and indexes, never
-drops or retypes anything, and it is safe to re-run.
+`npm run migrate:billing` applies the same statements manually if you would rather run them ahead
+of a deploy.
 
 The admin panel's **Maliyet Analizi** screen shows real provider cost per model, per-plan margins
 at full allowance usage, token-pack margins, and a what-if calculator for pricing a new plan.

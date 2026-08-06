@@ -53,6 +53,7 @@ import { Settings } from './entities/settings.entity';
 import { PlansModule } from './plans/plans.module';
 import { ApiModule } from './api/api.module';
 import { BillingModule } from './billing/billing.module';
+import { DatabaseModule } from './database/database.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
 import { PiiSanitizationInterceptor } from './common/interceptors/pii-sanitization.interceptor';
@@ -194,6 +195,7 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
       },
       inject: [ConfigService],
     }),
+    DatabaseModule,
     AuthModule,
     WorkspacesModule,
     SitesModule,

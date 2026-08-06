@@ -18,7 +18,7 @@ npm test -- -t "test name"         # single test by name
 npm run test:e2e                   # jest --config ./test/jest-e2e.json
 npm run worker                     # SQS consumer (ts-node)
 npm run create-admin               # seeds admin from ADMIN_EMAIL/ADMIN_PASSWORD/ADMIN_NAME
-npm run migrate:billing            # applies scripts/migrations/*.sql (additive, idempotent)
+npm run migrate:billing            # applies schema migrations by hand (they also run at boot)
 npm run seed:catalog               # upserts plans + token packs from src/billing/plan-catalog.ts
 
 # Frontend (Next.js 14 app router, port 3000)
@@ -31,11 +31,16 @@ npx tsc --noEmit                   # typecheck only
 
 **Production runs two processes** from the same build: `npm run start:api` (HTTP) and `npm run start:worker` (SQS consumer). Both are defined in the root `package.json`, which builds only the backend — the frontend deploys separately.
 
-**There is no migration framework.** Schema auto-sync is off in production (see `app.module.ts`),
-so any entity change needs a hand-written statement in `backend/scripts/migrations/` applied via
-`npm run migrate:billing`. Adding a column to an entity without one breaks *every* query against
-that table in production — TypeORM selects all mapped columns, so the failure surfaces far from
-the feature you added (a new `users` column takes down login and registration).
+**Schema changes apply at boot, not by hand.** `synchronize` is off in production, so
+`SchemaMigratorService` (`src/database/`) runs the statement lists in `src/database/migrations/`
+on every startup, serialised across processes with a Postgres advisory lock. Adding a column to an
+entity **must** come with a statement there: TypeORM selects all mapped columns, so a missing one
+breaks *every* query against that table — a new `users` column takes down login and registration,
+far from the feature you were building.
+
+Migrations are TypeScript, not `.sql`, so they ship inside `dist` without an asset-copying step.
+Keep every statement additive and idempotent (`IF NOT EXISTS`), and mark anything that legitimately
+fails on a re-run — `CREATE TYPE`, `CREATE EXTENSION` — as `optional: true`.
 
 `tsconfig.build.json` restricts compilation to `src/`. Without it, `backend/scripts/` is also compiled, TypeScript preserves the common root, and the entrypoints move to `dist/src/main.js` — silently breaking `start:prod`. If you add a top-level directory that should ship, extend that file rather than the base `tsconfig.json`.
 
