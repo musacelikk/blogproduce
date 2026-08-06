@@ -10,6 +10,7 @@ import { UsageLedger } from '../entities/usage-ledger.entity';
 import { PostRevision } from '../entities/post-revision.entity';
 import { TokenPack } from '../entities/token-pack.entity';
 import { TokenPurchase } from '../entities/token-purchase.entity';
+import { Payment } from '../entities/payment.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TokenPurchase } from '../entities/token-purchase.entity';
       PostRevision,
       TokenPack,
       TokenPurchase,
+      Payment,
     ]),
   ],
   controllers: [BillingController],

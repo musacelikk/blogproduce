@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, ArrowUpRight, Clock, Crown } from 'lucide-react';
+import { AlertCircle, ArrowRight, ArrowUpRight, Clock, Crown, Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,15 +24,25 @@ import {
   type PricingPlan,
 } from '@/components/pricing/plan-model';
 import {
+  cancelPaymentRequest,
+  createPaymentRequest,
   getAvailablePlans,
+  getBankDetails,
   getCurrentPlan,
   getEntitlement,
   getModelTiers,
+  getMyPaymentRequests,
+  type BankDetails,
   type Entitlement,
+  type PaymentRequest,
   type PlanDefinition,
   type TierInfo,
   type UserPlanInfo,
 } from '@/lib/api';
+import {
+  BankNotConfiguredNotice,
+  BankTransferPanel,
+} from '@/components/billing/BankTransferPanel';
 
 const LEVEL_ORDER: Record<string, number> = { trial: 0, starter: 1, pro: 2, enterprise: 3 };
 
@@ -43,6 +53,10 @@ export default function PlansPage() {
   const [tiers, setTiers] = useState<TierInfo[]>([]);
   const [period, setPeriod] = useState<BillingPeriod>('monthly');
   const [loading, setLoading] = useState(true);
+  const [bank, setBank] = useState<BankDetails | null>(null);
+  const [orderingPlanId, setOrderingPlanId] = useState<string | null>(null);
+  const [activeTransfer, setActiveTransfer] = useState<PaymentRequest | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -51,16 +65,18 @@ export default function PlansPage() {
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const [planList, current, ent, tierList] = await Promise.all([
+      const [planList, current, ent, tierList, bankInfo] = await Promise.all([
         getAvailablePlans().catch(() => []),
         getCurrentPlan().catch(() => null),
         getEntitlement().catch(() => null),
         getModelTiers().catch(() => []),
+        getBankDetails().catch(() => null),
       ]);
       setPlans(Array.isArray(planList) ? planList : []);
       setPlanInfo(current);
       setEntitlement(ent);
       setTiers(Array.isArray(tierList) ? tierList : []);
+      setBank(bankInfo);
     } catch (err) {
       console.error('Error loading plans:', err);
     } finally {
@@ -70,6 +86,44 @@ export default function PlansPage() {
 
   const pricingPlans = useMemo(() => toPricingPlans(plans), [plans]);
   const saving = useMemo(() => yearlySaving(pricingPlans), [pricingPlans]);
+
+  /**
+   * Open a bank-transfer order for a plan. The catalog `key` is read from the
+   * raw plan rows rather than the view model, so this keeps working regardless
+   * of how the pricing card shape evolves.
+   */
+  const handleChoosePlan = async (planId: string) => {
+    const planKey = plans.find((p) => String(p.id) === String(planId))?.key;
+    if (!planKey) {
+      setOrderError('Bu plan için ödeme başlatılamadı. Lütfen bizimle iletişime geçin.');
+      return;
+    }
+
+    setOrderingPlanId(planId);
+    setOrderError(null);
+    try {
+      const result = await createPaymentRequest({
+        type: 'plan',
+        planKey,
+        yearly: period === 'yearly',
+      });
+      setActiveTransfer(result.payment);
+      if (result.bank) setBank(result.bank);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'Ödeme talebi oluşturulamadı.');
+    } finally {
+      setOrderingPlanId(null);
+    }
+  };
+
+  const handleCancelTransfer = async (id: string) => {
+    try {
+      await cancelPaymentRequest(id);
+      setActiveTransfer(null);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'İptal edilemedi.');
+    }
+  };
 
   if (loading) {
     return (
@@ -143,6 +197,17 @@ export default function PlansPage() {
         </Card>
       )}
 
+      {bank && !bank.configured && (
+        <BankNotConfiguredNotice />
+      )}
+
+      {orderError && (
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-destructive-muted p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{orderError}</p>
+        </div>
+      )}
+
       {/* Plan cards — same card the public pricing page renders */}
       {pricingPlans.length === 0 ? (
         <EmptyState
@@ -167,12 +232,29 @@ export default function PlansPage() {
                       <Button className="w-full" variant="secondary" disabled>
                         Mevcut planınız
                       </Button>
+                    ) : plan.isTrial ? (
+                      // The trial is granted at signup, never bought.
+                      <Button className="w-full" variant="outline" disabled>
+                        Kayıtta otomatik tanımlanır
+                      </Button>
                     ) : (
-                      <Button asChild className="w-full" variant={isUpgrade ? 'default' : 'outline'}>
-                        <Link href={`/contact?plan=${encodeURIComponent(plan.name)}`}>
-                          {isUpgrade ? 'Bu plana yükselt' : 'Bu plana geç'}
-                          {isUpgrade ? <ArrowUpRight /> : <ArrowRight />}
-                        </Link>
+                      <Button
+                        className="w-full"
+                        variant={isUpgrade ? 'default' : 'outline'}
+                        onClick={() => handleChoosePlan(plan.id)}
+                        disabled={orderingPlanId !== null || bank?.configured === false}
+                      >
+                        {orderingPlanId === plan.id ? (
+                          <>
+                            <Loader2 className="animate-spin" />
+                            Hazırlanıyor…
+                          </>
+                        ) : (
+                          <>
+                            {isUpgrade ? 'Bu plana yükselt' : 'Bu plana geç'}
+                            {isUpgrade ? <ArrowUpRight /> : <ArrowRight />}
+                          </>
+                        )}
                       </Button>
                     )
                   }

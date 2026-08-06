@@ -1,13 +1,15 @@
 import * as React from 'react';
-import { Check } from 'lucide-react';
+import { Check, Landmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import {
   TIER_LABELS,
   TIER_ORDER,
+  formatCount,
+  formatPercent,
   formatTokens,
-  formatUsd,
+  formatTry,
   formatWorkspaces,
   type BillingPeriod,
   type PricingPlan,
@@ -79,25 +81,28 @@ export function PlanCard({ plan, period, action, current, className }: PlanCardP
           <>
             <div className="flex items-baseline gap-1.5">
               <span className="text-display-md text-foreground-strong">
-                {formatUsd(yearly ? plan.yearlyPerMonth : plan.monthlyPrice)}
+                {formatTry(yearly ? plan.yearlyPerMonth : plan.monthlyPrice)}
               </span>
               <span className="text-base text-muted-foreground">/ay</span>
             </div>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {yearly ? (
                 <>
-                  Yıllık {formatUsd(plan.yearlyPrice)} olarak faturalanır
-                  {plan.yearlySavingUsd > 0 && (
+                  Yıllık {formatTry(plan.yearlyPrice)} olarak faturalanır
+                  {plan.yearlySavingTry > 0 && (
                     <span className="font-medium text-success">
                       {' '}
-                      · {formatUsd(plan.yearlySavingUsd)} tasarruf
+                      · {formatTry(plan.yearlySavingTry)} tasarruf
                     </span>
                   )}
                 </>
               ) : plan.yearlySavingPct > 0 ? (
                 <>
-                  Yıllık ödemede aylık {formatUsd(plan.yearlyPerMonth)}
-                  <span className="font-medium text-success"> · %{plan.yearlySavingPct} indirim</span>
+                  Yıllık ödemede aylık {formatTry(plan.yearlyPerMonth)}
+                  <span className="font-medium text-success">
+                    {' '}
+                    · {formatPercent(plan.yearlySavingPct)} indirim
+                  </span>
                 </>
               ) : (
                 'Aylık faturalandırma, taahhüt yok'
@@ -106,6 +111,13 @@ export function PlanCard({ plan, period, action, current, className }: PlanCardP
           </>
         )}
       </div>
+
+      {!isFree && (
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Landmark className="h-3.5 w-3.5 shrink-0 text-accent-foreground" />
+          Ödeme havale/EFT ile alınır
+        </p>
+      )}
 
       {action && <div className="mt-6">{action}</div>}
 
@@ -119,7 +131,7 @@ export function PlanCard({ plan, period, action, current, className }: PlanCardP
           value={
             plan.estimatedArticles === null
               ? 'Sınırsız'
-              : `≈ ${plan.estimatedArticles.toLocaleString('tr-TR')} / ay`
+              : `≈ ${formatCount(plan.estimatedArticles)} / ay`
           }
         />
         <MetricRow label="Workspace" value={formatWorkspaces(plan.maxWorkspaces)} />

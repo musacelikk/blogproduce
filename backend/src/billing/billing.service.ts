@@ -1,14 +1,31 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { PlanDefinition } from '../entities/plan-definition.entity';
-import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+  BillingPeriod,
+} from '../entities/subscription.entity';
 import { UsageLedger } from '../entities/usage-ledger.entity';
 import { TokenPack } from '../entities/token-pack.entity';
 import { TokenPurchase, TokenPurchaseStatus } from '../entities/token-purchase.entity';
+import { Payment, PaymentMethod, PaymentStatus } from '../entities/payment.entity';
 import { ModelTier, TIER_DEFINITIONS, averageArticleTokens, normalizeTier } from './model-tiers';
 import { PLAN_BLUEPRINTS, TRIAL_DAYS } from './plan-catalog';
+import {
+  bankAccountDetails,
+  generateReferenceCode,
+  PAYMENT_REQUEST_TTL_DAYS,
+} from './bank-transfer';
 
 /** What a user is entitled to right now — the single answer every quota question reads. */
 export interface Entitlement {
@@ -52,6 +69,7 @@ export class BillingService {
     @InjectRepository(UsageLedger) private usageLedgerRepository: Repository<UsageLedger>,
     @InjectRepository(TokenPack) private tokenPacksRepository: Repository<TokenPack>,
     @InjectRepository(TokenPurchase) private tokenPurchasesRepository: Repository<TokenPurchase>,
+    @InjectRepository(Payment) private paymentsRepository: Repository<Payment>,
     private dataSource: DataSource,
   ) {}
 
@@ -200,27 +218,15 @@ export class BillingService {
   async listTokenPacks(): Promise<TokenPack[]> {
     return this.tokenPacksRepository.find({
       where: { active: true },
-      order: { sortOrder: 'ASC', priceUsd: 'ASC' },
+      order: { sortOrder: 'ASC', priceTry: 'ASC' },
     });
-  }
-
-  /** Credit a top-up. Payment capture happens upstream; this is the fulfilment step. */
-  async grantTokenPack(
-    userId: string,
-    packId: string,
-    note?: string,
-  ): Promise<{ tokens: number; balance: number }> {
-    const pack = await this.tokenPacksRepository.findOne({ where: { id: packId, active: true } });
-    if (!pack) throw new NotFoundException('Token paketi bulunamadı');
-
-    return this.creditTokens(userId, Number(pack.tokens), Number(pack.priceUsd), pack.id, note);
   }
 
   /** Credit an arbitrary token amount (admin grant, refund, migration). */
   async creditTokens(
     userId: string,
     tokens: number,
-    amountUsd: number,
+    amountTry: number,
     tokenPackId: string | null = null,
     note?: string,
   ): Promise<{ tokens: number; balance: number }> {
@@ -229,7 +235,7 @@ export class BillingService {
         userId,
         tokenPackId,
         tokens,
-        amountUsd,
+        amountTry,
         status: TokenPurchaseStatus.COMPLETED,
         note: note ?? null,
       });
@@ -253,6 +259,260 @@ export class BillingService {
       order: { createdAt: 'DESC' },
       take: 50,
     });
+  }
+
+  // ── Bank transfer (havale / EFT) ────────────────────────────────────────
+  //
+  // A bank transfer has no callback: money arrives in a bank statement, not a
+  // webhook. So the flow is deliberately two-phase — the customer creates a
+  // *pending* order and an admin confirms it against the statement. Nothing is
+  // granted until confirmation, and confirmation is the only place fulfilment
+  // happens.
+
+  getBankDetails() {
+    return bankAccountDetails();
+  }
+
+  /**
+   * Open an order and hand back the reference code the customer must quote in
+   * the transfer description. Grants nothing on its own.
+   */
+  async createPaymentRequest(
+    userId: string,
+    input: { type: 'plan' | 'token_pack'; planKey?: string; packId?: string; yearly?: boolean },
+  ): Promise<Payment> {
+    const details = bankAccountDetails();
+    if (!details.configured) {
+      throw new BadRequestException(
+        'Havale ile ödeme şu anda kullanılamıyor. Lütfen bizimle iletişime geçin.',
+      );
+    }
+
+    // One open order at a time: a second pending row for the same user makes an
+    // incoming transfer ambiguous to match.
+    const existing = await this.paymentsRepository.findOne({
+      where: { userId, status: PaymentStatus.PENDING, referenceCode: Not(IsNull()) },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Bekleyen bir ödemeniz var (${existing.referenceCode}). ` +
+          'Devam etmek için onu tamamlayın veya iptal edin.',
+      );
+    }
+
+    const draft =
+      input.type === 'token_pack'
+        ? await this.tokenPackOrder(input.packId)
+        : await this.planOrder(input.planKey, input.yearly === true);
+
+    const payment = this.paymentsRepository.create({
+      userId,
+      ...draft,
+      currency: 'TRY',
+      status: PaymentStatus.PENDING,
+      paymentMethod: PaymentMethod.BANK_TRANSFER,
+      referenceCode: generateReferenceCode(),
+    });
+
+    return this.paymentsRepository.save(payment);
+  }
+
+  private async tokenPackOrder(packId?: string): Promise<Partial<Payment>> {
+    if (!packId) throw new BadRequestException('Token paketi seçilmedi');
+
+    const pack = await this.tokenPacksRepository.findOne({ where: { id: packId, active: true } });
+    if (!pack) throw new NotFoundException('Token paketi bulunamadı');
+
+    // Amount and token count are snapshotted, so editing the catalog later
+    // cannot change what an already-placed order is worth.
+    return {
+      tokenPackId: pack.id,
+      tokens: Number(pack.tokens),
+      amount: Number(pack.priceTry),
+      notes: `${pack.name} token paketi`,
+    };
+  }
+
+  private async planOrder(planKey: string | undefined, yearly: boolean): Promise<Partial<Payment>> {
+    if (!planKey) throw new BadRequestException('Plan seçilmedi');
+
+    const plan = await this.plansRepository.findOne({ where: { key: planKey } });
+    if (!plan) throw new NotFoundException('Plan bulunamadı');
+
+    const amount = yearly ? Number(plan.price?.yearly ?? 0) : Number(plan.price?.monthly ?? 0);
+    if (amount <= 0) {
+      throw new BadRequestException('Bu plan için havale ile ödeme alınamıyor.');
+    }
+
+    return {
+      planId: plan.id,
+      amount,
+      billingPeriod: yearly ? BillingPeriod.YEARLY : BillingPeriod.MONTHLY,
+      notes: `${plan.name} planı (${yearly ? 'yıllık' : 'aylık'})`,
+    };
+  }
+
+  async listMyPayments(userId: string): Promise<Payment[]> {
+    return this.paymentsRepository.find({
+      where: { userId },
+      relations: ['plan', 'tokenPack'],
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+  }
+
+  async cancelPaymentRequest(userId: string, paymentId: string): Promise<void> {
+    const result = await this.paymentsRepository.update(
+      { id: paymentId, userId, status: PaymentStatus.PENDING },
+      { status: PaymentStatus.CANCELLED, reviewedAt: new Date() },
+    );
+    if (!result.affected) {
+      throw new NotFoundException('İptal edilebilecek bekleyen bir ödeme bulunamadı');
+    }
+  }
+
+  /** The admin inbox: orders waiting to be matched against the bank statement. */
+  async listPendingPayments(): Promise<Payment[]> {
+    return this.paymentsRepository.find({
+      where: { status: PaymentStatus.PENDING, referenceCode: Not(IsNull()) },
+      relations: ['user', 'plan', 'tokenPack'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  /**
+   * Confirm that the money arrived, then fulfil the order.
+   *
+   * The status transition is a conditional UPDATE rather than a read-then-write:
+   * two admins confirming the same transfer at once would otherwise both pass the
+   * check and credit the tokens twice. Only the update that actually moved the
+   * row from `pending` proceeds to fulfilment.
+   */
+  async confirmPayment(paymentId: string, adminId: string, note?: string): Promise<Payment> {
+    const claimed = await this.paymentsRepository
+      .createQueryBuilder()
+      .update(Payment)
+      .set({
+        status: PaymentStatus.COMPLETED,
+        paidAt: new Date(),
+        reviewedAt: new Date(),
+        reviewedById: adminId,
+        ...(note ? { notes: note } : {}),
+      })
+      .where('id = :paymentId AND status = :pending', {
+        paymentId,
+        pending: PaymentStatus.PENDING,
+      })
+      .execute();
+
+    if (!claimed.affected) {
+      throw new ConflictException('Bu ödeme zaten işlenmiş veya bulunamadı');
+    }
+
+    const payment = await this.paymentsRepository.findOne({
+      where: { id: paymentId },
+      relations: ['plan', 'tokenPack'],
+    });
+    if (!payment) throw new NotFoundException('Ödeme bulunamadı');
+
+    if (payment.tokenPackId || payment.tokens) {
+      await this.creditTokens(
+        payment.userId,
+        Number(payment.tokens ?? 0),
+        Number(payment.amount ?? 0),
+        payment.tokenPackId,
+        `Havale onayı — ${payment.referenceCode}`,
+      );
+    } else if (payment.planId) {
+      await this.activatePlan(payment);
+    }
+
+    this.logger.log(
+      `Ödeme onaylandı: ${payment.referenceCode} (kullanıcı ${payment.userId}, ${payment.amount} TRY)`,
+    );
+    return payment;
+  }
+
+  async rejectPayment(paymentId: string, adminId: string, reason?: string): Promise<void> {
+    const result = await this.paymentsRepository.update(
+      { id: paymentId, status: PaymentStatus.PENDING },
+      {
+        status: PaymentStatus.FAILED,
+        reviewedAt: new Date(),
+        reviewedById: adminId,
+        notes: reason ?? 'Ödeme doğrulanamadı',
+      },
+    );
+    if (!result.affected) {
+      throw new ConflictException('Bu ödeme zaten işlenmiş veya bulunamadı');
+    }
+  }
+
+  /**
+   * Start (or extend) a paid subscription. Extending from the current expiry
+   * rather than from today means a customer who renews early keeps the days they
+   * already paid for.
+   */
+  private async activatePlan(payment: Payment): Promise<void> {
+    const yearly = payment.billingPeriod === BillingPeriod.YEARLY;
+
+    const current = await this.subscriptionsRepository.findOne({
+      where: { userId: payment.userId, status: SubscriptionStatus.ACTIVE },
+      order: { startedAt: 'DESC' },
+    });
+
+    const now = new Date();
+    const base =
+      current?.expiresAt && current.expiresAt > now ? new Date(current.expiresAt) : new Date(now);
+    const expiresAt = new Date(base);
+    if (yearly) expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    else expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+    await this.dataSource.transaction(async (manager) => {
+      if (current) {
+        await manager.update(Subscription, { id: current.id }, {
+          status: SubscriptionStatus.EXPIRED,
+          cancelledAt: now,
+        });
+      }
+
+      const subscription = await manager.save(
+        manager.create(Subscription, {
+          userId: payment.userId,
+          planId: payment.planId!,
+          status: SubscriptionStatus.ACTIVE,
+          billingPeriod: yearly ? BillingPeriod.YEARLY : BillingPeriod.MONTHLY,
+          startedAt: now,
+          expiresAt,
+          autoRenew: false, // bank transfer is collected manually each period
+        }),
+      );
+
+      await manager.update(Payment, { id: payment.id }, { subscriptionId: subscription.id });
+      // Clear the trial: the user is on a paid plan now.
+      await manager.update(User, { id: payment.userId }, {
+        planId: payment.planId!,
+        trialEndsAt: null,
+      });
+    });
+  }
+
+  /** Orders abandoned past the quote window, so the inbox stays meaningful. */
+  async expireStalePaymentRequests(): Promise<number> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - PAYMENT_REQUEST_TTL_DAYS);
+
+    const result = await this.paymentsRepository
+      .createQueryBuilder()
+      .update(Payment)
+      .set({ status: PaymentStatus.CANCELLED, notes: 'Süresi doldu' })
+      .where('status = :pending AND "createdAt" < :cutoff', {
+        pending: PaymentStatus.PENDING,
+        cutoff,
+      })
+      .execute();
+
+    return result.affected ?? 0;
   }
 
   private async tokensUsedThisMonth(userId: string): Promise<number> {

@@ -6,7 +6,12 @@ import {
   BLOG_CONTENT_SCHEMA_NAME,
   GeneratedBlogContent,
 } from './blog-content.schema';
-import { ModelTier, TIER_DEFINITIONS, normalizeTier } from '../billing/model-tiers';
+import {
+  ModelTier,
+  SUBSTITUTE_MODEL,
+  TIER_DEFINITIONS,
+  normalizeTier,
+} from '../billing/model-tiers';
 import {
   BlogPromptInput,
   buildDraftPrompt,
@@ -71,11 +76,8 @@ export class BlogGeneratorService {
     // Degrade gracefully when the resolved provider has no API key configured.
     const provider = this.llm.providerFor(resolved);
     if (!this.llm.isProviderAvailable(provider)) {
-      const substitute =
-        provider === 'anthropic'
-          ? TIER_DEFINITIONS[ModelTier.STANDARD].model
-          : TIER_DEFINITIONS[ModelTier.PRO].model;
-      if (this.llm.isProviderAvailable(this.llm.providerFor(substitute))) {
+      const substitute = SUBSTITUTE_MODEL[provider as 'openai' | 'anthropic'];
+      if (substitute && this.llm.isProviderAvailable(this.llm.providerFor(substitute))) {
         this.logger.warn(`Provider for ${resolved} not configured; substituting ${substitute}`);
         return substitute;
       }

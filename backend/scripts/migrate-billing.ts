@@ -12,8 +12,7 @@
  */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
-import { SchemaMigratorService } from '../src/database/schema-migrator.service';
-import { BILLING_SCHEMA_001 } from '../src/database/migrations/001-billing-schema';
+import { SchemaMigratorService, ALL_MIGRATIONS } from '../src/database/schema-migrator.service';
 
 async function run() {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -23,7 +22,7 @@ async function run() {
   try {
     // Booting AppModule already ran the migrator once; this makes the manual
     // invocation explicit and reports the outcome.
-    await app.get(SchemaMigratorService).apply([...BILLING_SCHEMA_001]);
+    await app.get(SchemaMigratorService).apply(ALL_MIGRATIONS);
     console.log('\nŞema güncel. Sırada: npm run seed:catalog\n');
   } catch (error) {
     console.error('\nMigration başarısız:', (error as Error).message);

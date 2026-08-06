@@ -1,4 +1,5 @@
 import type { ModelTier, PlanDefinition, TierInfo, TokenPack } from '@/lib/api';
+import { formatTokens } from '@/lib/currency';
 
 /**
  * The single view model behind every pricing surface: the public /pricing page,
@@ -78,8 +79,8 @@ export interface PricingPlan {
   yearlyPrice: number;
   /** Yearly price expressed per month — what the card shows in yearly mode. */
   yearlyPerMonth: number;
-  /** Whole dollars saved over a year by paying yearly. */
-  yearlySavingUsd: number;
+  /** Lira saved over a year by paying yearly. */
+  yearlySavingTry: number;
   yearlySavingPct: number;
   /** Monthly token allowance; null means unlimited. */
   tokenAllowance: number | null;
@@ -90,6 +91,15 @@ export interface PricingPlan {
   maxWorkspaces: number | 'unlimited';
   highlights: string[];
   raw: PlanDefinition;
+}
+
+/**
+ * One decimal, which is also what `formatPercent` renders. Rounding here rather
+ * than at display time keeps the "same discount on every plan" check from
+ * failing on floating-point noise between two plans that discount identically.
+ */
+function roundPct(value: number): number {
+  return Math.max(0, Math.round(value * 10) / 10);
 }
 
 function normalizeTier(value: unknown): ModelTier | null {
@@ -150,9 +160,9 @@ export function toPricingPlan(plan: PlanDefinition): PricingPlan {
     monthlyPrice,
     yearlyPrice,
     yearlyPerMonth: yearlyPrice > 0 ? yearlyPrice / 12 : 0,
-    yearlySavingUsd: fullYear > yearlyPrice ? fullYear - yearlyPrice : 0,
+    yearlySavingTry: fullYear > yearlyPrice ? fullYear - yearlyPrice : 0,
     yearlySavingPct:
-      fullYear > 0 && yearlyPrice > 0 ? Math.max(0, Math.round(100 - (yearlyPrice / fullYear) * 100)) : 0,
+      fullYear > 0 && yearlyPrice > 0 ? roundPct(100 - (yearlyPrice / fullYear) * 100) : 0,
     tokenAllowance: allowance,
     estimatedArticles:
       allowance !== null ? Math.floor(allowance / AVG_ARTICLE_TOKENS[defaultTier]) : null,
@@ -190,28 +200,17 @@ export function yearlySaving(plans: PricingPlan[]): { pct: number; uniform: bool
 
 // ── Formatting ───────────────────────────────────────────────────────────
 
-/** USD, e.g. $49 — cents only when the amount actually has them. */
-export function formatUsd(value: number, forceDecimals = false): string {
-  const decimals = forceDecimals || !Number.isInteger(value);
-  return `$${value.toLocaleString('tr-TR', {
-    minimumFractionDigits: decimals ? 2 : 0,
-    maximumFractionDigits: decimals ? 2 : 0,
-  })}`;
-}
+/**
+ * Money and token formatting live in `@/lib/currency` — every surface in the app
+ * shares them so a price can never be rendered in the wrong currency. Re-exported
+ * here because the pricing components already import their view model from this
+ * file.
+ */
+export { formatTokens, formatTry, formatPercent } from '@/lib/currency';
 
-export function formatTokens(value: number): string {
+/** Article counts, not tokens — a plain locale number, never abbreviated. */
+export function formatCount(value: number): string {
   return value.toLocaleString('tr-TR');
-}
-
-/** 1.500.000 → "1,5M", 250.000 → "250K" */
-export function compactTokens(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}K`;
-  }
-  return formatTokens(value);
 }
 
 export function formatWorkspaces(value: number | 'unlimited'): string {
@@ -224,9 +223,9 @@ export interface PricingPack {
   id: string;
   name: string;
   tokens: number;
-  priceUsd: number;
+  priceTry: number;
   popular: boolean;
-  /** USD per 1M tokens — the number that makes the volume discount visible. */
+  /** TRY per 1M tokens — the number that makes the volume discount visible. */
   pricePerMillion: number;
   /** Discount against the smallest pack's unit price; 0 for the baseline pack. */
   savingPct: number;
@@ -235,19 +234,18 @@ export interface PricingPack {
 
 export function toPricingPacks(packs: TokenPack[]): PricingPack[] {
   const sorted = [...(packs ?? [])].filter((p) => p.tokens > 0).sort((a, b) => a.tokens - b.tokens);
-  const baseline = sorted.length ? sorted[0].priceUsd / (sorted[0].tokens / 1_000_000) : 0;
+  const baseline = sorted.length ? sorted[0].priceTry / (sorted[0].tokens / 1_000_000) : 0;
 
   return sorted.map((pack) => {
-    const pricePerMillion = pack.priceUsd / (pack.tokens / 1_000_000);
+    const pricePerMillion = pack.priceTry / (pack.tokens / 1_000_000);
     return {
       id: pack.id,
       name: pack.name,
       tokens: pack.tokens,
-      priceUsd: pack.priceUsd,
+      priceTry: pack.priceTry,
       popular: Boolean(pack.popular),
       pricePerMillion,
-      savingPct:
-        baseline > 0 ? Math.max(0, Math.round(100 - (pricePerMillion / baseline) * 100)) : 0,
+      savingPct: baseline > 0 ? roundPct(100 - (pricePerMillion / baseline) * 100) : 0,
       estimatedArticles: Math.floor(pack.tokens / AVG_ARTICLE_TOKENS.standard),
     };
   });
@@ -276,9 +274,7 @@ export const COMPARISON_GROUPS: ComparisonGroup[] = [
       {
         name: 'Tahmini blog / ay',
         value: (p) =>
-          p.estimatedArticles === null
-            ? 'Sınırsız'
-            : `≈ ${p.estimatedArticles.toLocaleString('tr-TR')}`,
+          p.estimatedArticles === null ? 'Sınırsız' : `≈ ${formatCount(p.estimatedArticles)}`,
       },
       { name: 'Workspace', value: (p) => formatWorkspaces(p.maxWorkspaces) },
       {
@@ -321,23 +317,43 @@ export interface PricingFaqItem {
 
 export const PRICING_FAQ: PricingFaqItem[] = [
   {
+    question: 'Ödeme nasıl yapılıyor?',
+    answer:
+      'Ödemeler havale/EFT ile alınır; kredi kartı kullanmıyoruz. Planı ya da token paketini seçtiğinizde panelde banka hesap bilgilerimiz ve size özel bir referans kodu görünür. Transferi yaparken açıklama alanına bu kodu yazmanız yeterli — ödemeyi eşleştirip mesai saatleri içinde manuel olarak onaylıyoruz. Onaydan sonra planınız veya token bakiyeniz hesabınıza tanımlanır ve panelde bildirim alırsınız.',
+  },
+  {
+    question: 'Ödemem ne kadar sürede onaylanır?',
+    answer:
+      'Onay otomatik değil, elle yapılır: ödemeniz hesabımıza geçtikten sonra referans kodunuzla eşleştirilip tanımlanır. Mesai saatleri içinde gelen transferler genellikle aynı iş günü, mesai dışında veya hafta sonu yapılanlar ilk iş günü onaylanır. Bankalar arası transferlerde paranın hesabımıza geçme süresi bu takvimi etkileyebilir. Bu sırada ücretsiz denemenizi kullanmaya devam edebilirsiniz.',
+  },
+  {
     question: 'Token nedir, nasıl harcanır?',
     answer:
       'Token, yapay zekânın okuduğu ve yazdığı metnin ölçü birimidir. Bir blog yazısı; başlık planı, taslak ve editör geçişi dahil ortalama 20 bin token harcar. Yani 1,5 milyon tokenlık bir plan ayda yaklaşık 65 yazıya denk gelir. Harcama her üretimde gerçek kullanım üzerinden ölçülür, panelden anlık olarak görebilirsiniz.',
   },
   {
-    question: 'Aylık limitim biterse ne olur?',
+    question: 'Aylık token hakkım biterse ne olur?',
     answer:
-      'Üretim durur, hesabınız kapanmaz. Dilerseniz ay sonunu bekleyip yenilenen hakkınızı kullanır, dilerseniz ek token paketi alırsınız. Satın alınan tokenlar aylık hak bittikten sonra devreye girer, böylece önce paketinizdeki hak harcanır.',
+      'Yeni üretim durur, hesabınız kapanmaz; mevcut içerikleriniz, taslaklarınız ve yayınlarınız olduğu gibi kalır. İki seçeneğiniz var: ay başını bekleyip yenilenen hakkınızla devam edebilir ya da ek token paketi alarak aynı gün üretime dönebilirsiniz. Paket ödemesi de havale/EFT ile alındığı için tokenlar onaydan sonra tanımlanır.',
+  },
+  {
+    question: 'Kullanmadığım tokenlar bir sonraki aya devreder mi?',
+    answer:
+      'Planın aylık token hakkı devretmez; her ay başında sıfırlanıp yeniden tanımlanır. Satın aldığınız ek token paketlerinin ise son kullanma tarihi yoktur, silinmez. Sistem önce o ayki plan hakkınızı harcar, ancak o bittikten sonra paket bakiyenize dokunur — böylece yoğun olmayan bir ayda satın aldığınız tokenlar boşa gitmez, ihtiyacınız olan ayı bekler.',
   },
   {
     question: 'Planımı sonradan değiştirebilir miyim?',
     answer:
-      'Evet. İstediğiniz an yükseltebilir veya düşürebilirsiniz. Yükseltmede yeni token hakkı hemen tanımlanır; düşürmede mevcut dönem sonuna kadar planınız aynı kalır ve sonraki dönem yeni plandan devam eder. Taahhüt yoktur, iptal tek tıkladır.',
+      'Evet. Yükseltmek istediğinizde yeni planın ücretini havale/EFT ile gönderirsiniz, ödeme onaylandığında yeni token hakkınız tanımlanır. Düşürmede veya bırakmada mevcut dönem sonuna kadar planınız aynı kalır, sonraki dönem için yeni bir ödeme yapmamanız yeterlidir. Otomatik yenileme yoktur, dolayısıyla habersiz bir tahsilat da olmaz.',
+  },
+  {
+    question: '7 günlük deneme için kart bilgisi gerekiyor mu?',
+    answer:
+      'Hayır. Kayıt olduğunuz anda 7 günlük deneme planı otomatik tanımlanır; kredi kartı ya da herhangi bir ödeme bilgisi istemiyoruz. Deneme süresi bittiğinde üretim durur, hesabınız kendiliğinden ücretli bir plana geçmez. Devam etmek isterseniz bir plan seçip havale/EFT ile ödeme yaparsınız.',
   },
   {
     question: 'İade alabilir miyim?',
     answer:
-      'Abonelik ücretlerinde ilk 14 gün içinde koşulsuz iade yapıyoruz; talebiniz aynı ödeme yöntemine iade edilir. Kullanılmamış ek token paketleri de satın alma tarihinden itibaren 14 gün içinde iade edilebilir. 7 günlük deneme sürümünde kredi kartı istemediğimiz için iade süreci de gerekmez.',
+      'Abonelik ücretlerinde ilk 14 gün içinde iade yapıyoruz; tutar, ödemeyi gönderdiğiniz banka hesabına havale ile geri aktarılır. Kullanılmamış ek token paketleri de satın alma tarihinden itibaren 14 gün içinde iade edilebilir. Deneme sürümünde ödeme almadığımız için iade süreci de gerekmez.',
   },
 ];

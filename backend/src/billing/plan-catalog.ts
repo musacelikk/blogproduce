@@ -3,10 +3,12 @@ import {
   averageArticleTokens,
   blendedCostPerMillionTokens,
 } from './model-tiers';
+import { grossMarginPct } from './currency';
 
 /**
  * The commercial catalog: subscription plans, the free trial, and the
- * pay-as-you-go token packs. Prices are USD.
+ * pay-as-you-go token packs. **Prices are TRY** — provider cost is USD and only
+ * ever meets these numbers through `currency.ts`.
  *
  * Plans are seeded into `plan_definitions` and editable from the admin panel —
  * this file is the source of truth for a fresh install and the reference the
@@ -18,6 +20,7 @@ export interface PlanBlueprint {
   name: string;
   level: 'trial' | 'starter' | 'pro' | 'enterprise';
   description: string;
+  /** TRY. Yearly is priced at ten months, so an annual commitment saves two. */
   price: { monthly: number; yearly: number };
   /** Monthly token allowance. Resets each calendar month. */
   tokenAllowance: number;
@@ -80,7 +83,7 @@ export const PLAN_BLUEPRINTS: PlanBlueprint[] = [
     level: 'starter',
     description:
       'Blogunu düzenli beslemek isteyen bireyler ve küçük ekipler için.',
-    price: { monthly: 19, yearly: 190 },
+    price: { monthly: 799, yearly: 7_990 },
     tokenAllowance: 500_000,
     allowedTiers: [ModelTier.STANDARD],
     defaultTier: ModelTier.STANDARD,
@@ -104,8 +107,8 @@ export const PLAN_BLUEPRINTS: PlanBlueprint[] = [
     name: 'Profesyonel',
     level: 'pro',
     description:
-      'Ajanslar ve içerik ekipleri için. Claude Sonnet ile belirgin kalite artışı.',
-    price: { monthly: 49, yearly: 490 },
+      'Ajanslar ve içerik ekipleri için. Pro kalite seviyesiyle belirgin fark.',
+    price: { monthly: 1_999, yearly: 19_990 },
     tokenAllowance: 1_500_000,
     allowedTiers: [ModelTier.STANDARD, ModelTier.PRO],
     defaultTier: ModelTier.PRO,
@@ -129,8 +132,8 @@ export const PLAN_BLUEPRINTS: PlanBlueprint[] = [
     name: 'Kurumsal',
     level: 'enterprise',
     description:
-      'Yüksek hacim ve pillar içerik. Claude Opus ile en üst kalite ve özel destek.',
-    price: { monthly: 149, yearly: 1490 },
+      'Yüksek hacim ve pillar içerik. En üst kalite seviyesi ve özel destek.',
+    price: { monthly: 5_999, yearly: 59_990 },
     tokenAllowance: 3_000_000,
     allowedTiers: [ModelTier.STANDARD, ModelTier.PRO, ModelTier.PREMIUM],
     defaultTier: ModelTier.PREMIUM,
@@ -156,14 +159,15 @@ export interface TokenPackBlueprint {
   key: string;
   name: string;
   tokens: number;
-  priceUsd: number;
+  /** TRY. */
+  priceTry: number;
   popular: boolean;
 }
 
 export const TOKEN_PACK_BLUEPRINTS: TokenPackBlueprint[] = [
-  { key: 'topup-250k', name: '250K Token', tokens: 250_000, priceUsd: 12, popular: false },
-  { key: 'topup-1m', name: '1M Token', tokens: 1_000_000, priceUsd: 39, popular: true },
-  { key: 'topup-5m', name: '5M Token', tokens: 5_000_000, priceUsd: 169, popular: false },
+  { key: 'topup-250k', name: '250K Token', tokens: 250_000, priceTry: 499, popular: false },
+  { key: 'topup-1m', name: '1M Token', tokens: 1_000_000, priceTry: 1_599, popular: true },
+  { key: 'topup-5m', name: '5M Token', tokens: 5_000_000, priceTry: 6_999, popular: false },
 ];
 
 /**
@@ -174,14 +178,15 @@ export function estimatedArticles(tokenAllowance: number, tier: ModelTier): numb
   return Math.floor(tokenAllowance / averageArticleTokens(tier));
 }
 
-/** Provider cost if a plan's entire allowance is spent on its default tier. */
+/** Provider cost (USD) if a plan's entire allowance is spent on its default tier. */
 export function planCostAtFullUsageUsd(plan: PlanBlueprint): number {
   return (plan.tokenAllowance / 1_000_000) * blendedCostPerMillionTokens(plan.defaultTier);
 }
 
-/** Gross margin (%) at full allowance usage — the worst realistic case. */
+/**
+ * Gross margin (%) at full allowance usage — the worst realistic case.
+ * Revenue is TRY, cost is USD, so the comparison goes through the exchange rate.
+ */
 export function planGrossMarginPct(plan: PlanBlueprint): number {
-  if (plan.price.monthly <= 0) return 0;
-  const cost = planCostAtFullUsageUsd(plan);
-  return ((plan.price.monthly - cost) / plan.price.monthly) * 100;
+  return grossMarginPct(plan.price.monthly, planCostAtFullUsageUsd(plan)) ?? 0;
 }

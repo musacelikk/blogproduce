@@ -5,10 +5,11 @@ export class GrantTokensDto {
   @Min(1)
   tokens: number;
 
+  /** TRY value of the grant, for reporting. Zero for a goodwill credit. */
   @IsNumber()
   @IsOptional()
   @Min(0)
-  amountUsd?: number;
+  amountTry?: number;
 
   @IsString()
   @IsOptional()

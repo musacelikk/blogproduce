@@ -16,8 +16,9 @@ import { BillingService } from './billing.service';
 import { CostAnalysisService } from './cost-analysis.service';
 import { TIER_DEFINITIONS } from './model-tiers';
 import { ProjectPlanDto } from './dto/project-plan.dto';
-import { PurchaseTokensDto } from './dto/purchase-tokens.dto';
 import { GrantTokensDto } from './dto/grant-tokens.dto';
+import { CreatePaymentRequestDto } from './dto/create-payment-request.dto';
+import { ReviewPaymentDto } from './dto/review-payment.dto';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,22 +59,78 @@ export class BillingController {
     return { success: true, data: await this.billingService.getPurchaseHistory(user.id) };
   }
 
+  // ── Bank transfer (havale / EFT) ──────────────────────────────────────
+
+  /** IBAN and instructions shown on the payment screen. */
+  @Get('bank-details')
+  getBankDetails() {
+    return { success: true, data: this.billingService.getBankDetails() };
+  }
+
   /**
-   * Fulfil a top-up. Payment capture is handled by the payment provider flow;
-   * this credits the balance once that succeeds.
+   * Open an order for a plan or a token pack and return the reference code.
+   * Grants nothing — fulfilment waits for an admin to match the bank statement.
    */
-  @Post('token-packs/:packId/purchase')
-  async purchaseTokens(
-    @CurrentUser() user: User,
-    @Param('packId') packId: string,
-    @Body() dto: PurchaseTokensDto,
-  ) {
-    const result = await this.billingService.grantTokenPack(user.id, packId, dto.reference);
+  @Post('payment-requests')
+  async createPaymentRequest(@CurrentUser() user: User, @Body() dto: CreatePaymentRequestDto) {
+    const payment = await this.billingService.createPaymentRequest(user.id, {
+      type: dto.type,
+      planKey: dto.planKey,
+      packId: dto.packId,
+      yearly: dto.yearly,
+    });
+
     return {
       success: true,
-      message: `${result.tokens.toLocaleString('tr-TR')} token hesabınıza eklendi.`,
-      data: result,
+      message:
+        'Ödeme talebiniz oluşturuldu. Havale açıklamasına referans kodunu yazmayı unutmayın.',
+      data: {
+        payment,
+        bank: this.billingService.getBankDetails(),
+      },
     };
+  }
+
+  @Get('payment-requests')
+  async getMyPayments(@CurrentUser() user: User) {
+    return { success: true, data: await this.billingService.listMyPayments(user.id) };
+  }
+
+  @Post('payment-requests/:id/cancel')
+  async cancelPaymentRequest(@CurrentUser() user: User, @Param('id') id: string) {
+    await this.billingService.cancelPaymentRequest(user.id, id);
+    return { success: true, message: 'Ödeme talebi iptal edildi.' };
+  }
+
+  // ── Admin: bank transfer inbox ────────────────────────────────────────
+
+  @Get('admin/payment-requests')
+  @Roles(UserRole.ADMIN)
+  async getPendingPayments() {
+    return { success: true, data: await this.billingService.listPendingPayments() };
+  }
+
+  /** Money arrived — activate the plan or credit the tokens. */
+  @Post('admin/payment-requests/:id/confirm')
+  @Roles(UserRole.ADMIN)
+  async confirmPayment(
+    @CurrentUser() admin: User,
+    @Param('id') id: string,
+    @Body() dto: ReviewPaymentDto,
+  ) {
+    const payment = await this.billingService.confirmPayment(id, admin.id, dto.note);
+    return { success: true, message: 'Ödeme onaylandı ve tanımlandı.', data: payment };
+  }
+
+  @Post('admin/payment-requests/:id/reject')
+  @Roles(UserRole.ADMIN)
+  async rejectPayment(
+    @CurrentUser() admin: User,
+    @Param('id') id: string,
+    @Body() dto: ReviewPaymentDto,
+  ) {
+    await this.billingService.rejectPayment(id, admin.id, dto.note);
+    return { success: true, message: 'Ödeme reddedildi.' };
   }
 
   // ── Admin: cost calculator ────────────────────────────────────────────
@@ -111,7 +168,7 @@ export class BillingController {
     const result = await this.billingService.creditTokens(
       userId,
       dto.tokens,
-      dto.amountUsd ?? 0,
+      dto.amountTry ?? 0,
       null,
       dto.note ?? 'Admin tarafından tanımlandı',
     );

@@ -11,7 +11,7 @@ interface PricingFaqProps {
   className?: string;
 }
 
-/** Compact pricing FAQ: token, limit, plan değişimi, iade. */
+/** Compact pricing FAQ: ödeme (havale/EFT), token, limit, plan değişimi, iade. */
 export function PricingFaq({ className }: PricingFaqProps) {
   const [openIndex, setOpenIndex] = React.useState<number | null>(0);
 
@@ -22,7 +22,7 @@ export function PricingFaq({ className }: PricingFaqProps) {
           size="md"
           eyebrow="Sık sorulanlar"
           title="Fiyatlandırma hakkında"
-          description="Aklınıza takılan başka bir şey olursa destek ekibimiz aynı gün içinde yanıtlıyor."
+          description="Ödeme, token ve plan değişikliği hakkında en çok sorulanlar. Aklınıza takılan başka bir şey olursa destek ekibimiz mesai saatleri içinde yanıtlıyor."
           className="lg:sticky lg:top-24 lg:col-span-4 lg:self-start"
         />
 

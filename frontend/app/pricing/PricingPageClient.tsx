@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Headphones, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, Headphones, Landmark, ShieldCheck } from 'lucide-react';
 import type { PlanDefinition, TierInfo, TokenPack } from '@/lib/api';
 import { trackButtonClick, trackCustomEvent } from '@/lib/analytics';
 import { Badge } from '@/components/ui/badge';
@@ -31,8 +31,8 @@ interface PricingPageClientProps {
 }
 
 const TRUST_SIGNALS = [
-  { icon: ShieldCheck, label: 'Güvenli ödeme' },
-  { icon: Zap, label: 'Anında aktivasyon' },
+  { icon: Landmark, label: 'Havale / EFT ile ödeme' },
+  { icon: ShieldCheck, label: 'Kredi kartı gerekmez' },
   { icon: Headphones, label: 'Türkçe destek' },
 ];
 
@@ -149,8 +149,11 @@ export function PricingPageClient({ plans, packs, tiers }: PricingPageClientProp
                   ))}
                 </PlanGrid>
 
-                <p className="mt-6 text-center text-sm text-muted-foreground">
-                  Fiyatlar ABD doları üzerindendir. Aylık token hakkı her ay başında yenilenir.
+                <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+                  Fiyatlar Türk Lirası cinsindendir. Aylık token hakkı her ay başında yenilenir.
+                  Ödemeler havale/EFT ile alınır: planı seçtikten sonra panelde banka bilgilerimizi
+                  ve size özel referans kodunu görürsünüz, transferi mesai saatleri içinde
+                  onaylıyoruz.
                 </p>
               </section>
 

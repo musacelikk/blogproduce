@@ -72,13 +72,26 @@ Prompts live in `blog-prompts.ts` and are the main lever on output quality — t
 
 ### Billing (`backend/src/billing/`)
 
-Three files hold the entire commercial model, and everything else reads from them:
+**Two currencies, and they must never be added together.** Customers pay in **TRY**; OpenAI and
+Anthropic bill us in **USD**. Every money field carries its unit in the name (`priceTry`,
+`costAtFullUsageUsd`), and `currency.ts` is the only place the two meet — it holds the
+`USD_TRY_RATE` conversion and `grossMarginPct(revenueTry, costUsd)`. Subtracting a USD cost from a
+TRY price without converting yields a margin roughly 40x too good, which is exactly the kind of
+error that reads as success.
 
-- **`model-tiers.ts`** — the quality tiers customers buy (`standard` → `gpt-4o`, `pro` →
-  `claude-sonnet-5`, `premium` → `claude-opus-5`), provider rate cards, and the cost maths.
-  `reasoningFactor` exists because Claude bills thinking tokens as output, so a per-word estimate
-  would understate the premium tier by ~80%.
-- **`plan-catalog.ts`** — plan and token-pack blueprints (the seed source of truth), plus the
+Four files hold the entire commercial model, and everything else reads from them:
+
+- **`model-tiers.ts`** — the quality tiers customers buy, provider rate cards, and the cost maths.
+  Tier→model is **configurable per environment** (`TIER_MODEL_STANDARD/PRO/PREMIUM`); the defaults
+  are OpenAI-only (`gpt-4o-mini` / `gpt-4o` / `gpt-4.1`) because the Anthropic key is not connected
+  yet, and a tier pointing at an unconfigured provider degrades silently — a customer would pay for
+  the top tier and get standard quality with only a log line. Pricing and `reasoningFactor` are
+  derived from the resolved model, so an override can never leave billing out of step with what
+  actually ran. `reasoningFactor` exists because Claude bills thinking tokens as output.
+  Note the tiers are **not** monotonic in cost: `gpt-4.1` (premium) is both better and cheaper than
+  `gpt-4o` (pro). That is not a bug — don't "fix" it by reordering.
+- **`currency.ts`** — the TRY/USD boundary described above.
+- **`plan-catalog.ts`** — plan and token-pack blueprints in TRY (the seed source of truth), plus the
   margin helpers. `npm run seed:catalog` upserts them by `key`.
 - **`billing.service.ts`** — `getEntitlement()` is the one answer to "what may this user do right
   now"; `authorizeGeneration()` is the gate every generation passes through.
@@ -93,14 +106,44 @@ Every new signup gets a 7-day trial (`users.trial_ends_at`, started in `AuthServ
 An expired plan keeps its tier permissions but grants no fresh allowance, so a lapsed user can
 still spend top-up tokens they already paid for.
 
+**Payment is bank transfer (havale/EFT), which has no callback.** There is no card gateway; money
+arrives as a line on a bank statement. So the flow is two-phase and the split is load-bearing:
+`createPaymentRequest()` opens a `pending` row in `payments` with a unique `referenceCode` and
+**grants nothing**, and `confirmPayment()` — admin-only — is the single place fulfilment happens
+(credit tokens, or activate the subscription). Never fulfil on row creation. Confirmation uses a
+conditional UPDATE off `pending` rather than read-then-write, so two admins confirming the same
+transfer cannot both credit it. Bank details come from env (`BANK_IBAN`, `BANK_NAME`,
+`BANK_ACCOUNT_HOLDER`), not the database, and orders are refused outright when they are unset
+rather than quoting a blank IBAN.
+
 `CostAnalysisService` powers the admin cost calculator: projected per-plan margins at full
 allowance usage, observed per-model spend from real revisions, and a what-if endpoint for pricing
 a plan before creating it. **Plan prices are editable in the admin panel** — the blueprints are
-the fresh-install defaults, and re-running the seeder overwrites admin edits.
+the fresh-install defaults, and re-running the seeder overwrites admin edits. When adding a figure
+to `getActuals()`, scope it to the selected month on *both* sides: revenue is filtered to
+subscriptions live during that month precisely so a historical margin compares like with like.
 
 Tests in `billing.service.spec.ts` assert the economics rather than the plumbing: every paid plan
 must stay above a 60% gross margin at 100% allowance usage, and token packs must sell above cost
 on every tier. Those are the assertions that break if someone edits a price carelessly.
+
+### Image uploads (`backend/src/assets/`, `backend/src/storage/`)
+
+`POST /assets/upload` (multipart, JWT) → S3 → an `assets` row with dimensions from `sharp`.
+
+**The claimed `Content-Type` is not trusted.** `file-type.util.ts` reads magic bytes and the
+controller overwrites `file.mimetype` with what it finds; a mismatch is a 400. SVG is refused
+outright — it is XML that can carry `<script>`, so an SVG served from the asset domain is stored
+XSS. The S3 key is a uuid, never the uploaded filename, which is attacker-controlled.
+
+Two deployment traps this code works around, both of which look like "uploads are broken":
+
+- **ACLs.** Buckets created after April 2023 default to `BucketOwnerEnforced`, where `PutObject`
+  carrying an ACL fails with `AccessControlListNotSupported`. So no ACL is sent unless `AWS_S3_ACL`
+  is set, and a rejection auto-retries without it. Public read comes from a bucket policy.
+- **next/image host allow-list.** An image on a host missing from `remotePatterns` in
+  `next.config.js` renders as a 400, not a broken URL. S3 and CloudFront wildcards are listed;
+  a custom asset domain needs `NEXT_PUBLIC_ASSET_HOST`.
 
 ### Multi-tenancy: Workspace vs Organization/Project
 

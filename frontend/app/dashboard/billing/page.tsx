@@ -10,6 +10,7 @@ import {
   Clock,
   CreditCard,
   Gauge,
+  Landmark,
   Loader2,
   Package,
   Receipt,
@@ -19,6 +20,12 @@ import {
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import {
+  BankNotConfiguredNotice,
+  BankTransferPanel,
+  PaymentStatusBadge,
+} from '@/components/billing/BankTransferPanel';
+import { formatTry } from '@/lib/currency';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -33,8 +40,13 @@ import {
   getModelTiers,
   getTokenPacks,
   getTokenPurchases,
-  purchaseTokenPack,
+  createPaymentRequest,
+  getBankDetails,
+  getMyPaymentRequests,
+  cancelPaymentRequest,
+  type BankDetails,
   type BillingHistoryItem,
+  type PaymentRequest,
   type Entitlement,
   type ModelTier,
   type TierInfo,
@@ -66,14 +78,6 @@ const SUBSCRIPTION_STATUS: Record<
   cancelled: { label: 'İptal edildi', variant: 'outline' },
 };
 
-const formatUsd = (value: number) => {
-  const amount = Number(value) || 0;
-  return `$${amount.toLocaleString('tr-TR', {
-    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
-
 const formatTokens = (value: number) => (Number(value) || 0).toLocaleString('tr-TR');
 
 /** Compact form for the big number on a tile — "1,5M", "500K". */
@@ -98,6 +102,10 @@ export default function BillingPage() {
   const [error, setError] = useState<string | null>(null);
   const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [bank, setBank] = useState<BankDetails | null>(null);
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  /** The order whose transfer instructions are on screen. */
+  const [activeTransfer, setActiveTransfer] = useState<PaymentRequest | null>(null);
 
   useEffect(() => {
     loadBillingData();
@@ -107,20 +115,25 @@ export default function BillingPage() {
     try {
       setLoading(true);
       setError(null);
-      const [ent, plan, tierList, packList, purchaseList, history] = await Promise.all([
-        getEntitlement(),
-        getCurrentPlan().catch(() => null),
-        getModelTiers().catch(() => []),
-        getTokenPacks().catch(() => []),
-        getTokenPurchases().catch(() => []),
-        getBillingHistory().catch(() => []),
-      ]);
+      const [ent, plan, tierList, packList, purchaseList, history, bankInfo, requests] =
+        await Promise.all([
+          getEntitlement(),
+          getCurrentPlan().catch(() => null),
+          getModelTiers().catch(() => []),
+          getTokenPacks().catch(() => []),
+          getTokenPurchases().catch(() => []),
+          getBillingHistory().catch(() => []),
+          getBankDetails().catch(() => null),
+          getMyPaymentRequests().catch(() => []),
+        ]);
       setEntitlement(ent);
       setPlanInfo(plan);
       setTiers(Array.isArray(tierList) ? tierList : []);
       setPacks(Array.isArray(packList) ? packList.filter((p) => p.active !== false) : []);
       setPurchases(Array.isArray(purchaseList) ? purchaseList : []);
       setBillingHistory(Array.isArray(history) ? history : []);
+      setBank(bankInfo);
+      setPaymentRequests(Array.isArray(requests) ? requests : []);
     } catch (err) {
       console.error('Error loading billing data:', err);
       setError(err instanceof Error ? err.message : 'Faturalandırma bilgileri yüklenirken bir hata oluştu');
@@ -129,30 +142,44 @@ export default function BillingPage() {
     }
   };
 
-  const handlePurchase = async (pack: TokenPack) => {
+  /**
+   * Opens a bank-transfer order and shows the instructions. Nothing is credited
+   * here — the tokens arrive when an admin matches the transfer, so the copy
+   * deliberately never says "satın alındı".
+   */
+  const handleOrderPack = async (pack: TokenPack) => {
     setBuyingPackId(pack.id);
     setNotice(null);
     try {
-      await purchaseTokenPack(pack.id);
-      const [ent, purchaseList] = await Promise.all([
-        getEntitlement(),
-        getTokenPurchases().catch(() => purchases),
-      ]);
-      setEntitlement(ent);
-      setPurchases(Array.isArray(purchaseList) ? purchaseList : []);
-      setNotice({
-        type: 'success',
-        text: `${pack.name} bakiyenize eklendi. ${formatTokens(pack.tokens)} token kullanıma hazır.`,
-      });
+      const result = await createPaymentRequest({ type: 'token_pack', packId: pack.id });
+      setActiveTransfer(result.payment);
+      if (result.bank) setBank(result.bank);
+      setPaymentRequests(await getMyPaymentRequests().catch(() => paymentRequests));
     } catch (err) {
       setNotice({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Satın alma tamamlanamadı, lütfen tekrar deneyin.',
+        text: err instanceof Error ? err.message : 'Sipariş oluşturulamadı, lütfen tekrar deneyin.',
       });
     } finally {
       setBuyingPackId(null);
     }
   };
+
+  const handleCancelRequest = async (id: string) => {
+    try {
+      await cancelPaymentRequest(id);
+      setActiveTransfer(null);
+      setPaymentRequests(await getMyPaymentRequests().catch(() => paymentRequests));
+      setNotice({ type: 'success', text: 'Ödeme talebiniz iptal edildi.' });
+    } catch (err) {
+      setNotice({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'İptal edilemedi.',
+      });
+    }
+  };
+
+  const pendingRequest = paymentRequests.find((p) => p.status === 'pending') ?? null;
 
   const tierLabel = (tier: ModelTier) => tiers.find((t) => t.tier === tier)?.label ?? TIER_FALLBACK[tier];
 
@@ -221,6 +248,31 @@ export default function BillingPage() {
         }
       />
 
+      {/* An open bank transfer outranks everything else on this page: until it is
+          paid and confirmed, nothing the customer bought has been granted. */}
+      {pendingRequest && bank && (
+        <Card className="border-warning/40 bg-warning-muted p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Landmark className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+              <div>
+                <p className="font-medium text-foreground-strong">Bekleyen ödemeniz var</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {pendingRequest.notes ?? 'Sipariş'} — {formatTry(Number(pendingRequest.amount))} ·
+                  referans kodu{' '}
+                  <span className="font-mono font-medium text-foreground-strong">
+                    {pendingRequest.referenceCode}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => setActiveTransfer(pendingRequest)}>
+              Havale bilgilerini gör
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Current plan */}
       <Card variant={isExpired ? 'default' : 'emphasis'} className="p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -250,7 +302,7 @@ export default function BillingPage() {
 
             <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-2xl font-semibold tabular-nums text-foreground-strong">
-                {isTrial || planPrice === 0 ? 'Ücretsiz' : formatUsd(planPrice)}
+                {isTrial || planPrice === 0 ? 'Ücretsiz' : formatTry(planPrice)}
               </span>
               {!isTrial && planPrice > 0 && (
                 <span className="text-sm text-muted-foreground">
@@ -364,9 +416,15 @@ export default function BillingPage() {
           <h2 className="mt-1 text-lg font-semibold text-foreground-strong">Token paketleri</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Kotanız yetmediğinde tek seferlik paket alın. Satın alınan tokenların süresi dolmaz ve yalnızca aylık
-            kotanız bittikten sonra harcanır.
+            kotanız bittikten sonra harcanır. Ödemeler havale/EFT ile alınır; onaydan sonra bakiyeniz tanımlanır.
           </p>
         </div>
+
+        {bank && !bank.configured && (
+          <div className="mb-4">
+            <BankNotConfiguredNotice />
+          </div>
+        )}
 
         {notice && (
           <div
@@ -393,7 +451,7 @@ export default function BillingPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {packs.map((pack) => {
               const isBuying = buyingPackId === pack.id;
-              const pricePerMillion = pack.tokens > 0 ? (pack.priceUsd / pack.tokens) * 1_000_000 : 0;
+              const pricePerMillion = pack.tokens > 0 ? (pack.priceTry / pack.tokens) * 1_000_000 : 0;
 
               return (
                 <Card
@@ -411,18 +469,18 @@ export default function BillingPage() {
 
                   <div className="mt-5 flex items-baseline gap-1.5">
                     <span className="text-3xl font-semibold tabular-nums text-foreground-strong">
-                      {formatUsd(pack.priceUsd)}
+                      {formatTry(pack.priceTry)}
                     </span>
                     <span className="text-sm text-muted-foreground">tek seferlik</span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    1M token başına {formatUsd(Math.round(pricePerMillion))}
+                    1M token başına {formatTry(Math.round(pricePerMillion))}
                   </p>
 
                   <Button
                     className="mt-5 w-full"
                     variant={pack.popular ? 'default' : 'outline'}
-                    onClick={() => handlePurchase(pack)}
+                    onClick={() => handleOrderPack(pack)}
                     disabled={isBuying || buyingPackId !== null}
                   >
                     {isBuying ? (
@@ -483,7 +541,7 @@ export default function BillingPage() {
                       {purchase.tokenPack?.name ?? purchase.note ?? 'Token tanımlaması'}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatTokens(purchase.tokens)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatUsd(purchase.amountUsd)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatTry(Number(purchase.amountTry))}</TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
@@ -494,6 +552,57 @@ export default function BillingPage() {
           </Table>
         )}
       </section>
+
+      {/* Bank transfer orders */}
+      {paymentRequests.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <Landmark className="h-5 w-5 text-accent-foreground" />
+            <h2 className="text-lg font-semibold text-foreground-strong">Ödemelerim</h2>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tarih</TableHead>
+                <TableHead>Sipariş</TableHead>
+                <TableHead>Referans</TableHead>
+                <TableHead className="text-right">Tutar</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead className="text-right">İşlem</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paymentRequests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {formatDate(request.createdAt)}
+                  </TableCell>
+                  <TableCell className="font-medium text-foreground-strong">
+                    {request.notes ?? 'Sipariş'}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {request.referenceCode ?? '—'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatTry(Number(request.amount))}
+                  </TableCell>
+                  <TableCell>
+                    <PaymentStatusBadge status={request.status} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {request.status === 'pending' && (
+                      <Button variant="ghost" size="sm" onClick={() => setActiveTransfer(request)}>
+                        Bilgileri gör
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       {/* Subscription history */}
       <section>
@@ -544,7 +653,7 @@ export default function BillingPage() {
                     <TableCell className="whitespace-nowrap text-muted-foreground">
                       {item.expiresAt ? formatDate(item.expiresAt) : 'Süresiz'}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{formatUsd(price)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatTry(price)}</TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
@@ -555,6 +664,15 @@ export default function BillingPage() {
           </Table>
         )}
       </section>
+
+      {activeTransfer && bank && (
+        <BankTransferPanel
+          payment={activeTransfer}
+          bank={bank}
+          onClose={() => setActiveTransfer(null)}
+          onCancelled={() => handleCancelRequest(activeTransfer.id)}
+        />
+      )}
     </div>
   );
 }

@@ -132,13 +132,11 @@ export default function RootLayout({
     offers: {
       '@type': 'Offer',
       price: '0',
-      priceCurrency: 'USD',
+      priceCurrency: 'TRY',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '150',
-    },
+    // No aggregateRating: the product has no collected reviews, and asserting
+    // one in structured data is both false to readers and a Google policy
+    // violation (manual action risk). Add it back only from real review data.
   };
 
   return (

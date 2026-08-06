@@ -37,6 +37,7 @@ function buildService(options: {
     repo(options.ledger ?? null) as any,
     repo(null) as any,
     repo(null) as any,
+    repo(null) as any,
     { transaction: async (fn: any) => fn({}) } as any,
   );
 }

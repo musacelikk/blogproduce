@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
+  ArrowLeftRight,
   Calculator,
   Coins,
   Cpu,
-  DollarSign,
   FileText,
+  Info,
   Layers,
   Loader2,
   Percent,
@@ -40,32 +41,35 @@ import {
   type ModelTier,
   type PlanProjection,
 } from '@/lib/api';
+import { formatPercent, formatTokens, formatTry, formatUsd } from '@/lib/currency';
 
 const SELECT_CLASS =
   'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground transition-colors hover:border-strong focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20';
 
 const LABEL_CLASS = 'mb-1.5 block text-xs font-medium text-muted-foreground';
 
-/* ── formatters ───────────────────────────────────────────────────────────
- * Currency is fixed at 2 decimals. The one exception: a non-zero amount below
- * a cent would render as "$0.00" and hide the figure entirely, so it falls
- * back to 4 decimals — an ops console must not round a real cost away.
+/* ── Para birimi ──────────────────────────────────────────────────────────
+ * Bu ekranda iki para birimi yan yana durur ve asla toplanmaz:
+ *   • Sağlayıcı maliyeti  → USD (OpenAI bizi dolarla faturalar)
+ *   • Gelir / fiyat / kâr → TRY (müşteri lira öder)
+ * Dönüşüm, backend'in `USD_TRY_RATE` ile hesapladığı `exchangeRate` üzerinden
+ * yapılır; sayfadaki her marj bu kura bağlıdır. Bu yüzden biçimlendirme
+ * yardımcıları `lib/currency.ts` içinden gelir — burada yeniden tanımlanmaz.
  */
-function usd(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  const abs = Math.abs(value);
-  const digits = abs > 0 && abs < 0.01 ? 4 : 2;
-  return `$${value.toFixed(digits)}`;
-}
 
-function num(value: number | null | undefined): string {
+/** Adet/sayı alanları (blog, üretim, abonelik) — para değil, kısaltılmaz. */
+function count(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   return value.toLocaleString('tr-TR');
 }
 
-function pct(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `%${value.toFixed(1)}`;
+/**
+ * API'nin yalnızca USD döndürdüğü sağlayıcı maliyetleri için TRY karşılığı.
+ * Backend ile aynı kuru kullanır, dolayısıyla aynı sonucu verir.
+ */
+function usdToTry(value: number | null | undefined, rate: number): number | null {
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  return value * rate;
 }
 
 /** Marj renk eşiği: %70+ sağlıklı · %50–70 izlenmeli · %50 altı riskli. */
@@ -122,6 +126,32 @@ function SectionHeading({
   );
 }
 
+/** TRY birincil, USD ikincil — sağlayıcı maliyeti gösteriminin standart biçimi. */
+function CostCell({
+  amountTry,
+  amountUsd,
+  emphasis = false,
+}: {
+  amountTry: number | null | undefined;
+  amountUsd: number | null | undefined;
+  emphasis?: boolean;
+}) {
+  return (
+    <>
+      <span
+        className={
+          emphasis
+            ? 'font-semibold tabular-nums text-foreground-strong'
+            : 'tabular-nums text-foreground'
+        }
+      >
+        {formatTry(amountTry, true)}
+      </span>
+      <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatUsd(amountUsd)}</p>
+    </>
+  );
+}
+
 export default function AdminCostsPage() {
   const monthOptions = useMemo(buildMonthOptions, []);
 
@@ -131,9 +161,9 @@ export default function AdminCostsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // What-if hesaplayıcı
+  // What-if hesaplayıcı — fiyat TRY, planlar ₺799 / ₺1.999 / ₺5.999 bandında.
   const [whatIfAllowance, setWhatIfAllowance] = useState('1500000');
-  const [whatIfPrice, setWhatIfPrice] = useState('49');
+  const [whatIfPrice, setWhatIfPrice] = useState('1999');
   const [whatIfTier, setWhatIfTier] = useState<ModelTier>('pro');
   const [projection, setProjection] = useState<PlanProjection | null>(null);
   const [projecting, setProjecting] = useState(false);
@@ -178,6 +208,7 @@ export default function AdminCostsPage() {
         setProjectionError(null);
         const result = await projectPlanEconomics({
           tokenAllowance: allowance,
+          // Backend alan adı `monthlyPrice`; değer TRY olarak yorumlanır.
           monthlyPrice: price,
           tier: whatIfTier,
         });
@@ -200,6 +231,7 @@ export default function AdminCostsPage() {
   }, [whatIfAllowance, whatIfPrice, whatIfTier]);
 
   const actuals = data?.actuals;
+  const exchangeRate = data?.exchangeRate ?? actuals?.exchangeRate ?? 0;
   // Memoised so the `?? []` fallbacks do not produce a fresh array identity on
   // every render, which would re-run the hooks below (and the what-if call).
   const tiers = useMemo(() => data?.tiers ?? [], [data?.tiers]);
@@ -217,6 +249,22 @@ export default function AdminCostsPage() {
     },
     [tiers],
   );
+
+  /**
+   * Maliyet seviyeyle birlikte artmak zorunda değil: Premium (gpt-4.1) daha yeni
+   * bir model olduğu için Pro'dan (gpt-4o) ucuza gelir. Tabloyu okuyan birinin
+   * bunu hata sanmaması için, sıralamada bir düşüş varsa açıkça yazıyoruz.
+   */
+  const costInversion = useMemo(() => {
+    for (let i = 1; i < tiers.length; i += 1) {
+      const prev = tiers[i - 1];
+      const current = tiers[i];
+      if (current.blendedCostPerMillionUsd < prev.blendedCostPerMillionUsd) {
+        return { cheaper: current, pricier: prev };
+      }
+    }
+    return null;
+  }, [tiers]);
 
   /** Paket marj tablosunun sütunları: önce bilinen seviyeler, sonra veride görülenler. */
   const packTierKeys = useMemo(() => {
@@ -240,7 +288,7 @@ export default function AdminCostsPage() {
     <div className="space-y-10">
       <PageHeader
         title="Maliyet Analizi"
-        description="Sağlayıcı maliyeti, plan kârlılığı ve fiyatlandırma senaryoları. Tüm tutarlar USD."
+        description="Sağlayıcı maliyeti USD (bize dolarla fatura edilir), gelir ve fiyatlar TRY. İkisi aşağıdaki kur üzerinden karşılaştırılır."
         actions={
           <div className="flex items-center gap-2">
             <label htmlFor="month-select" className="sr-only">
@@ -288,53 +336,86 @@ export default function AdminCostsPage() {
             refreshing ? 'pointer-events-none opacity-60' : 'opacity-100'
           }`}
         >
+          {/* ── 0. Kur ───────────────────────────────────────────────────────
+           * Sayfadaki her marj bu tek sayıya bağlı: kur bayatsa hepsi yanlış.
+           * Bu yüzden en üstte ve büyük gösteriliyor. */}
+          <section>
+            <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <ArrowLeftRight className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Dönüşüm kuru (USD → TRY)
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold leading-none tracking-tight tabular-nums text-foreground-strong">
+                    1 $ = {formatTry(exchangeRate, true)}
+                  </p>
+                </div>
+              </div>
+              <p className="max-w-md text-xs leading-relaxed text-muted-foreground sm:text-right">
+                Bu sayfadaki <span className="font-medium text-foreground">tüm</span> maliyet–gelir
+                karşılaştırmaları ve marjlar bu kurla hesaplandı.{' '}
+                <code className="rounded bg-secondary px-1 py-0.5 font-mono text-[11px]">
+                  USD_TRY_RATE
+                </code>{' '}
+                ortam değişkeninden okunur; değer bayatsa buradaki her marj yanlıştır.
+              </p>
+            </div>
+          </section>
+
           {/* ── 1. Bu ayın gerçekleşen tablosu ───────────────────────────── */}
           <section>
             <SectionHeading
               eyebrow="Gerçekleşen"
               title={`${monthOptions.find((m) => m.value === month)?.label ?? month} özeti`}
-              description="Sağlayıcı faturası ile tahsil edilen gelir arasındaki fark. Gelir; abonelik ve token paketi satışlarının toplamıdır."
+              description="Sağlayıcı faturası ile tahsil edilen gelir arasındaki fark. Gelir; abonelik ve token paketi satışlarının toplamıdır. Maliyet kartlarında büyük rakam TRY karşılığı, altındaki ise faturalanan USD tutarıdır."
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <StatCard
                 label="Sağlayıcı maliyeti"
-                value={usd(actuals?.providerCostUsd)}
+                value={formatTry(actuals?.providerCostTry)}
                 icon={<Server />}
-                hint={`${num(actuals?.totalTokens)} token (${num(actuals?.tokensIn)} girdi · ${num(
+                hint={`${formatUsd(actuals?.providerCostUsd)} fatura · ${formatTokens(
+                  actuals?.totalTokens,
+                )} token (${formatTokens(actuals?.tokensIn)} girdi · ${formatTokens(
                   actuals?.tokensOut,
                 )} çıktı)`}
               />
               <StatCard
                 label="Gelir"
-                value={usd(actuals?.revenueUsd)}
+                value={formatTry(actuals?.revenueTry)}
                 icon={<Wallet />}
-                hint={`Abonelik ${usd(actuals?.subscriptionRevenueUsd)} · Ek paket ${usd(
-                  actuals?.topUpRevenueUsd,
+                hint={`Abonelik ${formatTry(actuals?.subscriptionRevenueTry)} · Ek paket ${formatTry(
+                  actuals?.topUpRevenueTry,
                 )}`}
               />
               <StatCard
                 label="Brüt kâr"
-                value={usd(actuals?.grossProfitUsd)}
+                value={formatTry(actuals?.grossProfitTry)}
                 icon={<PiggyBank />}
-                hint={`${num(actuals?.activeSubscriptions)} aktif abonelik`}
+                hint={`${count(actuals?.activeSubscriptions)} aktif abonelik · gelir − maliyet (TRY)`}
               />
               <StatCard
                 label="Brüt marj"
-                value={pct(actuals?.grossMarginPct)}
+                value={formatPercent(actuals?.grossMarginPct)}
                 icon={<Percent />}
                 hint="Hedef: %70 ve üzeri"
               />
               <StatCard
                 label="Üretilen blog"
-                value={num(actuals?.articlesGenerated)}
+                value={count(actuals?.articlesGenerated)}
                 icon={<FileText />}
-                hint={`${num(actuals?.generationRequests)} üretim isteği`}
+                hint={`${count(actuals?.generationRequests)} üretim isteği`}
               />
               <StatCard
                 label="Blog başına ort. maliyet"
-                value={usd(actuals?.avgCostPerArticleUsd)}
+                value={formatTry(actuals?.avgCostPerArticleTry, true)}
                 icon={<Calculator />}
-                hint="Sağlayıcı maliyeti ÷ üretilen blog"
+                hint={`${formatUsd(
+                  actuals?.avgCostPerArticleUsd,
+                )} · sağlayıcı maliyeti ÷ üretilen blog`}
               />
             </div>
           </section>
@@ -344,7 +425,7 @@ export default function AdminCostsPage() {
             <SectionHeading
               eyebrow="Birim ekonomi"
               title="Kalite seviyesi ekonomisi"
-              description="Düşünme (reasoning) token'ları sağlayıcı tarafından çıktı olarak faturalandığı için harmanlanmış maliyet, çıktı fiyatını düşünme katsayısıyla ağırlıklandırarak hesaplanır."
+              description="Sağlayıcı fiyatları USD/1M token olarak yayımlanır, bu yüzden bu tabloda olduğu gibi bırakıldı. Düşünme (reasoning) token'ları çıktı olarak faturalandığı için harmanlanmış maliyet, çıktı fiyatını düşünme katsayısıyla ağırlıklandırır."
             />
             {tiers.length === 0 ? (
               <EmptyState
@@ -379,27 +460,48 @@ export default function AdminCostsPage() {
                         {tier.model}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {usd(tier.inputPricePerMillion)}
+                        {formatUsd(tier.inputPricePerMillionUsd)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {usd(tier.outputPricePerMillion)}
+                        {formatUsd(tier.outputPricePerMillionUsd)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
                         {tier.reasoningFactor.toFixed(2)}×
                       </TableCell>
                       <TableCell className="text-right font-medium tabular-nums text-foreground-strong">
-                        {usd(tier.blendedCostPerMillion)}
+                        {formatUsd(tier.blendedCostPerMillionUsd)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {num(tier.avgTokensPerArticle)}
+                        {formatTokens(tier.avgTokensPerArticle)}
                       </TableCell>
-                      <TableCell className="text-right font-medium tabular-nums text-foreground-strong">
-                        {usd(tier.avgCostPerArticle)}
+                      <TableCell className="text-right">
+                        <CostCell
+                          amountTry={tier.avgCostPerArticleTry}
+                          amountUsd={tier.avgCostPerArticleUsd}
+                          emphasis
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+            )}
+            {costInversion && (
+              <div className="mt-3 flex items-start gap-3 rounded-xl border border-border bg-secondary p-4">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  <span className="font-medium text-foreground">Maliyet seviyeyle artmıyor —</span>{' '}
+                  bu bir hata değil.{' '}
+                  <span className="font-medium text-foreground">{costInversion.cheaper.label}</span>{' '}
+                  (
+                  <span className="font-mono">{costInversion.cheaper.model}</span>) token başına{' '}
+                  <span className="font-medium text-foreground">{costInversion.pricier.label}</span>{' '}
+                  (<span className="font-mono">{costInversion.pricier.model}</span>) seviyesinden
+                  ucuza gelir; daha yeni bir model olduğu için sağlayıcı listesinde daha düşük
+                  fiyatlanmış. Üst seviye, daha pahalı olduğu için değil daha iyi çıktı verdiği için
+                  üst seviyedir — dolayısıyla marjı da daha yüksek çıkar.
+                </p>
+              </div>
             )}
           </section>
 
@@ -408,7 +510,7 @@ export default function AdminCostsPage() {
             <SectionHeading
               eyebrow="Planlar"
               title="Plan kârlılığı"
-              description="Her plan, token hakkının tamamı varsayılan kalite seviyesinde harcanmış gibi değerlendirilir — yani en kötü senaryo. Başabaş blog sayısı, aylık fiyatı karşılayan üretim adedidir."
+              description="Her plan, token hakkının tamamı varsayılan kalite seviyesinde harcanmış gibi değerlendirilir — yani en kötü senaryo. Fiyatlar TRY, maliyet sütununda üstteki rakam TRY karşılığı, altındaki faturalanan USD."
             />
             {plans.length === 0 ? (
               <EmptyState
@@ -443,26 +545,33 @@ export default function AdminCostsPage() {
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {plan.level}
-                            {plan.yearlyPrice > 0 && ` · yıllık ${usd(plan.yearlyPrice)}`}
+                            {plan.yearlyPriceTry > 0 && ` · yıllık ${formatTry(plan.yearlyPriceTry)}`}
                           </p>
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums text-foreground-strong">
-                          {usd(plan.monthlyPrice)}
+                          {formatTry(plan.monthlyPriceTry)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {num(plan.tokenAllowance)}
+                          {plan.tokenAllowance === null ? (
+                            <span className="text-muted-foreground">Sınırsız</span>
+                          ) : (
+                            formatTokens(plan.tokenAllowance)
+                          )}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {num(plan.estimatedArticles)}
+                          {count(plan.estimatedArticles)}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {usd(plan.costAtFullUsage)}
+                        <TableCell className="text-right">
+                          <CostCell
+                            amountTry={plan.costAtFullUsageTry}
+                            amountUsd={plan.costAtFullUsageUsd}
+                          />
                         </TableCell>
                         <TableCell className={`text-right font-semibold tabular-nums ${tone}`}>
-                          {pct(plan.grossMarginPct)}
+                          {formatPercent(plan.grossMarginPct)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums text-muted-foreground">
-                          {num(plan.breakEvenArticles)}
+                          {count(plan.breakEvenArticles)}
                         </TableCell>
                       </TableRow>
                     );
@@ -508,26 +617,26 @@ export default function AdminCostsPage() {
                     />
                     <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
                       {Number(whatIfAllowance) > 0
-                        ? `${num(Number(whatIfAllowance))} token`
+                        ? `${count(Number(whatIfAllowance))} token`
                         : 'Pozitif bir değer girin'}
                     </p>
                   </div>
                   <div>
                     <label className={LABEL_CLASS} htmlFor="whatif-price">
-                      Aylık fiyat (USD)
+                      Aylık fiyat (TRY)
                     </label>
                     <Input
                       id="whatif-price"
                       type="number"
                       min={0}
-                      step={1}
+                      step={50}
                       value={whatIfPrice}
                       onChange={(e) => setWhatIfPrice(e.target.value)}
-                      placeholder="49"
+                      placeholder="1999"
                     />
                     <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
                       {Number(whatIfPrice) >= 0 && whatIfPrice !== ''
-                        ? `${usd(Number(whatIfPrice))} / ay`
+                        ? `${formatTry(Number(whatIfPrice))} / ay`
                         : 'Geçerli bir fiyat girin'}
                     </p>
                   </div>
@@ -554,7 +663,7 @@ export default function AdminCostsPage() {
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 font-mono text-xs text-muted-foreground">
                       {tiers.find((t) => t.tier === whatIfTier)?.model ?? 'Model seçilecek'}
                     </p>
                   </div>
@@ -573,12 +682,12 @@ export default function AdminCostsPage() {
                       projecting ? 'opacity-60' : 'opacity-100'
                     }`}
                   >
-                    <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-medium text-foreground-strong">
                         {tierLabel(projection.tier)} seviyesinde sonuç
                       </p>
                       <span className="font-mono text-xs text-muted-foreground">
-                        {projection.model}
+                        {projection.model} · 1 $ = {formatTry(projection.exchangeRate, true)}
                       </span>
                     </div>
                     <dl className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-3">
@@ -587,7 +696,7 @@ export default function AdminCostsPage() {
                           Tahmini blog sayısı
                         </dt>
                         <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground-strong">
-                          {num(projection.estimatedArticles)}
+                          {count(projection.estimatedArticles)}
                         </dd>
                       </div>
                       <div>
@@ -595,19 +704,22 @@ export default function AdminCostsPage() {
                           Tam kullanımda maliyet
                         </dt>
                         <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground-strong">
-                          {usd(projection.costAtFullUsageUsd)}
+                          {formatTry(projection.costAtFullUsageTry)}
                         </dd>
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                          {formatUsd(projection.costAtFullUsageUsd)} sağlayıcı faturası
+                        </p>
                       </div>
                       <div>
                         <dt className="text-xs font-medium text-muted-foreground">Brüt kâr</dt>
                         <dd
                           className={`mt-1 text-xl font-semibold tabular-nums ${
-                            projection.grossProfitUsd < 0
+                            projection.grossProfitTry < 0
                               ? 'text-destructive'
                               : 'text-foreground-strong'
                           }`}
                         >
-                          {usd(projection.grossProfitUsd)}
+                          {formatTry(projection.grossProfitTry)}
                         </dd>
                       </div>
                       <div>
@@ -615,7 +727,7 @@ export default function AdminCostsPage() {
                         <dd
                           className={`mt-1 text-xl font-semibold tabular-nums ${projectionMarginTone}`}
                         >
-                          {pct(projection.grossMarginPct)}
+                          {formatPercent(projection.grossMarginPct)}
                         </dd>
                       </div>
                       <div>
@@ -623,7 +735,7 @@ export default function AdminCostsPage() {
                           Blog başına maliyet
                         </dt>
                         <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground-strong">
-                          {usd(projection.costPerArticleUsd)}
+                          {formatTry(projection.costPerArticleTry, true)}
                         </dd>
                       </div>
                       <div>
@@ -631,11 +743,14 @@ export default function AdminCostsPage() {
                           %70 marj için asgari fiyat
                         </dt>
                         <dd className="mt-1 text-xl font-semibold tabular-nums text-foreground-strong">
-                          {usd(projection.minPriceFor70PctMargin)}
+                          {formatTry(projection.minPriceFor70PctMarginTry)}
                         </dd>
-                        {projection.monthlyPrice < projection.minPriceFor70PctMargin && (
+                        {projection.monthlyPriceTry < projection.minPriceFor70PctMarginTry && (
                           <p className="mt-1 text-xs text-warning">
-                            Mevcut fiyat {usd(projection.minPriceFor70PctMargin - projection.monthlyPrice)}{' '}
+                            Mevcut fiyat{' '}
+                            {formatTry(
+                              projection.minPriceFor70PctMarginTry - projection.monthlyPriceTry,
+                            )}{' '}
                             düşük.
                           </p>
                         )}
@@ -666,7 +781,7 @@ export default function AdminCostsPage() {
             <SectionHeading
               eyebrow="Ek satın alma"
               title="Token paketi marjları"
-              description="Satın alınan tokenlar süresiz geçerlidir ve yalnızca aylık hak tükendikten sonra harcanır. Marj, tokenların hangi kalite seviyesinde tüketildiğine göre değişir."
+              description="Satın alınan tokenlar süresiz geçerlidir ve yalnızca aylık hak tükendikten sonra harcanır. Paket fiyatı TRY; marj, tokenların hangi kalite seviyesinde tüketildiğine göre değişir."
             />
             {tokenPacks.length === 0 ? (
               <EmptyState
@@ -681,7 +796,7 @@ export default function AdminCostsPage() {
                     <TableHead>Paket</TableHead>
                     <TableHead className="text-right">Token</TableHead>
                     <TableHead className="text-right">Fiyat</TableHead>
-                    <TableHead className="text-right">Satış $/1M</TableHead>
+                    <TableHead className="text-right">Satış ₺/1M</TableHead>
                     {packTierKeys.map((key) => (
                       <TableHead key={key} className="text-right">
                         {tierLabel(key)} marjı
@@ -695,12 +810,14 @@ export default function AdminCostsPage() {
                       <TableCell className="font-medium text-foreground-strong">
                         {pack.name}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{num(pack.tokens)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatTokens(pack.tokens)}
+                      </TableCell>
                       <TableCell className="text-right font-medium tabular-nums text-foreground-strong">
-                        {usd(pack.priceUsd)}
+                        {formatTry(pack.priceTry)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {usd(pack.pricePerMillionUsd)}
+                        {formatTry(pack.pricePerMillionTry)}
                       </TableCell>
                       {packTierKeys.map((key) => {
                         const entry = pack.marginByTier?.[key];
@@ -710,10 +827,13 @@ export default function AdminCostsPage() {
                             {entry ? (
                               <>
                                 <span className={`font-semibold tabular-nums ${tone}`}>
-                                  {pct(entry.grossMarginPct)}
+                                  {formatPercent(entry.grossMarginPct)}
                                 </span>
                                 <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                                  maliyet {usd(entry.costUsd)}
+                                  maliyet {formatTry(entry.costTry)}{' '}
+                                  <span className="whitespace-nowrap">
+                                    ({formatUsd(entry.costUsd)})
+                                  </span>
                                 </p>
                               </>
                             ) : (
@@ -734,7 +854,7 @@ export default function AdminCostsPage() {
             <SectionHeading
               eyebrow="Gerçekleşen"
               title="Model bazında maliyet"
-              description="Seçili ayda fiilen faturalanan token kullanımı. Maliyeti en yüksek modelden başlar."
+              description="Seçili ayda fiilen faturalanan token kullanımı. Maliyeti en yüksek modelden başlar; birim fiyatlar sağlayıcının yayımladığı gibi USD/1M token."
             />
             {models.length === 0 ? (
               <EmptyState
@@ -773,25 +893,34 @@ export default function AdminCostsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {num(model.revisions)}
+                        {count(model.revisions)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {num(model.tokensIn)}
+                        {formatTokens(model.tokensIn)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {num(model.tokensOut)}
+                        {formatTokens(model.tokensOut)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
-                        {usd(model.inputPricePerMillion)}
+                        {formatUsd(model.inputPricePerMillionUsd)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
-                        {usd(model.outputPricePerMillion)}
+                        {formatUsd(model.outputPricePerMillionUsd)}
                       </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums text-foreground-strong">
-                        {usd(model.totalCostUsd)}
+                      <TableCell className="text-right">
+                        <CostCell
+                          amountTry={model.totalCostTry}
+                          amountUsd={model.totalCostUsd}
+                          emphasis
+                        />
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {usd(model.avgCostPerRevisionUsd)}
+                      <TableCell className="text-right">
+                        {/* API bu alanı yalnızca USD döndürüyor; TRY karşılığı
+                            sayfanın kuruyla türetiliyor. */}
+                        <CostCell
+                          amountTry={usdToTry(model.avgCostPerRevisionUsd, exchangeRate)}
+                          amountUsd={model.avgCostPerRevisionUsd}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -806,6 +935,7 @@ export default function AdminCostsPage() {
               Plan ve paket marjları, token hakkının tamamının kullanıldığı varsayımıyla
               hesaplanır; gerçek kullanım genelde bunun altında kaldığı için gerçekleşen marj
               daha yüksek olur. Karşılaştırma yaparken üstteki gerçekleşen tabloyu esas alın.
+              Maliyet tarafı USD olduğundan kur hareketi, fiyatlara dokunmadan da marjı değiştirir.
             </p>
           </div>
         </div>
@@ -813,7 +943,7 @@ export default function AdminCostsPage() {
 
       {!data && !loading && !error && (
         <EmptyState
-          icon={<DollarSign />}
+          icon={<Coins />}
           title="Veri bulunamadı"
           description="Seçili ay için maliyet analizi oluşturulamadı."
           action={

@@ -26,8 +26,13 @@ export class TokenPack {
   @Column({ type: 'bigint' })
   tokens: number;
 
-  @Column({ name: 'price_usd', type: 'decimal', precision: 10, scale: 2 })
-  priceUsd: number;
+  /** TRY — what the customer pays. */
+  @Column({ name: 'price_try', type: 'decimal', precision: 12, scale: 2 })
+  priceTry: number;
+
+  /** Historical USD price from before the TRY switch. Not used for new sales. */
+  @Column({ name: 'price_usd', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  priceUsd: number | null;
 
   @Column({ default: false })
   popular: boolean;

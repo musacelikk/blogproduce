@@ -21,6 +21,7 @@ import {
   Mail,
   Bell,
   Receipt,
+  Landmark,
   Calculator,
   Home,
   MousePointerClick,
@@ -56,6 +57,7 @@ const sidebarGroups: { label: string; items: { name: string; href: string; icon:
     label: 'Finans',
     items: [
       { name: 'Planlar', href: '/admin/plans', icon: CreditCard },
+      { name: 'Havale Onayları', href: '/admin/payments', icon: Landmark },
       { name: 'Satışlar', href: '/admin/sales', icon: Receipt },
       { name: 'Maliyet Analizi', href: '/admin/costs', icon: Calculator },
     ],

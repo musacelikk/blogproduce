@@ -4,10 +4,10 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://blogproduce.com';
 
 export const metadata: Metadata = {
   title: 'Fiyatlandırma',
-  description: 'BlogProduce fiyatlandırma planları. Başlangıç, Profesyonel ve Kurumsal planlarla SEO optimizasyonlu blog içerikleri üretin, ek token paketleriyle tamamlayın. 7 gün ücretsiz deneme, kredi kartı gerekmez.',
+  description: 'BlogProduce fiyatlandırma planları. Başlangıç, Profesyonel ve Kurumsal planlarla SEO optimizasyonlu blog içerikleri üretin, ek token paketleriyle tamamlayın. Türk Lirası fiyatlar, havale/EFT ile ödeme. 7 gün ücretsiz deneme, kredi kartı gerekmez.',
   openGraph: {
     title: 'Fiyatlandırma - BlogProduce',
-    description: 'BlogProduce fiyatlandırma planları. İhtiyacınıza uygun planı seçin. 7 gün ücretsiz deneme, kredi kartı gerekmez.',
+    description: 'BlogProduce fiyatlandırma planları. İhtiyacınıza uygun planı seçin. Havale/EFT ile ödeme, 7 gün ücretsiz deneme, kredi kartı gerekmez.',
     url: `${siteUrl}/pricing`,
     type: 'website',
   },

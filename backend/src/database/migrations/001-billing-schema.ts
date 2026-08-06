@@ -9,9 +9,13 @@ import { SchemaStatement } from '../schema-migrator.service';
  * Every statement is additive and idempotent: nothing is dropped or retyped, so
  * running this on every boot costs one cheap no-op round trip per statement.
  *
- * The rest of the schema was created by TypeORM, whose uuid primary keys default
- * to `uuid_generate_v4()` from uuid-ossp — the new tables use the same function
- * to keep one convention across the database.
+ * New tables default their uuid primary keys with `gen_random_uuid()`, which is
+ * built into Postgres 13+ and needs no extension. The older schema uses
+ * `uuid_generate_v4()` from uuid-ossp, but depending on that here proved
+ * fragile: on a host where the extension is unavailable, `CREATE EXTENSION` is
+ * skipped (it is optional), every CREATE TABLE below then fails on the missing
+ * function, and later migrations cascade off the missing tables. A built-in has
+ * no such failure mode.
  */
 export const BILLING_SCHEMA_001: SchemaStatement[] = [
   // Whichever uuid extension is already present is enough; on Postgres 13+
@@ -39,7 +43,7 @@ export const BILLING_SCHEMA_001: SchemaStatement[] = [
   // ── token_packs: the pay-as-you-go catalog ─────────────────────────────
   {
     sql: `CREATE TABLE IF NOT EXISTS token_packs (
-      id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       key         varchar NOT NULL UNIQUE,
       name        varchar NOT NULL,
       tokens      bigint NOT NULL,
@@ -60,7 +64,7 @@ export const BILLING_SCHEMA_001: SchemaStatement[] = [
   },
   {
     sql: `CREATE TABLE IF NOT EXISTS token_purchases (
-      id             uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id        uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
       token_pack_id  uuid NULL REFERENCES token_packs (id),
       tokens         bigint NOT NULL,

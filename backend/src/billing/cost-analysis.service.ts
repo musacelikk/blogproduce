@@ -17,10 +17,17 @@ import {
   tierForModel,
 } from './model-tiers';
 import { PLAN_BLUEPRINTS, TOKEN_PACK_BLUEPRINTS } from './plan-catalog';
+import { grossMarginPct, usdToTry, usdTryRate } from './currency';
 
 /**
  * Powers the admin cost calculator: what a blog actually costs us, what each
  * plan earns at full usage, and how projected margins compare to reality.
+ *
+ * **Costs are USD, revenue is TRY.** Provider bills arrive in dollars while we
+ * charge lira, so every margin here converts the cost side at `usdTryRate()`
+ * before comparing. Field suffixes (`...Usd` / `...Try`) are load-bearing —
+ * subtracting one from the other without converting silently reports a margin
+ * that is ~40x too good.
  */
 @Injectable()
 export class CostAnalysisService {
@@ -39,12 +46,13 @@ export class CostAnalysisService {
       model: def.model,
       label: def.label,
       description: def.description,
-      inputPricePerMillion: def.pricing.input,
-      outputPricePerMillion: def.pricing.output,
+      inputPricePerMillionUsd: def.pricing.input,
+      outputPricePerMillionUsd: def.pricing.output,
       reasoningFactor: def.reasoningFactor,
-      blendedCostPerMillion: Number(blendedCostPerMillionTokens(def.tier).toFixed(2)),
+      blendedCostPerMillionUsd: Number(blendedCostPerMillionTokens(def.tier).toFixed(2)),
       avgTokensPerArticle: averageArticleTokens(def.tier),
-      avgCostPerArticle: Number(averageArticleCostUsd(def.tier).toFixed(4)),
+      avgCostPerArticleUsd: Number(averageArticleCostUsd(def.tier).toFixed(4)),
+      avgCostPerArticleTry: Number(usdToTry(averageArticleCostUsd(def.tier)).toFixed(2)),
     }));
   }
 
@@ -65,31 +73,35 @@ export class CostAnalysisService {
       const defaultTier =
         (plan.features?.defaultTier as ModelTier) ?? blueprint?.defaultTier ?? ModelTier.STANDARD;
 
-      const monthlyPrice = Number(plan.price?.monthly ?? 0);
-      const costAtFullUsage =
+      const monthlyPriceTry = Number(plan.price?.monthly ?? 0);
+      const costAtFullUsageUsd =
         allowance === null ? null : (allowance / 1_000_000) * blendedCostPerMillionTokens(defaultTier);
 
-      const grossMarginPct =
-        costAtFullUsage === null || monthlyPrice <= 0
-          ? null
-          : Number((((monthlyPrice - costAtFullUsage) / monthlyPrice) * 100).toFixed(1));
+      const costPerArticleTry = usdToTry(averageArticleCostUsd(defaultTier));
 
       return {
         planId: plan.id,
         key: plan.key,
         name: plan.name,
         level: plan.level,
-        monthlyPrice,
-        yearlyPrice: Number(plan.price?.yearly ?? 0),
+        monthlyPriceTry,
+        yearlyPriceTry: Number(plan.price?.yearly ?? 0),
         tokenAllowance: allowance,
         defaultTier,
         estimatedArticles:
           allowance === null ? null : Math.floor(allowance / averageArticleTokens(defaultTier)),
-        costAtFullUsage: costAtFullUsage === null ? null : Number(costAtFullUsage.toFixed(2)),
-        grossMarginPct,
-        /** Articles a subscriber can generate before the plan stops being profitable. */
-        breakEvenArticles:
-          monthlyPrice > 0 ? Math.floor(monthlyPrice / averageArticleCostUsd(defaultTier)) : 0,
+        costAtFullUsageUsd:
+          costAtFullUsageUsd === null ? null : Number(costAtFullUsageUsd.toFixed(2)),
+        costAtFullUsageTry:
+          costAtFullUsageUsd === null ? null : Number(usdToTry(costAtFullUsageUsd).toFixed(2)),
+        grossMarginPct:
+          costAtFullUsageUsd === null ? null : grossMarginPct(monthlyPriceTry, costAtFullUsageUsd),
+        /**
+         * Articles a subscriber can generate before the plan stops being
+         * profitable — clamped to the allowance, because the quota stops them
+         * first. Unclamped this reports a loss scenario that cannot occur.
+         */
+        breakEvenArticles: this.breakEvenArticles(monthlyPriceTry, costPerArticleTry, allowance, defaultTier),
       };
     });
   }
@@ -106,11 +118,26 @@ export class CostAnalysisService {
 
     const { start, end } = this.monthBounds(targetMonth);
 
-    // Revenue: active subscriptions normalised to a monthly figure, plus top-ups sold.
-    const subscriptions = await this.subscriptionsRepository.find({
-      where: { status: SubscriptionStatus.ACTIVE },
-      relations: ['plan'],
-    });
+    // Revenue: subscriptions that were live *during the selected month*, not the
+    // ones live right now. Scoping cost to the month while leaving revenue at
+    // today's MRR would compare last month's spend against this month's income
+    // and report a margin for a combination that never existed.
+    const subscriptions = await this.subscriptionsRepository
+      .createQueryBuilder('s')
+      .leftJoinAndSelect('s.plan', 'plan')
+      .where('s.startedAt < :end', { end })
+      .andWhere('(s.expiresAt IS NULL OR s.expiresAt >= :start)', { start })
+      .andWhere('s.status IN (:...statuses)', {
+        // A subscription cancelled or expired later was still billed for this
+        // month, so restricting to ACTIVE would understate historical revenue.
+        statuses: [
+          SubscriptionStatus.ACTIVE,
+          SubscriptionStatus.CANCELLED,
+          SubscriptionStatus.EXPIRED,
+        ],
+      })
+      .getMany();
+
     const subscriptionRevenue = subscriptions.reduce((sum, s) => {
       const price = s.billingPeriod === BillingPeriod.YEARLY
         ? Number(s.plan?.price?.yearly ?? 0) / 12
@@ -123,25 +150,29 @@ export class CostAnalysisService {
       .where('p.status = :status', { status: TokenPurchaseStatus.COMPLETED })
       .andWhere('p.createdAt >= :start AND p.createdAt < :end', { start, end })
       .getMany();
-    const topUpRevenue = purchases.reduce((sum, p) => sum + Number(p.amountUsd ?? 0), 0);
+    const topUpRevenue = purchases.reduce((sum, p) => sum + Number(p.amountTry ?? 0), 0);
 
-    const revenue = subscriptionRevenue + topUpRevenue;
+    const revenueTry = subscriptionRevenue + topUpRevenue;
+    const providerCostTry = usdToTry(providerCost);
     const articles = await this.countArticles(start, end);
 
     return {
       month: targetMonth,
+      exchangeRate: usdTryRate(),
       providerCostUsd: Number(providerCost.toFixed(2)),
-      subscriptionRevenueUsd: Number(subscriptionRevenue.toFixed(2)),
-      topUpRevenueUsd: Number(topUpRevenue.toFixed(2)),
-      revenueUsd: Number(revenue.toFixed(2)),
-      grossProfitUsd: Number((revenue - providerCost).toFixed(2)),
-      grossMarginPct: revenue > 0 ? Number((((revenue - providerCost) / revenue) * 100).toFixed(1)) : null,
+      providerCostTry: Number(providerCostTry.toFixed(2)),
+      subscriptionRevenueTry: Number(subscriptionRevenue.toFixed(2)),
+      topUpRevenueTry: Number(topUpRevenue.toFixed(2)),
+      revenueTry: Number(revenueTry.toFixed(2)),
+      grossProfitTry: Number((revenueTry - providerCostTry).toFixed(2)),
+      grossMarginPct: grossMarginPct(revenueTry, providerCost),
       tokensIn,
       tokensOut,
       totalTokens: tokensIn + tokensOut,
       generationRequests: requestCount,
       articlesGenerated: articles,
       avgCostPerArticleUsd: articles > 0 ? Number((providerCost / articles).toFixed(4)) : null,
+      avgCostPerArticleTry: articles > 0 ? Number((providerCostTry / articles).toFixed(2)) : null,
       activeSubscriptions: subscriptions.length,
     };
   }
@@ -177,10 +208,13 @@ export class CostAnalysisService {
           revisions,
           tokensIn,
           tokensOut,
-          inputPricePerMillion: pricing.input,
-          outputPricePerMillion: pricing.output,
+          inputPricePerMillionUsd: pricing.input,
+          outputPricePerMillionUsd: pricing.output,
           totalCostUsd: Number(cost.toFixed(4)),
+          totalCostTry: Number(usdToTry(cost).toFixed(2)),
           avgCostPerRevisionUsd: revisions > 0 ? Number((cost / revisions).toFixed(4)) : 0,
+          avgCostPerRevisionTry:
+            revisions > 0 ? Number(usdToTry(cost / revisions).toFixed(2)) : 0,
         };
       })
       .sort((a, b) => b.totalCostUsd - a.totalCostUsd);
@@ -188,42 +222,44 @@ export class CostAnalysisService {
 
   /**
    * What-if calculator: price a hypothetical plan before creating it.
-   * Answers "if I sell N tokens for $X on tier T, what is my margin?"
+   * Answers "if I sell N tokens for ₺X on tier T, what is my margin?"
    */
   projectPlan(input: { tokenAllowance: number; monthlyPrice: number; tier?: string }) {
     const tier = (input.tier as ModelTier) ?? ModelTier.STANDARD;
     const def = TIER_DEFINITIONS[tier] ?? TIER_DEFINITIONS[ModelTier.STANDARD];
-    const costAtFullUsage = (input.tokenAllowance / 1_000_000) * blendedCostPerMillionTokens(def.tier);
+    const costAtFullUsageUsd =
+      (input.tokenAllowance / 1_000_000) * blendedCostPerMillionTokens(def.tier);
+    const costAtFullUsageTry = usdToTry(costAtFullUsageUsd);
     const articles = Math.floor(input.tokenAllowance / averageArticleTokens(def.tier));
 
     return {
       tier: def.tier,
       model: def.model,
+      exchangeRate: usdTryRate(),
       tokenAllowance: input.tokenAllowance,
-      monthlyPrice: input.monthlyPrice,
+      monthlyPriceTry: input.monthlyPrice,
       estimatedArticles: articles,
-      costAtFullUsageUsd: Number(costAtFullUsage.toFixed(2)),
-      grossProfitUsd: Number((input.monthlyPrice - costAtFullUsage).toFixed(2)),
-      grossMarginPct:
-        input.monthlyPrice > 0
-          ? Number((((input.monthlyPrice - costAtFullUsage) / input.monthlyPrice) * 100).toFixed(1))
-          : null,
-      costPerArticleUsd: Number(averageArticleCostUsd(def.tier).toFixed(4)),
+      costAtFullUsageUsd: Number(costAtFullUsageUsd.toFixed(2)),
+      costAtFullUsageTry: Number(costAtFullUsageTry.toFixed(2)),
+      grossProfitTry: Number((input.monthlyPrice - costAtFullUsageTry).toFixed(2)),
+      grossMarginPct: grossMarginPct(input.monthlyPrice, costAtFullUsageUsd),
+      costPerArticleTry: Number(usdToTry(averageArticleCostUsd(def.tier)).toFixed(2)),
       /** Price floor for a target margin, so the admin can sanity-check a discount. */
-      minPriceFor70PctMargin: Number((costAtFullUsage / 0.3).toFixed(2)),
+      minPriceFor70PctMarginTry: Number((costAtFullUsageTry / 0.3).toFixed(2)),
     };
   }
 
-  /** Margin on the pay-as-you-go packs. */
+  /** Margin on the pay-as-you-go packs, scored against every tier they can be spent on. */
   getTokenPackEconomics() {
     return TOKEN_PACK_BLUEPRINTS.map((pack) => {
-      const pricePerMillion = pack.priceUsd / (pack.tokens / 1_000_000);
+      const pricePerMillionTry = pack.priceTry / (pack.tokens / 1_000_000);
       return Object.values(TIER_DEFINITIONS).reduce(
         (acc, def) => {
-          const cost = (pack.tokens / 1_000_000) * blendedCostPerMillionTokens(def.tier);
+          const costUsd = (pack.tokens / 1_000_000) * blendedCostPerMillionTokens(def.tier);
           acc.marginByTier[def.tier] = {
-            costUsd: Number(cost.toFixed(2)),
-            grossMarginPct: Number((((pack.priceUsd - cost) / pack.priceUsd) * 100).toFixed(1)),
+            costUsd: Number(costUsd.toFixed(2)),
+            costTry: Number(usdToTry(costUsd).toFixed(2)),
+            grossMarginPct: grossMarginPct(pack.priceTry, costUsd),
           };
           return acc;
         },
@@ -231,9 +267,12 @@ export class CostAnalysisService {
           key: pack.key,
           name: pack.name,
           tokens: pack.tokens,
-          priceUsd: pack.priceUsd,
-          pricePerMillionUsd: Number(pricePerMillion.toFixed(2)),
-          marginByTier: {} as Record<string, { costUsd: number; grossMarginPct: number }>,
+          priceTry: pack.priceTry,
+          pricePerMillionTry: Number(pricePerMillionTry.toFixed(2)),
+          marginByTier: {} as Record<
+            string,
+            { costUsd: number; costTry: number; grossMarginPct: number | null }
+          >,
         },
       );
     });
@@ -247,12 +286,27 @@ export class CostAnalysisService {
     ]);
 
     return {
+      exchangeRate: usdTryRate(),
+      currency: 'TRY',
       tiers: this.getTierEconomics(),
       plans,
       tokenPacks: this.getTokenPackEconomics(),
       actuals,
       models,
     };
+  }
+
+  /** Break-even article count, capped by what the plan's allowance actually permits. */
+  private breakEvenArticles(
+    monthlyPriceTry: number,
+    costPerArticleTry: number,
+    allowance: number | null,
+    tier: ModelTier,
+  ): number {
+    if (monthlyPriceTry <= 0 || costPerArticleTry <= 0) return 0;
+    const byPrice = Math.floor(monthlyPriceTry / costPerArticleTry);
+    if (allowance === null) return byPrice;
+    return Math.min(byPrice, Math.floor(allowance / averageArticleTokens(tier)));
   }
 
   private async countArticles(start: Date, end: Date): Promise<number> {

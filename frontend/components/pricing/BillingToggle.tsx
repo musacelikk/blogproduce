@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import type { BillingPeriod } from './plan-model';
+import { formatPercent, type BillingPeriod } from './plan-model';
 
 interface BillingToggleProps {
   value: BillingPeriod;
@@ -50,7 +50,9 @@ export function BillingToggle({ value, onChange, saving, className }: BillingTog
 
       {saving && saving.pct > 0 && (
         <Badge variant="success">
-          Yıllık ödemede {saving.uniform ? `%${saving.pct}` : `%${saving.pct}'ye varan`} tasarruf
+          Yıllık ödemede{' '}
+          {saving.uniform ? formatPercent(saving.pct) : `${formatPercent(saving.pct)}'ye varan`}{' '}
+          tasarruf
         </Badge>
       )}
     </div>

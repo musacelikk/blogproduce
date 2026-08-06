@@ -14,6 +14,7 @@ import { Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { PlanDefinition, PlanLevel } from '../src/entities/plan-definition.entity';
 import { TokenPack } from '../src/entities/token-pack.entity';
+import { formatTry } from '../src/billing/currency';
 import {
   PLAN_BLUEPRINTS,
   TOKEN_PACK_BLUEPRINTS,
@@ -77,7 +78,7 @@ async function run() {
       key: blueprint.key,
       name: blueprint.name,
       tokens: blueprint.tokens,
-      priceUsd: blueprint.priceUsd,
+      priceTry: blueprint.priceTry,
       popular: blueprint.popular,
       active: true,
       sortOrder: index,
@@ -85,10 +86,10 @@ async function run() {
 
     if (existing) {
       await packs.update(existing.id, payload);
-      console.log(`  güncellendi  ${blueprint.name} — $${blueprint.priceUsd}`);
+      console.log(`  güncellendi  ${blueprint.name} — ${formatTry(blueprint.priceTry)}`);
     } else {
       await packs.save(packs.create(payload));
-      console.log(`  oluşturuldu  ${blueprint.name} — $${blueprint.priceUsd}`);
+      console.log(`  oluşturuldu  ${blueprint.name} — ${formatTry(blueprint.priceTry)}`);
     }
   }
 

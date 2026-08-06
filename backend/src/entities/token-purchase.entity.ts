@@ -41,8 +41,13 @@ export class TokenPurchase {
   @Column({ type: 'bigint' })
   tokens: number;
 
-  @Column({ name: 'amount_usd', type: 'decimal', precision: 10, scale: 2 })
-  amountUsd: number;
+  /** TRY — what the customer actually paid. */
+  @Column({ name: 'amount_try', type: 'decimal', precision: 12, scale: 2 })
+  amountTry: number;
+
+  /** Historical USD amount from before the TRY switch. */
+  @Column({ name: 'amount_usd', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  amountUsd: number | null;
 
   @Column({
     type: 'enum',

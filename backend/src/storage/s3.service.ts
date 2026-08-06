@@ -18,6 +18,19 @@ export class S3Service {
   private bucketName: string;
   private region: string;
   private publicUrl?: string;
+  /**
+   * Object ACL to request, or undefined to send none.
+   *
+   * Buckets created after April 2023 default to Object Ownership =
+   * BucketOwnerEnforced, where ACLs are *disabled* and any PutObject carrying
+   * one fails outright with AccessControlListNotSupported. Sending no ACL is
+   * therefore the correct default; such buckets are made public with a bucket
+   * policy or fronted by CloudFront. Set AWS_S3_ACL=public-read for an older
+   * bucket that still relies on per-object ACLs.
+   */
+  private objectAcl?: 'public-read' | 'private';
+  /** Flipped when S3 tells us ACLs are unsupported, so we stop resending them. */
+  private aclRejected = false;
 
   constructor(private configService: ConfigService) {
     this.region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
@@ -25,6 +38,9 @@ export class S3Service {
     const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
     this.bucketName = this.configService.get<string>('AWS_S3_BUCKET_NAME') || '';
     this.publicUrl = this.configService.get<string>('AWS_S3_PUBLIC_URL');
+
+    const acl = this.configService.get<string>('AWS_S3_ACL')?.trim();
+    this.objectAcl = acl === 'public-read' || acl === 'private' ? acl : undefined;
 
     const endpoint = this.configService.get<string>('AWS_S3_ENDPOINT');
     const forcePathStyle = this.configService.get<string>('AWS_S3_FORCE_PATH_STYLE') === 'true';
@@ -66,40 +82,91 @@ export class S3Service {
       throw new Error('S3 bucket not configured');
     }
 
-    // Generate unique filename
-    const fileExtension = file.originalname.split('.').pop() || '';
-    const fileName = `${uuidv4()}.${fileExtension}`;
+    // Never derive the key from the uploaded filename: it is attacker-controlled
+    // and would let a caller write outside the intended prefix (`../`) or
+    // overwrite another workspace's object. Only the extension is carried over,
+    // and only after being reduced to safe characters.
+    const fileExtension = this.safeExtension(file.originalname, file.mimetype);
+    const fileName = `${uuidv4()}${fileExtension}`;
     const key = workspaceId
       ? `${folder}/${workspaceId}/${fileName}`
       : `${folder}/${fileName}`;
 
     try {
-      const command = new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ACL: 'public-read', // Make file publicly accessible
-      });
+      await this.putObject(key, file);
 
-      await this.s3Client.send(command);
-
-      // Generate public URL
-      const url = this.publicUrl
-        ? `${this.publicUrl}/${key}`
-        : `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${key}`;
-
+      const url = this.getPublicUrl(key);
       this.logger.log(`File uploaded: ${key}`);
 
-      return {
-        url,
-        key,
-        bucket: this.bucketName,
-      };
+      return { url, key, bucket: this.bucketName };
     } catch (error) {
       this.logger.error(`Failed to upload file: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  /**
+   * PutObject, retrying once without the ACL when the bucket has ACLs disabled.
+   *
+   * Without this an upload against a modern bucket fails with a message
+   * ("AccessControlListNotSupported") that says nothing about which setting to
+   * change, and the feature simply appears broken.
+   */
+  private async putObject(key: string, file: Express.Multer.File): Promise<void> {
+    const base = {
+      Bucket: this.bucketName,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      // Assets are immutable — the key contains a uuid — so they can be cached
+      // indefinitely. Without this every page view re-fetches every image.
+      CacheControl: 'public, max-age=31536000, immutable',
+    };
+
+    const useAcl = this.objectAcl && !this.aclRejected;
+
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand(useAcl ? { ...base, ACL: this.objectAcl } : base),
+      );
+    } catch (error) {
+      const name = (error as any)?.name ?? (error as any)?.Code;
+      if (useAcl && name === 'AccessControlListNotSupported') {
+        this.logger.warn(
+          'Bucket has ACLs disabled (Object Ownership = BucketOwnerEnforced). ' +
+            'Retrying without ACL and dropping AWS_S3_ACL for the rest of this process — ' +
+            'grant public read with a bucket policy or serve via CloudFront instead.',
+        );
+        this.aclRejected = true;
+        await this.s3Client.send(new PutObjectCommand(base));
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Extension for the stored key, chosen from the detected content type and
+   * falling back to a sanitised form of the original. Anything unrecognised gets
+   * no extension at all rather than whatever the client claimed.
+   */
+  private safeExtension(originalName: string, mimetype: string): string {
+    const byMime: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif',
+      'image/avif': '.avif',
+      'video/mp4': '.mp4',
+      'video/webm': '.webm',
+      'application/pdf': '.pdf',
+      'text/plain': '.txt',
+    };
+    if (byMime[mimetype]) return byMime[mimetype];
+
+    const raw = originalName.includes('.') ? originalName.split('.').pop() ?? '' : '';
+    const cleaned = raw.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+    return cleaned ? `.${cleaned}` : '';
   }
 
   /**

@@ -1,6 +1,17 @@
 import { ConfigService } from '@nestjs/config';
 import { BlogGeneratorService } from './blog-generator.service';
 import { LlmService } from './llm.service';
+import { ModelTier, modelForTier } from '../billing/model-tiers';
+
+/**
+ * Tier→model mapping is deliberately configurable (see model-tiers.ts), so these
+ * assertions read the mapping instead of hardcoding model ids. Otherwise every
+ * test here breaks the day the Anthropic key is connected and the tiers move to
+ * Claude — a false alarm that says nothing about whether routing still works.
+ */
+const STANDARD = modelForTier(ModelTier.STANDARD);
+const PRO = modelForTier(ModelTier.PRO);
+const PREMIUM = modelForTier(ModelTier.PREMIUM);
 
 /** Minimal stubs — these tests cover pure routing/parsing logic, not network calls. */
 function buildService(options: { anthropic?: boolean; openai?: boolean; env?: Record<string, string> } = {}) {
@@ -19,12 +30,20 @@ function buildService(options: { anthropic?: boolean; openai?: boolean; env?: Re
 describe('BlogGeneratorService.resolveModel', () => {
   it('maps quality tiers to concrete models', () => {
     const service = buildService();
-    expect(service.resolveModel('standard')).toBe('gpt-4o');
-    expect(service.resolveModel('ucuz')).toBe('gpt-4o');
-    expect(service.resolveModel('pro')).toBe('claude-sonnet-5');
-    expect(service.resolveModel('orta')).toBe('claude-sonnet-5');
-    expect(service.resolveModel('premium')).toBe('claude-opus-5');
-    expect(service.resolveModel('pahalı')).toBe('claude-opus-5');
+    expect(service.resolveModel('standard')).toBe(STANDARD);
+    expect(service.resolveModel('pro')).toBe(PRO);
+    expect(service.resolveModel('premium')).toBe(PREMIUM);
+  });
+
+  it('accepts the Turkish tier aliases customers and admins actually type', () => {
+    const service = buildService();
+    expect(service.resolveModel('ucuz')).toBe(STANDARD);
+    expect(service.resolveModel('orta')).toBe(PRO);
+    expect(service.resolveModel('pahalı')).toBe(PREMIUM);
+  });
+
+  it('gives each tier a distinct model, so a paid upgrade changes something', () => {
+    expect(new Set([STANDARD, PRO, PREMIUM]).size).toBe(3);
   });
 
   it('passes explicit model ids through untouched', () => {
@@ -33,21 +52,21 @@ describe('BlogGeneratorService.resolveModel', () => {
 
   it('falls back to the configured default when nothing is requested', () => {
     expect(buildService({ env: { OPENAI_MODEL: 'gpt-4.1' } }).resolveModel()).toBe('gpt-4.1');
-    expect(buildService().resolveModel()).toBe('gpt-4o');
   });
 
   it('substitutes a provider that is actually configured', () => {
-    // Premium resolves to Claude, but with no Anthropic key it must degrade rather than fail.
+    // A Claude-backed tier with no Anthropic key must degrade to OpenAI rather
+    // than fail the generation outright.
     const withoutAnthropic = buildService({ anthropic: false });
-    expect(withoutAnthropic.resolveModel('premium')).toBe('gpt-4o');
+    expect(withoutAnthropic.resolveModel('claude-opus-5').startsWith('claude')).toBe(false);
 
     const withoutOpenAI = buildService({ openai: false });
-    expect(withoutOpenAI.resolveModel('standard')).toBe('claude-sonnet-5');
+    expect(withoutOpenAI.resolveModel('gpt-4o').startsWith('claude')).toBe(true);
   });
 
   it('keeps the requested model when no substitute is available either', () => {
     const neither = buildService({ anthropic: false, openai: false });
-    expect(neither.resolveModel('premium')).toBe('claude-opus-5');
+    expect(neither.resolveModel('claude-opus-5')).toBe('claude-opus-5');
   });
 });
 

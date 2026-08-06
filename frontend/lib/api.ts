@@ -1850,7 +1850,7 @@ export interface TokenPack {
   key: string;
   name: string;
   tokens: number;
-  priceUsd: number;
+  priceTry: number;
   popular: boolean;
   active: boolean;
 }
@@ -1858,7 +1858,7 @@ export interface TokenPack {
 export interface TokenPurchase {
   id: string;
   tokens: number;
-  amountUsd: number;
+  amountTry: number;
   status: string;
   note: string | null;
   createdAt: string;
@@ -1882,32 +1882,112 @@ export async function getTokenPacks(): Promise<TokenPack[]> {
   return body.data || [];
 }
 
-export async function purchaseTokenPack(packId: string, reference?: string) {
-  const response = await apiRequest(`/billing/token-packs/${packId}/purchase`, {
-    method: 'POST',
-    body: JSON.stringify({ reference }),
-  });
-  return response.data || response;
-}
-
 export async function getTokenPurchases(): Promise<TokenPurchase[]> {
   const response = await apiRequest('/billing/purchases', { method: 'GET' });
   return response.data || response;
 }
 
+// ── Bank transfer (havale / EFT) ─────────────────────────────────────────
+
+export interface BankDetails {
+  bankName: string;
+  accountHolder: string;
+  iban: string;
+  currency: 'TRY';
+  /** False when the deployment has not set BANK_IBAN yet. */
+  configured: boolean;
+  instructions: string[];
+}
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
+
+export interface PaymentRequest {
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  /** Code the customer must quote in the transfer description. */
+  referenceCode: string | null;
+  tokens: number | null;
+  billingPeriod: string | null;
+  notes: string | null;
+  paidAt: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  plan?: { id: string; name: string; level: string } | null;
+  tokenPack?: TokenPack | null;
+  user?: { id: string; email: string; name?: string } | null;
+}
+
+export async function getBankDetails(): Promise<BankDetails> {
+  const response = await apiRequest('/billing/bank-details', { method: 'GET' });
+  return response.data || response;
+}
+
+/**
+ * Open a bank-transfer order. Grants nothing on its own — an admin confirms it
+ * against the bank statement, and only then is the plan or token pack fulfilled.
+ */
+export async function createPaymentRequest(input: {
+  type: 'plan' | 'token_pack';
+  planKey?: string;
+  packId?: string;
+  yearly?: boolean;
+}): Promise<{ payment: PaymentRequest; bank: BankDetails }> {
+  const response = await apiRequest('/billing/payment-requests', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return response.data || response;
+}
+
+export async function getMyPaymentRequests(): Promise<PaymentRequest[]> {
+  const response = await apiRequest('/billing/payment-requests', { method: 'GET' });
+  return response.data || response;
+}
+
+export async function cancelPaymentRequest(id: string) {
+  return apiRequest(`/billing/payment-requests/${id}/cancel`, { method: 'POST' });
+}
+
+export async function getPendingPaymentRequests(): Promise<PaymentRequest[]> {
+  const response = await apiRequest('/billing/admin/payment-requests', { method: 'GET' });
+  return response.data || response;
+}
+
+export async function confirmPaymentRequest(id: string, note?: string) {
+  return apiRequest(`/billing/admin/payment-requests/${id}/confirm`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+}
+
+export async function rejectPaymentRequest(id: string, note?: string) {
+  return apiRequest(`/billing/admin/payment-requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  });
+}
+
 // ── Admin cost calculator ────────────────────────────────────────────────
+//
+// Provider cost is USD (that is what OpenAI bills us); everything customer-facing
+// is TRY. The `...Usd` / `...Try` suffixes are load-bearing — mixing them
+// produces a margin that looks ~40x better than reality.
 
 export interface TierEconomics {
   tier: ModelTier;
   model: string;
   label: string;
   description: string;
-  inputPricePerMillion: number;
-  outputPricePerMillion: number;
   reasoningFactor: number;
-  blendedCostPerMillion: number;
+  inputPricePerMillionUsd: number;
+  outputPricePerMillionUsd: number;
+  blendedCostPerMillionUsd: number;
   avgTokensPerArticle: number;
-  avgCostPerArticle: number;
+  avgCostPerArticleUsd: number;
+  avgCostPerArticleTry: number;
 }
 
 export interface PlanEconomics {
@@ -1915,23 +1995,26 @@ export interface PlanEconomics {
   key: string | null;
   name: string;
   level: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
+  monthlyPriceTry: number;
+  yearlyPriceTry: number;
   tokenAllowance: number | null;
   defaultTier: ModelTier;
   estimatedArticles: number | null;
-  costAtFullUsage: number | null;
+  costAtFullUsageUsd: number | null;
+  costAtFullUsageTry: number | null;
   grossMarginPct: number | null;
   breakEvenArticles: number;
 }
 
 export interface CostActuals {
   month: string;
+  exchangeRate: number;
   providerCostUsd: number;
-  subscriptionRevenueUsd: number;
-  topUpRevenueUsd: number;
-  revenueUsd: number;
-  grossProfitUsd: number;
+  providerCostTry: number;
+  subscriptionRevenueTry: number;
+  topUpRevenueTry: number;
+  revenueTry: number;
+  grossProfitTry: number;
   grossMarginPct: number | null;
   tokensIn: number;
   tokensOut: number;
@@ -1939,6 +2022,7 @@ export interface CostActuals {
   generationRequests: number;
   articlesGenerated: number;
   avgCostPerArticleUsd: number | null;
+  avgCostPerArticleTry: number | null;
   activeSubscriptions: number;
 }
 
@@ -1948,22 +2032,30 @@ export interface ModelBreakdown {
   revisions: number;
   tokensIn: number;
   tokensOut: number;
-  inputPricePerMillion: number;
-  outputPricePerMillion: number;
+  inputPricePerMillionUsd: number;
+  outputPricePerMillionUsd: number;
   totalCostUsd: number;
+  totalCostTry: number;
   avgCostPerRevisionUsd: number;
+  avgCostPerRevisionTry: number;
 }
 
 export interface TokenPackEconomics {
   key: string;
   name: string;
   tokens: number;
-  priceUsd: number;
-  pricePerMillionUsd: number;
-  marginByTier: Record<string, { costUsd: number; grossMarginPct: number }>;
+  priceTry: number;
+  pricePerMillionTry: number;
+  marginByTier: Record<
+    string,
+    { costUsd: number; costTry: number; grossMarginPct: number | null }
+  >;
 }
 
 export interface CostAnalysis {
+  /** Live USD→TRY rate the margins were computed at (USD_TRY_RATE). */
+  exchangeRate: number;
+  currency: string;
   tiers: TierEconomics[];
   plans: PlanEconomics[];
   tokenPacks: TokenPackEconomics[];
@@ -1974,14 +2066,16 @@ export interface CostAnalysis {
 export interface PlanProjection {
   tier: ModelTier;
   model: string;
+  exchangeRate: number;
   tokenAllowance: number;
-  monthlyPrice: number;
+  monthlyPriceTry: number;
   estimatedArticles: number;
   costAtFullUsageUsd: number;
-  grossProfitUsd: number;
+  costAtFullUsageTry: number;
+  grossProfitTry: number;
   grossMarginPct: number | null;
-  costPerArticleUsd: number;
-  minPriceFor70PctMargin: number;
+  costPerArticleTry: number;
+  minPriceFor70PctMarginTry: number;
 }
 
 export async function getCostAnalysis(month?: string): Promise<CostAnalysis> {
@@ -2004,7 +2098,7 @@ export async function projectPlanEconomics(input: {
 
 export async function grantUserTokens(
   userId: string,
-  payload: { tokens: number; amountUsd?: number; note?: string },
+  payload: { tokens: number; amountTry?: number; note?: string },
 ) {
   const response = await apiRequest(`/billing/admin/users/${userId}/grant-tokens`, {
     method: 'POST',

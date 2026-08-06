@@ -41,7 +41,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getPost, updatePost, publishPost, unpublishPost, deletePost, schedulePost, unschedulePost, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
+import { getPost, updatePost, publishPost, unpublishPost, deletePost, schedulePost, unschedulePost, searchUnsplashPhotos, triggerUnsplashDownload, type Asset, type Post, type UnsplashPhoto } from '@/lib/api';
+import { ImageUploader } from '@/components/media/ImageUploader';
 import { sanitizeHtml } from '@/lib/sanitize';
 
 const statusVariants: Record<string, BadgeProps['variant']> = {
@@ -92,6 +93,8 @@ export default function BlogDetailPage() {
   const [showImageSearch, setShowImageSearch] = useState(false);
   const [imageSearchQuery, setImageSearchQuery] = useState('');
   const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
+  /** Which source the cover image is being picked from. */
+  const [imageSource, setImageSource] = useState<'upload' | 'unsplash'>('upload');
   const [selectedImage, setSelectedImage] = useState<UnsplashPhoto | null>(null);
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -389,6 +392,31 @@ export default function BlogDetailPage() {
       alert('Resim arama sırasında bir hata oluştu');
     } finally {
       setIsSearchingImages(false);
+    }
+  };
+
+  /**
+   * Set an uploaded asset as the cover. `coverImageCreditJson` is cleared
+   * explicitly — leaving a previous Unsplash credit in place would attribute the
+   * user's own photo to a stranger.
+   */
+  const handleUploadedCover = async (asset: Asset) => {
+    if (!post) return;
+    try {
+      setUpdatingImage(true);
+      await updatePost(post.id, {
+        coverImageUrl: asset.url,
+        coverImageCreditJson: null as any,
+      });
+      await loadPost();
+      setShowImageSearch(false);
+      setSelectedImage(null);
+      setUnsplashPhotos([]);
+      setImageSearchQuery('');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Kapak görseli güncellenemedi');
+    } finally {
+      setUpdatingImage(false);
     }
   };
 
@@ -1291,8 +1319,10 @@ export default function BlogDetailPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div>
-                <h2 className="mb-1 text-base font-semibold text-foreground-strong">Kapak Resmi Seç</h2>
-                <p className="text-xs text-muted-foreground">Unsplash&apos;tan resim arayın</p>
+                <h2 className="mb-1 text-base font-semibold text-foreground-strong">Kapak Görseli</h2>
+                <p className="text-xs text-muted-foreground">
+                  Kendi görselinizi yükleyin veya Unsplash arşivinden seçin
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -1309,6 +1339,55 @@ export default function BlogDetailPage() {
               </Button>
             </div>
 
+            {/* Source tabs */}
+            <div
+              role="tablist"
+              aria-label="Kapak görseli kaynağı"
+              className="flex gap-1 border-b border-border px-4 pt-3 sm:px-6"
+            >
+              {([
+                { id: 'upload', label: 'Kendi görselim' },
+                { id: 'unsplash', label: 'Unsplash arşivi' },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={imageSource === tab.id}
+                  onClick={() => setImageSource(tab.id)}
+                  className={`rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors duration-fast ease-out-quart ${
+                    imageSource === tab.id
+                      ? 'border-b-2 border-primary text-foreground-strong'
+                      : 'border-b-2 border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {imageSource === 'upload' ? (
+              <div className="overflow-y-auto p-4 sm:p-6">
+                {post.workspaceId ? (
+                  <>
+                    <ImageUploader
+                      workspaceId={post.workspaceId}
+                      defaultAlt={post.title}
+                      onUploaded={handleUploadedCover}
+                    />
+                    {updatingImage && (
+                      <p className="mt-4 text-center text-sm text-muted-foreground">
+                        Kapak görseli ayarlanıyor…
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Bu blog bir çalışma alanına bağlı olmadığı için görsel yüklenemiyor.
+                  </p>
+                )}
+              </div>
+            ) : (
+            <>
             {/* Search */}
             <div className="p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div className="flex gap-2">
@@ -1443,6 +1522,8 @@ export default function BlogDetailPage() {
                   )}
                 </Button>
               </div>
+            )}
+            </>
             )}
           </motion.div>
         </div>

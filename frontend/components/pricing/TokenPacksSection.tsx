@@ -5,9 +5,10 @@ import { SectionHeading } from '@/components/sections/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import {
-  compactTokens,
+  formatCount,
+  formatPercent,
   formatTokens,
-  formatUsd,
+  formatTry,
   type PricingPack,
 } from './plan-model';
 
@@ -29,7 +30,7 @@ export function TokenPacksSection({ packs, className, renderAction }: TokenPacks
         size="md"
         eyebrow="Ek token"
         title="Plan yetmezse, paketle tamamlayın"
-        description="Tek seferlik alınan tokenlar süresiz geçerlidir ve yalnızca aylık hakkınız bittikten sonra harcanır."
+        description="Tek seferlik alınan tokenlar süresiz geçerlidir ve yalnızca aylık hakkınız bittikten sonra harcanır. Ödeme havale/EFT ile alınır; tokenlar transfer onaylandığında bakiyenize eklenir."
       />
 
       <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -52,32 +53,34 @@ export function TokenPacksSection({ packs, className, renderAction }: TokenPacks
 
             <div className="mt-4 flex items-baseline gap-1.5">
               <span className="text-display-md text-foreground-strong">
-                {compactTokens(pack.tokens)}
+                {formatTokens(pack.tokens)}
               </span>
               <span className="text-sm text-muted-foreground">token</span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {formatTokens(pack.tokens)} token · ≈ {pack.estimatedArticles.toLocaleString('tr-TR')} blog
+              ≈ {formatCount(pack.estimatedArticles)} blog içeriği
             </p>
 
             <div className="mt-5 flex items-end justify-between gap-3 rounded-lg bg-surface-sunken p-4">
               <div>
                 <p className="text-xs text-muted-foreground">Tek seferlik</p>
                 <p className="text-2xl font-semibold tabular-nums text-foreground-strong">
-                  {formatUsd(pack.priceUsd)}
+                  {formatTry(pack.priceTry)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">1M token birim</p>
                 <p className="text-sm font-semibold tabular-nums text-foreground-strong">
-                  {formatUsd(pack.pricePerMillion)}
+                  {formatTry(pack.pricePerMillion)}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex-1">
               {pack.savingPct > 0 ? (
-                <Badge variant="success">Birim fiyatta %{pack.savingPct} avantaj</Badge>
+                <Badge variant="success">
+                  Birim fiyatta {formatPercent(pack.savingPct)} avantaj
+                </Badge>
               ) : (
                 <Badge variant="outline">Başlangıç birim fiyatı</Badge>
               )}

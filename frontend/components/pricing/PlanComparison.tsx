@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import {
   COMPARISON_GROUPS,
-  formatUsd,
+  formatTry,
   type BillingPeriod,
   type PricingPlan,
 } from './plan-model';
@@ -79,7 +79,7 @@ export function PlanComparison({
                 <TableCell key={plan.id} className="text-center text-sm tabular-nums">
                   {plan.monthlyPrice === 0
                     ? 'Ücretsiz'
-                    : `${formatUsd(
+                    : `${formatTry(
                         period === 'yearly' && plan.yearlyPrice > 0
                           ? plan.yearlyPerMonth
                           : plan.monthlyPrice,
