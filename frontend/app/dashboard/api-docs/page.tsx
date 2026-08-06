@@ -670,7 +670,10 @@ function PublishedSection() {
         <CodeBlock
           title="Next.js App Router example"
           language="tsx"
-          code={`// app/blog/page.tsx — list published posts (server component)
+          code={`// npm i isomorphic-dompurify
+import DOMPurify from 'isomorphic-dompurify';
+
+// app/blog/page.tsx — list published posts (server component)
 export default async function BlogPage() {
   const res = await fetch('${API_BASE_URL}/api/v1/published?limit=20', {
     headers: { Authorization: \`Bearer \${process.env.BLOGPRODUCE_API_KEY}\` },
@@ -702,10 +705,15 @@ export default async function PostPage({ params }) {
   );
   const { data: post } = await res.json();
 
+  // content_html is sanitized server-side, but sanitize again at the render
+  // boundary — it is the one place that protects you regardless of what
+  // reaches the content upstream.
+  const html = DOMPurify.sanitize(post.content_html);
+
   return (
     <article>
       <h1>{post.title}</h1>
-      <div dangerouslySetInnerHTML={{ __html: post.content_html }} />
+      <div dangerouslySetInnerHTML={{ __html: html }} />
     </article>
   );
 }`}

@@ -128,6 +128,35 @@ product at `/dashboard/api-docs`.
 Generation is asynchronous: `POST /api/v1/posts:generate` returns a `jobId`, you poll
 `GET /api/v1/jobs/{jobId}` until it succeeds, then publish and fetch the article.
 
+## Plans and billing
+
+Customers buy a **monthly token allowance**, plus optional pay-as-you-go top-ups.
+
+| Plan | Fiyat | Aylık token | Kalite seviyeleri | ≈ blog/ay |
+|---|---|---|---|---|
+| Ücretsiz Deneme | 7 gün ücretsiz | 150.000 | Standart, Pro | ~7 |
+| Başlangıç | $19/ay | 500.000 | Standart | ~26 |
+| Profesyonel | $49/ay | 1.500.000 | Standart, Pro | ~67 |
+| Kurumsal | $149/ay | 3.000.000 | Standart, Pro, Premium | ~114 |
+
+Top-ups: 250K/$12 · 1M/$39 · 5M/$169. Purchased tokens never expire and are spent only after the
+monthly allowance runs out.
+
+**Quality tiers** map to models: Standart → `gpt-4o`, Pro → `claude-sonnet-5`,
+Premium → `claude-opus-5`. A plan can only generate with the tiers it includes.
+
+Every new signup automatically gets the 7-day trial. Plans and token packs live in the database
+and are editable from the admin panel; seed a fresh install with:
+
+```bash
+cd backend && npm run seed:catalog
+```
+
+The admin panel's **Maliyet Analizi** screen shows real provider cost per model, per-plan margins
+at full allowance usage, token-pack margins, and a what-if calculator for pricing a new plan.
+Plan economics are asserted in `backend/src/billing/billing.service.spec.ts` — every paid plan
+must stay above a 60% gross margin at 100% usage, so a careless price edit fails the test suite.
+
 ## Running in production
 
 Two processes share one build:

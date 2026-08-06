@@ -47,9 +47,12 @@ import { UsageEvent } from './entities/usage-event.entity';
 import { ApiKeySecret } from './entities/api-key-secret.entity';
 import { ApiKeyRateLimit } from './entities/api-key-rate-limit.entity';
 import { IdempotencyKey } from './entities/idempotency-key.entity';
+import { TokenPack } from './entities/token-pack.entity';
+import { TokenPurchase } from './entities/token-purchase.entity';
 import { Settings } from './entities/settings.entity';
 import { PlansModule } from './plans/plans.module';
 import { ApiModule } from './api/api.module';
+import { BillingModule } from './billing/billing.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ActivityLogInterceptor } from './common/interceptors/activity-log.interceptor';
 import { PiiSanitizationInterceptor } from './common/interceptors/pii-sanitization.interceptor';
@@ -119,6 +122,10 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
               ApiKeySecret,
               ApiKeyRateLimit,
               IdempotencyKey,
+            TokenPack,
+            TokenPurchase,
+              TokenPack,
+              TokenPurchase,
               Settings,
             ],
             // Auto-sync alters the live schema on boot. Off in production unless
@@ -172,6 +179,8 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
             ApiKeySecret,
             ApiKeyRateLimit,
             IdempotencyKey,
+            TokenPack,
+            TokenPurchase,
             Settings,
           ],
           synchronize:
@@ -200,6 +209,7 @@ import { StructuredLoggingInterceptor } from './common/interceptors/structured-l
     ContactModule,
     NotificationModule,
     PlansModule,
+    BillingModule,
     ApiModule,
     OrganizationsModule,
     TypeOrmModule.forFeature([ActivityLog]),

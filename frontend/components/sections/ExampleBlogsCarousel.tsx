@@ -2,9 +2,10 @@
 
 import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
-import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Sparkles, Globe } from 'lucide-react';
+import { ArrowRight, Calendar, ChevronLeft, ChevronRight, Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { SectionHeading } from '@/components/sections/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -144,62 +145,51 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
   const displayBlogs = blogs && blogs.length > 0 ? blogs : mockBlogs;
 
   return (
-    <section className="w-full bg-background py-16 sm:py-24">
+    <section className="w-full bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div ref={headerRef} className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-14">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={headerInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-          >
-            <Badge className="mb-3">
-              <Sparkles className="h-3 w-3" />
-              AI Üretildi
-            </Badge>
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl lg:text-4xl">
-              Örnek Bloglar
-            </h2>
-            <p className="mt-2 max-w-lg text-sm text-muted-foreground md:text-base">
-              BlogProduce ile üretilmiş, SEO optimizasyonlu ve prompt&apos;a göre özelleştirilmiş profesyonel içerikler
-            </p>
-          </motion.div>
-
-          {/* Nav buttons */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={headerInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="hidden shrink-0 items-center gap-2 md:flex"
-          >
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => scroll('left')}
-              disabled={!canScrollLeft}
-              className="h-9 w-9 rounded-full"
-              aria-label="Önceki bloglar"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => scroll('right')}
-              disabled={!canScrollRight}
-              className="h-9 w-9 rounded-full"
-              aria-label="Sonraki bloglar"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </motion.div>
-        </div>
+        <motion.div
+          ref={headerRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={headerInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+        >
+          <SectionHeading
+            eyebrow="Örnek bloglar"
+            title="Platformdan çıkan gerçek içerikler"
+            description="Hepsi BlogProduce ile üretildi: SEO optimizasyonlu, prompt'a göre özelleştirilmiş ve yayına hazır."
+            action={
+              <div className="hidden shrink-0 items-center gap-2 md:flex">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => scroll('left')}
+                  disabled={!canScrollLeft}
+                  className="rounded-full"
+                  aria-label="Önceki bloglar"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => scroll('right')}
+                  disabled={!canScrollRight}
+                  className="rounded-full"
+                  aria-label="Sonraki bloglar"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            }
+          />
+        </motion.div>
 
         {/* Cards */}
         <div
           ref={scrollContainerRef}
-          className="scrollbar-hide flex gap-6 overflow-x-auto overflow-y-visible pb-4"
+          className="scrollbar-hide mt-14 flex gap-6 overflow-x-auto overflow-y-visible pb-4"
         >
           {displayBlogs.map((blog, index) => (
             <motion.article
@@ -208,12 +198,12 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: index * 0.08, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-              className="group w-[82vw] shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-card transition-colors duration-300 hover:border-primary md:w-[360px] lg:w-[380px]"
+              className="group w-[82vw] shrink-0 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-card transition-[box-shadow,border-color] duration-base ease-out-quart hover:border-strong hover:shadow-card-hover md:w-[360px] lg:w-[380px]"
               whileHover={{ y: -4 }}
               onClick={() => { if (blog.slug) router.push(`/example-blogs/${blog.slug}`); }}
             >
               {/* Image */}
-              <div className="relative h-48 overflow-hidden bg-secondary">
+              <div className="relative h-48 overflow-hidden border-b border-border bg-surface-sunken">
                 <Image
                   src={blog.coverImageUrl || blog.image || '/images/default-blog.jpg'}
                   alt={blog.title}
@@ -243,8 +233,8 @@ export const ExampleBlogsCarousel = ({ blogs }: ExampleBlogsCarouselProps) => {
               </div>
 
               {/* Content */}
-              <div className="p-5">
-                <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary">
+              <div className="p-6">
+                <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground-strong transition-colors duration-base ease-out-quart group-hover:text-primary">
                   {blog.title}
                 </h3>
                 <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">

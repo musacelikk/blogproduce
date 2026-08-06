@@ -14,6 +14,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { GeneratePostDto } from './dto/generate-post.dto';
 import { SqsService } from '../queue/sqs.service';
 import { WebhookService } from '../webhooks/webhook.service';
+import { BillingService } from '../billing/billing.service';
 import { WebhookEvent } from '../entities/webhook.entity';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
@@ -41,6 +42,7 @@ export class PostsService {
     private projectRepository: Repository<Project>,
     private sqsService: SqsService,
     private webhookService: WebhookService,
+    private billingService: BillingService,
     private htmlSanitizer: HtmlSanitizerService,
   ) {}
 
@@ -428,18 +430,9 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
-    // Check free user limit (3 blogs for users without a plan)
-    if (!user.planId) {
-      const userPostsCount = await this.postsRepository.count({
-        where: { authorId: user.id },
-      });
-
-      if (userPostsCount >= 3) {
-        throw new ForbiddenException(
-          'Ücretsiz plan limitine ulaştınız. Daha fazla blog üretmek için bir plan seçin.',
-        );
-      }
-    }
+    // Plan, tier permission and token balance are all checked here so the caller
+    // gets an actionable error immediately instead of a job that fails in the worker.
+    const tier = await this.billingService.authorizeGeneration(user.id, generatePostDto.model);
 
     // Generate unique slug from topic (Turkish chars → ASCII, no timestamp suffix)
     const baseSlug = toSlug(generatePostDto.topic);
@@ -529,7 +522,7 @@ export class PostsService {
         tone: generatePostDto.tone,
         length: generatePostDto.length,
         seoMode: generatePostDto.seoMode,
-        model: generatePostDto.model,
+        model: tier,
         additionalContext: generatePostDto.additionalContext,
         targetAudience: generatePostDto.targetAudience,
       },
@@ -552,7 +545,7 @@ export class PostsService {
       tone: generatePostDto.tone || 'professional',
       length: generatePostDto.length || 'medium',
       seoMode: generatePostDto.seoMode || false,
-      model: generatePostDto.model || 'gpt-4.1-mini',
+      model: tier,
       additionalContext: generatePostDto.additionalContext,
       targetAudience: generatePostDto.targetAudience,
       // Always generate canonical JSON; we convert to other formats later

@@ -17,12 +17,12 @@ function buildService(options: { anthropic?: boolean; openai?: boolean; env?: Re
 }
 
 describe('BlogGeneratorService.resolveModel', () => {
-  it('maps pricing tiers to concrete models', () => {
+  it('maps quality tiers to concrete models', () => {
     const service = buildService();
-    expect(service.resolveModel('standard')).toBe('gpt-4.1-mini');
-    expect(service.resolveModel('ucuz')).toBe('gpt-4.1-mini');
-    expect(service.resolveModel('pro')).toBe('gpt-4.1');
-    expect(service.resolveModel('orta')).toBe('gpt-4.1');
+    expect(service.resolveModel('standard')).toBe('gpt-4o');
+    expect(service.resolveModel('ucuz')).toBe('gpt-4o');
+    expect(service.resolveModel('pro')).toBe('claude-sonnet-5');
+    expect(service.resolveModel('orta')).toBe('claude-sonnet-5');
     expect(service.resolveModel('premium')).toBe('claude-opus-5');
     expect(service.resolveModel('pahalı')).toBe('claude-opus-5');
   });
@@ -33,16 +33,16 @@ describe('BlogGeneratorService.resolveModel', () => {
 
   it('falls back to the configured default when nothing is requested', () => {
     expect(buildService({ env: { OPENAI_MODEL: 'gpt-4.1' } }).resolveModel()).toBe('gpt-4.1');
-    expect(buildService().resolveModel()).toBe('gpt-4.1-mini');
+    expect(buildService().resolveModel()).toBe('gpt-4o');
   });
 
   it('substitutes a provider that is actually configured', () => {
     // Premium resolves to Claude, but with no Anthropic key it must degrade rather than fail.
     const withoutAnthropic = buildService({ anthropic: false });
-    expect(withoutAnthropic.resolveModel('premium')).toBe('gpt-4.1');
+    expect(withoutAnthropic.resolveModel('premium')).toBe('gpt-4o');
 
     const withoutOpenAI = buildService({ openai: false });
-    expect(withoutOpenAI.resolveModel('standard')).toBe('claude-opus-5');
+    expect(withoutOpenAI.resolveModel('standard')).toBe('claude-sonnet-5');
   });
 
   it('keeps the requested model when no substitute is available either', () => {

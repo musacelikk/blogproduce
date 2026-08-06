@@ -19,12 +19,14 @@ import { ApiKeyRateLimit } from '../entities/api-key-rate-limit.entity';
 import { ApiKeyQuotaService } from './services/api-key-quota.service';
 import { ApiKeyRotationService } from './services/api-key-rotation.service';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, RefreshToken, ApiKey, ApiKeySecret, ApiKeyRateLimit]),
     PassportModule,
     forwardRef(() => WorkspacesModule),
+    BillingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

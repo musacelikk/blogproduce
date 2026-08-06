@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { History, Search, Clock, FileText, Sparkles, Calendar, TrendingUp, Filter, Loader2, AlertCircle, EyeOff, AlertTriangle } from 'lucide-react';
+import { History, Search, Clock, FileText, Sparkles, Calendar, TrendingUp, Filter, AlertCircle, EyeOff, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
-import { getPosts, type Post } from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getPosts } from '@/lib/api';
 import Link from 'next/link';
 
 type ActivityType = 'generated' | 'edited' | 'published';
@@ -189,6 +191,19 @@ export default function HistoryPage() {
     }
   };
 
+  const getActivityBadgeVariant = (type: ActivityType): BadgeProps['variant'] => {
+    switch (type) {
+      case 'generated':
+        return 'primary';
+      case 'edited':
+        return 'success';
+      case 'published':
+        return 'warning';
+      default:
+        return 'outline';
+    }
+  };
+
   const getActivityLabel = (type: ActivityType) => {
     switch (type) {
       case 'generated':
@@ -217,10 +232,40 @@ export default function HistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-3 h-12 w-12 animate-spin text-primary" />
-          <p className="text-base text-muted-foreground">Yükleniyor...</p>
+      /* Skeleton mirrors the timeline: header, filter bar, four stat tiles, dated groups. */
+      <div className="space-y-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex gap-2">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-6 w-28 rounded-full" />
+            ))}
+          </div>
+        </div>
+        <Skeleton className="h-[68px] w-full rounded-xl" />
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-[102px] rounded-xl" />
+          ))}
+        </div>
+        <div className="rounded-xl border border-border bg-card p-6 shadow-card">
+          {[...Array(2)].map((_, group) => (
+            <div key={group} className={group > 0 ? 'mt-8' : ''}>
+              <div className="mb-4 flex items-center gap-3">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+              <div className="space-y-6 border-l-2 border-border pl-8">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-[86px] w-full rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -228,17 +273,21 @@ export default function HistoryPage() {
 
   if (error) {
     return (
-      <div className="space-y-5">
-        <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4 text-destructive">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div>
-              <p className="font-medium">Hata</p>
-              <p>{error}</p>
-              <Button variant="outline" size="sm" onClick={loadHistory} className="mt-2">
-                Tekrar Dene
-              </Button>
-            </div>
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="Hesap"
+          title="Geçmiş"
+          description="Tüm aktivite ve işlem geçmişinizi görüntüleyin"
+        />
+        <div className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Geçmiş yüklenemedi</p>
+            <p className="mt-0.5">{error}</p>
+            <Button variant="outline" size="sm" onClick={loadHistory} className="mt-3">
+              <RefreshCw />
+              Tekrar Dene
+            </Button>
           </div>
         </div>
       </div>
@@ -246,30 +295,31 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
+        eyebrow="Hesap"
         title="Geçmiş"
         description="Tüm aktivite ve işlem geçmişinizi görüntüleyin"
         actions={
           <div className="flex flex-wrap gap-2">
             <Badge variant="primary">
               <Sparkles className="h-3.5 w-3.5" />
-              {totalGenerated} Üretildi
+              <span className="tabular-nums">{totalGenerated}</span> Üretildi
             </Badge>
             <Badge variant="success">
               <FileText className="h-3.5 w-3.5" />
-              {totalEdited} Düzenlendi
+              <span className="tabular-nums">{totalEdited}</span> Düzenlendi
             </Badge>
             <Badge variant="warning">
               <TrendingUp className="h-3.5 w-3.5" />
-              {totalPublished} Yayınlandı
+              <span className="tabular-nums">{totalPublished}</span> Yayınlandı
             </Badge>
           </div>
         }
       />
 
       {/* Search and Filter */}
-      <Card className="flex flex-col gap-3 p-3.5 shadow-card md:flex-row">
+      <Card className="flex flex-col gap-3 p-3.5 md:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -285,7 +335,8 @@ export default function HistoryPage() {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as ActivityType | 'Tümü')}
-            className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="Aktivite türüne göre filtrele"
+            className={cn(fieldClasses, 'block h-10 w-auto')}
           >
             <option value="Tümü">Tümü</option>
             <option value="generated">Üretildi</option>
@@ -296,7 +347,7 @@ export default function HistoryPage() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
         <StatCard label="Toplam Aktivite" value={history.length} icon={<History />} />
         <StatCard label="Üretilen" value={totalGenerated} icon={<Sparkles />} />
         <StatCard label="Düzenlenen" value={totalEdited} icon={<FileText />} />
@@ -304,16 +355,37 @@ export default function HistoryPage() {
       </div>
 
       {/* History Timeline */}
-      <Card className="overflow-hidden shadow-card">
+      <Card className="overflow-hidden">
         {filteredHistory.length === 0 ? (
           <EmptyState
             className="rounded-none border-0"
-            icon={<History />}
-            title={history.length === 0 ? 'Henüz aktivite bulunmuyor' : 'Aktivite bulunamadı'}
+            icon={history.length === 0 ? <History /> : <Search />}
+            title={history.length === 0 ? 'Henüz aktivite bulunmuyor' : 'Eşleşen aktivite yok'}
             description={
               history.length === 0
-                ? 'Blog üretmeye başladığınızda aktiviteleriniz burada görünecek'
-                : 'Arama kriterlerinizi değiştirip tekrar deneyin'
+                ? 'Blog ürettiğinizde, düzenlediğinizde ve yayınladığınızda her adım burada tarih sırasıyla listelenir.'
+                : 'Aramanız veya seçtiğiniz tür bu dönemdeki hiçbir aktiviteyle eşleşmedi. Filtreleri temizleyip tekrar deneyin.'
+            }
+            action={
+              history.length === 0 ? (
+                <Button asChild size="lg">
+                  <Link href="/dashboard/generate">
+                    <Sparkles />
+                    İlk Blogunu Üret
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterType('Tümü');
+                  }}
+                >
+                  <Filter />
+                  Filtreleri Temizle
+                </Button>
+              )
             }
           />
         ) : (
@@ -321,10 +393,14 @@ export default function HistoryPage() {
             {Object.entries(groupedHistory).map(([date, items], dateIndex) => (
               <div key={date} className={dateIndex > 0 ? 'mt-8' : ''}>
                 <div className="mb-4 flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-lg font-medium text-foreground">
+                  <Calendar className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <h3 className="whitespace-nowrap text-sm font-semibold text-foreground-strong">
                     {date}
                   </h3>
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {items.length} kayıt
+                  </span>
                 </div>
                 <div className="relative space-y-6 border-l-2 border-border pl-8">
                   {items.map((item) => (
@@ -335,10 +411,16 @@ export default function HistoryPage() {
                       </div>
 
                       <Link href={`/dashboard/blogs/${item.postId}`}>
-                        <div className={`rounded-lg border border-border p-3.5 transition-all hover:shadow-card-hover ${item.hiddenByAdmin ? 'bg-[var(--destructive-muted)]' : getActivityColor(item.type)}`}>
+                        <div
+                          className={`rounded-lg border p-3.5 transition-[background-color,border-color,box-shadow] duration-base ease-out-quart hover:border-strong hover:shadow-card-hover ${
+                            item.hiddenByAdmin
+                              ? 'border-destructive/30 bg-[var(--destructive-muted)]'
+                              : 'border-border bg-card'
+                          }`}
+                        >
                           <div className="mb-1.5 flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5">
-                              <div className={`rounded-lg p-1.5 ${item.hiddenByAdmin ? 'bg-[var(--destructive-muted)]' : getActivityColor(item.type)}`}>
+                              <div className={`shrink-0 rounded-lg p-1.5 ${item.hiddenByAdmin ? 'bg-[var(--destructive-muted)]' : getActivityColor(item.type)}`}>
                                 {item.hiddenByAdmin ? (
                                   <AlertTriangle className="h-4 w-4 text-destructive" />
                                 ) : (
@@ -346,7 +428,7 @@ export default function HistoryPage() {
                                 )}
                               </div>
                               <div>
-                                <h4 className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-destructive' : 'text-foreground'}`}>
+                                <h4 className={`text-sm font-medium ${item.hiddenByAdmin ? 'text-destructive' : 'text-foreground-strong'}`}>
                                   {item.title}
                                 </h4>
                                 <p className={`text-xs ${item.hiddenByAdmin ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -366,9 +448,9 @@ export default function HistoryPage() {
                                   Kaldırıldı
                                 </Badge>
                               ) : (
-                                <span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                <Badge variant={getActivityBadgeVariant(item.type)}>
                                   {getActivityLabel(item.type)}
-                                </span>
+                                </Badge>
                               )}
                             </div>
                           </div>

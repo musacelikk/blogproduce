@@ -16,10 +16,12 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -40,8 +42,7 @@ import {
   type PlanDefinition,
 } from '@/lib/api';
 
-const selectClass =
-  'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50';
+const selectClass = cn(fieldClasses, 'block h-10');
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -140,10 +141,41 @@ export default function AdminUsersPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+      /* Skeleton mirrors the page: header, four-up filter bar, then the user table. */
+      <div className="space-y-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-10 w-36 rounded-lg" />
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-10 rounded-lg" />
+            ))}
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+          <div className="h-12 border-b border-border bg-surface-raised" />
+          <div className="divide-y divide-border">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-36" />
+                  <Skeleton className="h-3 w-52 max-w-full" />
+                </div>
+                <Skeleton className="h-9 w-28 shrink-0 rounded-lg" />
+                <Skeleton className="hidden h-3.5 w-10 shrink-0 md:block" />
+                <Skeleton className="h-5 w-16 shrink-0 rounded-full" />
+                <Skeleton className="hidden h-3.5 w-24 shrink-0 lg:block" />
+                <Skeleton className="h-9 w-24 shrink-0 rounded-lg" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -152,6 +184,7 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="Yönetim"
         title="Kullanıcı Yönetimi"
         description="Tüm kullanıcıları görüntüleyin ve yönetin"
         actions={
@@ -168,13 +201,14 @@ export default function AdminUsersPage() {
       />
 
       {error && (
-        <div className="rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4">
-          <div className="flex items-start gap-2 text-destructive">
-            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Hata</p>
-              <p className="text-sm">{error}</p>
-            </div>
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">İşlem tamamlanamadı</p>
+            <p className="mt-0.5">{error}</p>
           </div>
         </div>
       )}
@@ -247,9 +281,9 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>Kullanıcı</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead>Bloglar</TableHead>
+                <TableHead className="text-right">Bloglar</TableHead>
                 <TableHead>Durum</TableHead>
-                <TableHead>Kayıt Tarihi</TableHead>
+                <TableHead className="text-right">Kayıt Tarihi</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
@@ -262,7 +296,9 @@ export default function AdminUsersPage() {
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+                        <p className="truncate text-sm font-medium text-foreground-strong">
+                          {user.name}
+                        </p>
                         <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
@@ -273,17 +309,19 @@ export default function AdminUsersPage() {
                       onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
                       disabled={actionLoading === user.id}
                       aria-label="Kullanıcı rolü"
-                      className="h-9 rounded-lg border border-input bg-card px-2.5 text-xs text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className={cn(fieldClasses, 'block h-9 w-auto px-2.5 text-xs')}
                     >
                       <option value="user">Kullanıcı</option>
                       <option value="admin">Admin</option>
                     </select>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                  <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm text-foreground">{user.blogsCount}</span>
-                    </div>
+                      <span className="text-sm font-medium text-foreground tabular-nums">
+                        {user.blogsCount.toLocaleString('tr-TR')}
+                      </span>
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.status === 'active' ? 'success' : 'destructive'}>
@@ -295,12 +333,12 @@ export default function AdminUsersPage() {
                       {user.status === 'active' ? 'Aktif' : 'Pasif'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">
+                  <TableCell className="text-right">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
                       {new Date(user.createdAt).toLocaleDateString('tr-TR', {
                         year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
+                        month: 'short',
+                        day: '2-digit',
                       })}
                     </span>
                   </TableCell>
@@ -365,14 +403,34 @@ export default function AdminUsersPage() {
 
           {/* Summary */}
           <p className="text-xs text-muted-foreground">
-            Toplam {filteredUsers.length} kullanıcı gösteriliyor
+            Toplam <span className="tabular-nums">{filteredUsers.length.toLocaleString('tr-TR')}</span>{' '}
+            kullanıcı gösteriliyor
           </p>
         </div>
       ) : (
         <EmptyState
-          icon={<Users />}
-          title="Kullanıcı bulunamadı"
-          description="Arama ve filtre kriterlerinize uyan kullanıcı yok."
+          icon={users.length === 0 ? <Users /> : <Search />}
+          title={users.length === 0 ? 'Henüz kullanıcı yok' : 'Eşleşen kullanıcı bulunamadı'}
+          description={
+            users.length === 0
+              ? 'Sisteme ilk kullanıcı kaydolduğunda burada listelenir ve rolünü buradan yönetebilirsiniz.'
+              : 'Aramanız ya da seçtiğiniz rol/durum filtreleri hiçbir kullanıcıyla eşleşmedi. Filtreleri temizleyip tekrar deneyin.'
+          }
+          action={
+            users.length > 0 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setRoleFilter('all');
+                  setStatusFilter('all');
+                }}
+              >
+                <XCircle />
+                Filtreleri Temizle
+              </Button>
+            ) : undefined
+          }
         />
       )}
 

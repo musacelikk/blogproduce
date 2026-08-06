@@ -28,7 +28,14 @@ const config: Config = {
         input: token('input'),
         ring: token('ring'),
         background: token('background'),
-        foreground: token('foreground'),
+        foreground: {
+          DEFAULT: token('foreground'),
+          strong: token('foreground-strong'),
+        },
+        surface: {
+          raised: token('surface-raised'),
+          sunken: token('surface-sunken'),
+        },
         primary: {
           DEFAULT: token('primary'),
           foreground: token('primary-foreground'),
@@ -100,6 +107,17 @@ const config: Config = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      // Named keys, not `duration-[var(--duration-base)]`. The animate plugin also
+      // registers `duration-*` (for animation-duration), so an arbitrary value is
+      // ambiguous — Tailwind warns and emits nothing, silently dropping the token.
+      transitionDuration: {
+        fast: 'var(--duration-fast)',
+        base: 'var(--duration-base)',
+        slow: 'var(--duration-slow)',
+      },
+      transitionTimingFunction: {
+        'out-quart': 'var(--ease-out-quart)',
       },
       boxShadow: {
         card: '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)',

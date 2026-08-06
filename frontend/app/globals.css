@@ -71,6 +71,14 @@ body:has([data-login-page]) footer {
   --info-foreground-rgb: 255 255 255;
   --info-muted-rgb: 240 249 255;
 
+  /* Elevated surfaces — a second, faintly raised plane above --card, used for
+     nested panels, table headers and toolbars so density reads without extra borders. */
+  --surface-raised-rgb: 248 250 252;
+  --surface-sunken-rgb: 244 247 250;
+
+  /* Headings sit a shade deeper than body copy — crisper without going pure black. */
+  --foreground-strong-rgb: 9 15 32;
+
   /* Borders / Inputs */
   --border-rgb: 226 232 240;
   --input-rgb: 226 232 240;
@@ -121,6 +129,10 @@ body:has([data-login-page]) footer {
   --info: rgb(var(--info-rgb));
   --info-foreground: rgb(var(--info-foreground-rgb));
   --info-muted: rgb(var(--info-muted-rgb));
+  --surface-raised: rgb(var(--surface-raised-rgb));
+  --surface-sunken: rgb(var(--surface-sunken-rgb));
+  --foreground-strong: rgb(var(--foreground-strong-rgb));
+  --border-strong: rgb(203 213 225);
   --border: rgb(var(--border-rgb));
   --input: rgb(var(--input-rgb));
   --ring: rgb(var(--ring-rgb));
@@ -140,6 +152,13 @@ body:has([data-login-page]) footer {
 
   /* Radius */
   --radius: 0.75rem;
+
+  /* Motion — one easing curve and three durations across the whole product, so
+     interactions feel like they come from the same hand. */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
 
   /* Gradients */
   --gradient-brand: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
@@ -169,19 +188,87 @@ body:has([data-login-page]) footer {
     font-family: var(--font-inter-tight), "Inter", system-ui, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
+    color: var(--foreground-strong);
     font-weight: 600;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.021em;
     line-height: 1.2;
+    text-wrap: balance;
   }
+  /* Optical tightening: the larger the type, the tighter it wants to be set. */
+  h1 { letter-spacing: -0.032em; }
+  h2 { letter-spacing: -0.027em; }
+
   ::selection {
     background-color: var(--accent);
     color: var(--accent-foreground);
+  }
+
+  /* One focus treatment everywhere, keyboard-only. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Display scale — marketing headlines. Sizes step with the viewport so a hero
+     never needs its own one-off font-size classes. */
+  .text-display-xl {
+    font-size: clamp(2.5rem, 1.2rem + 4.4vw, 4.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.038em;
+    font-weight: 600;
+  }
+  .text-display-lg {
+    font-size: clamp(2rem, 1.1rem + 3vw, 3.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.034em;
+    font-weight: 600;
+  }
+  .text-display-md {
+    font-size: clamp(1.625rem, 1.1rem + 1.8vw, 2.25rem);
+    line-height: 1.15;
+    letter-spacing: -0.028em;
+    font-weight: 600;
+  }
+  /* Small uppercase label above a section title. */
+  .text-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-foreground);
+  }
+
+  .bg-surface-raised { background-color: var(--surface-raised); }
+  .bg-surface-sunken { background-color: var(--surface-sunken); }
+  .text-foreground-strong { color: var(--foreground-strong); }
+  .border-strong { border-color: var(--border-strong); }
+
+  /* Hairline separator that reads as a seam rather than a line. */
+  .divider-soft {
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      rgb(var(--border-rgb)) 12%,
+      rgb(var(--border-rgb)) 88%,
+      transparent
+    );
+    height: 1px;
   }
   .text-muted-foreground {
     color: var(--muted-foreground);

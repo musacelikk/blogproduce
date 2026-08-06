@@ -8,9 +8,10 @@ import { GenerationJob } from '../entities/generation-job.entity';
 import { QueueModule } from '../queue/queue.module';
 import { UsageModule } from '../usage/usage.module';
 import { AiModule } from '../ai/ai.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, PostRevision, PostSeo, GenerationJob]), QueueModule, UsageModule, AiModule],
+  imports: [TypeOrmModule.forFeature([Post, PostRevision, PostSeo, GenerationJob]), QueueModule, UsageModule, AiModule, BillingModule],
   providers: [WorkerService],
   exports: [WorkerService],
 })

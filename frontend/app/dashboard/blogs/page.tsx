@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -254,7 +255,7 @@ function BlogsPageContent() {
               ? extractText(textContent)
               : (parsed.title || JSON.stringify(parsed, null, 2).substring(0, 200));
             return (
-              <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
+              <div className="line-clamp-3 rounded-lg border border-border bg-surface-sunken p-2.5 text-xs leading-relaxed text-muted-foreground">
                 {preview}
               </div>
             );
@@ -262,7 +263,7 @@ function BlogsPageContent() {
         } catch {
           // If JSON parsing fails, treat as text
           return (
-            <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
+            <div className="line-clamp-3 rounded-lg border border-border bg-surface-sunken p-2.5 text-xs leading-relaxed text-muted-foreground">
               {extractText(content)}
             </div>
           );
@@ -271,7 +272,7 @@ function BlogsPageContent() {
         // Strip HTML tags for preview
         const textContent = extractText(content);
         return (
-          <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
+          <div className="line-clamp-3 rounded-lg border border-border bg-surface-sunken p-2.5 text-xs leading-relaxed text-muted-foreground">
             {textContent}
           </div>
         );
@@ -279,7 +280,7 @@ function BlogsPageContent() {
         // Markdown or other text formats
         const preview = extractText(content);
         return (
-          <div className="line-clamp-3 rounded-lg border border-border bg-secondary p-2 text-xs text-muted-foreground">
+          <div className="line-clamp-3 rounded-lg border border-border bg-surface-sunken p-2.5 text-xs leading-relaxed text-muted-foreground">
             {preview}
           </div>
         );
@@ -343,6 +344,7 @@ function BlogsPageContent() {
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow="İçerik"
         title="Bloglarım"
         description="Tüm blog içeriklerinizi buradan yönetin"
         actions={
@@ -375,7 +377,7 @@ function BlogsPageContent() {
                       router.push(`/dashboard/blogs?workspaceId=${wsId}`);
                     }
                   }}
-                  className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className={cn(fieldClasses, 'block h-10 flex-1')}
                 >
                   {workspaces.map((ws) => (
                     <option key={ws.id} value={ws.id}>
@@ -404,7 +406,7 @@ function BlogsPageContent() {
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
                 aria-label="Etikete göre filtrele"
-                className="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={cn(fieldClasses, 'block h-10 w-auto')}
               >
                 <option value="Tümü">Tüm Etiketler</option>
                 {allTags.map((tag) => (
@@ -437,7 +439,7 @@ function BlogsPageContent() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         <StatCard
           label="Toplam Blog"
           value={blogs.length}
@@ -476,11 +478,14 @@ function BlogsPageContent() {
       <Card className="overflow-hidden shadow-card">
         {/* View Mode Toggle */}
         {!isLoading && filteredBlogs.length > 0 && (
-          <div className="flex flex-col items-start justify-between gap-3 border-b border-border p-4 sm:flex-row sm:items-center">
-            <h2 className="text-base font-semibold tracking-tight text-foreground">
-              Bloglarım ({filteredBlogs.length})
+          <div className="flex flex-col items-start justify-between gap-3 border-b border-border bg-surface-raised px-5 py-4 sm:flex-row sm:items-center">
+            <h2 className="text-base font-semibold tracking-tight text-foreground-strong">
+              Bloglarım{' '}
+              <span className="font-normal text-muted-foreground tabular-nums">
+                ({filteredBlogs.length})
+              </span>
             </h2>
-            <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
@@ -503,43 +508,70 @@ function BlogsPageContent() {
           </div>
         )}
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          /* Skeleton mirrors the real card: cover, two-line title, meta rows, status/action footer. */
+          <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-xl border border-border p-5">
-                <Skeleton className="mb-3 h-5 w-full" />
-                <Skeleton className="mb-4 h-4 w-3/4" />
-                <Skeleton className="mb-2 h-3 w-32" />
-                <Skeleton className="h-3 w-24" />
+              <div key={i} className="overflow-hidden rounded-xl border border-border">
+                <Skeleton className="h-40 w-full rounded-none sm:h-44" />
+                <div className="p-5">
+                  <div className="mb-4 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                    <Skeleton className="h-7 w-7 shrink-0 rounded-lg" />
+                  </div>
+                  <Skeleton className="mb-4 h-12 w-full rounded-lg" />
+                  <div className="mb-4 space-y-2">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-4">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         ) : filteredBlogs.length === 0 ? (
           <EmptyState
             className="rounded-none border-0"
-            icon={<FileText />}
-            title={blogs.length === 0 ? 'Henüz blog oluşturulmamış' : 'Blog bulunamadı'}
+            icon={blogs.length === 0 ? <FileText /> : <Search />}
+            title={blogs.length === 0 ? 'Henüz blog oluşturulmamış' : 'Eşleşen blog bulunamadı'}
             description={
               blogs.length === 0
-                ? 'İlk blogunu oluşturmak için "Yeni Blog Oluştur" butonuna tıkla'
-                : 'Arama kriterlerinizi değiştirip tekrar deneyin'
+                ? 'Bir konu başlığı verin, yapay zekâ SEO uyumlu blog içeriğinizi dakikalar içinde hazırlasın.'
+                : 'Aramanız veya seçtiğiniz etiket bu workspace’teki hiçbir blogla eşleşmedi. Filtreleri temizleyip tekrar deneyin.'
             }
             action={
               blogs.length === 0 ? (
-                <Button asChild>
+                <Button asChild size="lg">
                   <Link href="/dashboard/generate">
-                    <FileText />
-                    Yeni Blog Oluştur
+                    <Sparkles />
+                    İlk Blogunu Üret
                   </Link>
                 </Button>
-              ) : undefined
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTag('Tümü');
+                  }}
+                >
+                  <Filter />
+                  Filtreleri Temizle
+                </Button>
+              )
             }
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredBlogs.map((blog) => (
               <div
                 key={blog.id}
-                className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-card-hover"
+                className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card transition-[box-shadow,border-color,transform] duration-base ease-out-quart hover:-translate-y-0.5 hover:border-strong hover:shadow-card-hover"
               >
                 {/* Cover Image */}
                 {blog.coverImageUrl && (
@@ -559,7 +591,7 @@ function BlogsPageContent() {
                 )}
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-4 flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold text-foreground transition-colors group-hover:text-accent-foreground">
+                    <h3 className="line-clamp-2 min-w-0 flex-1 text-base font-semibold text-foreground-strong transition-colors group-hover:text-accent-foreground">
                       {blog.title}
                     </h3>
                     <div className="relative shrink-0">
@@ -590,7 +622,9 @@ function BlogsPageContent() {
                       {blog.contentLength !== undefined && blog.contentLength > 0 && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <FileText className="h-3.5 w-3.5" />
-                          <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
+                          <span className="tabular-nums">
+                            {blog.contentLength.toLocaleString('tr-TR')} karakter
+                          </span>
                         </div>
                       )}
                       {blog.model && (
@@ -617,7 +651,10 @@ function BlogsPageContent() {
         ) : (
           <div className="divide-y divide-border">
             {filteredBlogs.map((blog) => (
-              <div key={blog.id} className="group relative p-5 transition-colors hover:bg-secondary">
+              <div
+                key={blog.id}
+                className="group relative p-5 transition-colors duration-fast ease-out-quart hover:bg-surface-raised"
+              >
                 <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                   {blog.coverImageUrl && (
                     <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-lg sm:mr-4 sm:h-24 sm:w-32">
@@ -635,7 +672,7 @@ function BlogsPageContent() {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h3 className="mb-2 text-base font-semibold text-foreground transition-colors group-hover:text-accent-foreground">
+                    <h3 className="mb-2 text-base font-semibold text-foreground-strong transition-colors group-hover:text-accent-foreground">
                       {blog.title}
                     </h3>
 
@@ -652,7 +689,9 @@ function BlogsPageContent() {
                       {blog.contentLength !== undefined && blog.contentLength > 0 && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <FileText className="h-3.5 w-3.5" />
-                          <span>{blog.contentLength.toLocaleString('tr-TR')} karakter</span>
+                          <span className="tabular-nums">
+                            {blog.contentLength.toLocaleString('tr-TR')} karakter
+                          </span>
                         </div>
                       )}
                       {blog.model && (
@@ -705,15 +744,32 @@ function BlogsPageContent() {
 
 export default function BlogsPage() {
   return (
-    <Suspense fallback={
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-4 w-80" />
+    <Suspense
+      fallback={
+        /* Mirrors the loaded layout: header, filter bar, three stat tiles, card grid. */
+        <div className="space-y-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-40 rounded-lg" />
+          </div>
+          <Skeleton className="h-[74px] w-full rounded-xl" />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-[118px] rounded-xl" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-72 rounded-xl" />
+            ))}
+          </div>
         </div>
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    }>
+      }
+    >
       <BlogsPageContent />
     </Suspense>
   );

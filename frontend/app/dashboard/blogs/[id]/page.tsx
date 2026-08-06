@@ -7,10 +7,8 @@ import {
   ArrowLeft,
   FileText,
   Calendar,
-  User,
   Building2,
   Tag,
-  Eye,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -37,9 +35,12 @@ import { Button } from '@/components/ui/button';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getPost, updatePost, publishPost, unpublishPost, deletePost, schedulePost, unschedulePost, searchUnsplashPhotos, triggerUnsplashDownload, type Post, type UnsplashPhoto } from '@/lib/api';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -576,11 +577,47 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 mx-auto mb-2 text-accent-foreground animate-spin" />
-          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+      /* Skeleton mirrors the detail layout: action bar, info card with cover, versions panel. */
+      <div className="space-y-6">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-20 rounded-lg" />
+            <Skeleton className="h-7 w-40" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-9 w-28 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+          </div>
         </div>
+
+        <Card className="p-4 sm:p-6">
+          <Skeleton className="mb-4 h-6 w-2/3" />
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-4 w-56 max-w-full" />
+            ))}
+          </div>
+          <Skeleton className="mb-4 h-4 w-full" />
+          <Skeleton className="h-48 w-full rounded-lg sm:h-64" />
+        </Card>
+
+        <Card className="p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Skeleton className="h-5 w-40" />
+            <div className="flex gap-1.5">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-9 w-20 rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <Skeleton className="mb-4 h-16 w-full rounded-lg" />
+          <div className="space-y-3 rounded-lg border border-border p-6">
+            {[...Array(8)].map((_, i) => (
+              <Skeleton key={i} className={i % 4 === 0 ? 'h-5 w-1/2' : 'h-4 w-full'} />
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }
@@ -588,26 +625,23 @@ export default function BlogDetailPage() {
   if (error || !post) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Geri
-          </Button>
-        </div>
-        <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
-            <div>
-              <h3 className="mb-1 text-sm font-semibold text-foreground">Hata</h3>
-              <p className="text-xs text-destructive">{error || 'Blog bulunamadı'}</p>
-            </div>
-          </div>
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/blogs')}>
+          <ArrowLeft />
+          Bloglarım
+        </Button>
+        <EmptyState
+          icon={<AlertCircle />}
+          title="Blog görüntülenemedi"
+          description={error || 'Bu blog silinmiş olabilir veya erişim yetkiniz bulunmuyor.'}
+          action={
+            <Button asChild size="lg">
+              <Link href="/dashboard/blogs">
+                <FileText />
+                Bloglarıma Dön
+              </Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -622,11 +656,15 @@ export default function BlogDetailPage() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/blogs')}>
+          <Button variant="ghost" size="icon-sm" onClick={() => router.push('/dashboard/blogs')} aria-label="Bloglarıma dön">
             <ArrowLeft />
-            <span className="hidden sm:inline">Geri</span>
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Blog Detayı</h1>
+          <div className="min-w-0">
+            <p className="text-eyebrow">İçerik</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground-strong">
+              Blog Detayı
+            </h1>
+          </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Badge variant={statusVariant} className="py-1">
@@ -717,18 +755,16 @@ export default function BlogDetailPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-card rounded-xl border border-border p-4 sm:p-6"
+        className="rounded-xl border border-border bg-card p-4 shadow-card sm:p-6"
       >
-        <h2
-          className="text-lg sm:text-xl font-medium text-foreground mb-4"
-        >
+        <h2 className="mb-4 text-lg font-semibold text-foreground-strong sm:text-xl">
           {post.title}
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Hash className="w-4 h-4" />
-            <span>ID: {post.id}</span>
+            <Hash className="w-4 h-4 shrink-0" />
+            <span className="truncate font-mono text-xs">ID: {post.id}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
@@ -765,12 +801,13 @@ export default function BlogDetailPage() {
               <Globe className="w-4 h-4" />
               {isEditing ? (
                 <div className="flex-1">
-                  <input
+                  <Input
                     type="text"
                     value={editedSlug}
                     onChange={(e) => setEditedSlug(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-card rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="h-9"
                     placeholder="Slug"
+                    aria-label="Slug"
                   />
                 </div>
               ) : (
@@ -821,12 +858,9 @@ export default function BlogDetailPage() {
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Tag className="w-4 h-4 text-muted-foreground" />
             {post.tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground"
-              >
+              <Badge key={tag.id} variant="outline">
                 {tag.name}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
@@ -840,9 +874,7 @@ export default function BlogDetailPage() {
         {/* Cover Image */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-foreground">
-              Kapak Resmi
-            </label>
+            <span className="text-sm font-medium text-foreground-strong">Kapak Resmi</span>
             <Button
               variant="outline"
               size="sm"
@@ -880,10 +912,10 @@ export default function BlogDetailPage() {
               )}
             </div>
           ) : (
-            <div className="w-full h-48 sm:h-64 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary">
+            <div className="flex h-48 w-full items-center justify-center rounded-lg border border-dashed border-border bg-surface-sunken sm:h-64">
               <div className="text-center">
-                <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Kapak resmi yok</p>
+                <ImageIcon className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Henüz kapak resmi seçilmedi</p>
               </div>
             </div>
           )}
@@ -896,84 +928,49 @@ export default function BlogDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-card rounded-xl border border-border p-6"
+          className="rounded-xl border border-border bg-card p-6 shadow-card"
         >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2 mb-4">
-            <h3
-              className="text-base sm:text-lg font-medium text-foreground"
-            >
-              Versiyonlar ({post.revisions.length})
+          <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-2">
+            <h3 className="text-base font-semibold text-foreground-strong">
+              Versiyonlar{' '}
+              <span className="font-normal text-muted-foreground tabular-nums">
+                ({post.revisions.length})
+              </span>
             </h3>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {!isEditing && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
-                  >
-                    <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Düzenle</span>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit />
+                    Düzenle
                   </Button>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyContentAs('json')}
-                      className="text-muted-foreground border-border text-[10px]"
-                    >
-                      <Copy className="w-3 h-3 sm:mr-1" />
-                      <span className="hidden sm:inline">JSON</span>
-                      <span className="sm:hidden">J</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyContentAs('markdown')}
-                      className="text-muted-foreground border-border text-[10px]"
-                    >
-                      <Copy className="w-3 h-3 sm:mr-1" />
-                      <span className="hidden sm:inline">Markdown</span>
-                      <span className="sm:hidden">MD</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCopyContentAs('html')}
-                      className="text-muted-foreground border-border text-[10px]"
-                    >
-                      <Copy className="w-3 h-3 sm:mr-1" />
-                      <span className="hidden sm:inline">HTML</span>
-                      <span className="sm:hidden">H</span>
-                    </Button>
+                  {/* Copy-as group reads as one control, so it sits in its own hairline shell. */}
+                  <div className="flex items-center gap-1 rounded-lg border border-border bg-surface-raised p-0.5">
+                    <span className="px-2 text-xs font-medium text-muted-foreground">Kopyala</span>
+                    {(['json', 'markdown', 'html'] as const).map((target) => (
+                      <Button
+                        key={target}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopyContentAs(target)}
+                        title={`${target.toUpperCase()} olarak kopyala`}
+                      >
+                        <Copy />
+                        {target.toUpperCase()}
+                      </Button>
+                    ))}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadContent}
-                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
-                  >
-                    <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-                    <span className="hidden sm:inline">İndir</span>
+                  <Button variant="outline" size="sm" onClick={handleDownloadContent}>
+                    <Download />
+                    İndir
                   </Button>
                 </>
               )}
               {isEditing && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="text-xs flex-1 sm:flex-initial"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5 animate-spin" />
-                    ) : (
-                      <Save className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-                    )}
-                    <span className="hidden sm:inline">Kaydet</span>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader2 className="animate-spin" /> : <Save />}
+                    Kaydet
                   </Button>
                   <Button
                     variant="outline"
@@ -983,10 +980,9 @@ export default function BlogDetailPage() {
                       setEditedContent(selectedRevision?.content || '');
                       setEditedSlug(post?.slug || '');
                     }}
-                    className="text-muted-foreground border-border text-xs flex-1 sm:flex-initial"
                   >
-                    <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
-                    <span className="hidden sm:inline">İptal</span>
+                    <X />
+                    İptal
                   </Button>
                 </>
               )}
@@ -999,7 +995,8 @@ export default function BlogDetailPage() {
               <select
                 value={selectedRevisionIndex}
                 onChange={(e) => setSelectedRevisionIndex(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-secondary rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Görüntülenecek versiyon"
+                className={cn(fieldClasses, 'block h-10')}
               >
                 {post.revisions.map((revision, index) => {
                   const isPublishedVersion = post.publishedRevisionId === revision.id;
@@ -1026,8 +1023,8 @@ export default function BlogDetailPage() {
 
           {/* Selected Version Info */}
           {selectedRevision && !isEditing && (
-            <div className="mb-4 p-3 sm:p-4 bg-secondary rounded-lg border border-border">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-muted-foreground">
+            <div className="mb-4 rounded-lg border border-border bg-surface-raised p-3 sm:p-4">
+              <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
                 {selectedRevision.contentFormat && (
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
@@ -1062,20 +1059,24 @@ export default function BlogDetailPage() {
               {isEditing ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
+                    <label
+                      htmlFor="blog-content"
+                      className="mb-2 block text-sm font-medium text-foreground-strong"
+                    >
                       İçerik Düzenle
                     </label>
-                    <textarea
+                    <Textarea
+                      id="blog-content"
                       value={editedContent}
                       onChange={(e) => setEditedContent(e.target.value)}
-                      className="w-full h-[300px] sm:h-[500px] px-3 sm:px-4 py-2 sm:py-3 bg-card rounded-lg border border-border text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-mono"
+                      className="h-[300px] resize-none font-mono sm:h-[500px]"
                       placeholder="Blog içeriğinizi buraya yazın..."
                     />
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="bg-card rounded-lg border border-border p-4 sm:p-6 lg:p-8 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
+                  <div className="max-h-[600px] overflow-y-auto rounded-lg border border-border bg-surface-raised p-4 sm:max-h-[800px] sm:p-6 lg:p-8">
                     <div
                       className="prose prose-lg max-w-none text-foreground leading-relaxed"
                       dangerouslySetInnerHTML={{
@@ -1096,12 +1097,20 @@ export default function BlogDetailPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-card rounded-xl border border-border p-6"
         >
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Henüz versiyon bulunmuyor</p>
-          </div>
+          <EmptyState
+            icon={<FileText />}
+            title="Henüz versiyon üretilmedi"
+            description="Bu blog için içerik üretimi tamamlandığında her sürüm burada listelenir ve aralarında geçiş yapabilirsiniz."
+            action={
+              <Button asChild>
+                <Link href="/dashboard/generate">
+                  <Zap />
+                  Yeni Üretim Başlat
+                </Link>
+              </Button>
+            }
+          />
         </motion.div>
       )}
 
@@ -1116,8 +1125,10 @@ export default function BlogDetailPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div className="flex-1 min-w-0 pr-2">
-                <h2 className="text-base sm:text-lg font-medium text-foreground mb-1 truncate">{post.title}</h2>
-                <p className="text-xs text-muted-foreground">
+                <h2 className="mb-1 truncate text-base font-semibold text-foreground-strong sm:text-lg">
+                  {post.title}
+                </h2>
+                <p className="text-xs text-muted-foreground tabular-nums">
                   Versiyon: {selectedRevision.version || 1}
                 </p>
               </div>
@@ -1136,10 +1147,12 @@ export default function BlogDetailPage() {
               {(() => {
                 if (!selectedRevision.content) {
                   return (
-                    <div className="text-center py-12">
-                      <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">İçerik bulunamadı</p>
-                    </div>
+                    <EmptyState
+                      className="border-0 bg-transparent"
+                      icon={<FileText />}
+                      title="İçerik bulunamadı"
+                      description="Bu versiyon boş görünüyor. Başka bir versiyon seçmeyi deneyin."
+                    />
                   );
                 }
 
@@ -1278,7 +1291,7 @@ export default function BlogDetailPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div>
-                <h2 className="text-lg font-medium text-foreground mb-1">Kapak Resmi Seç</h2>
+                <h2 className="mb-1 text-base font-semibold text-foreground-strong">Kapak Resmi Seç</h2>
                 <p className="text-xs text-muted-foreground">Unsplash&apos;tan resim arayın</p>
               </div>
               <Button
@@ -1299,7 +1312,7 @@ export default function BlogDetailPage() {
             {/* Search */}
             <div className="p-4 sm:p-6 border-b border-border flex-shrink-0">
               <div className="flex gap-2">
-                <input
+                <Input
                   type="text"
                   value={imageSearchQuery}
                   onChange={(e) => setImageSearchQuery(e.target.value)}
@@ -1309,7 +1322,8 @@ export default function BlogDetailPage() {
                     }
                   }}
                   placeholder="Arama terimi (örn: technology, business)"
-                  className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label="Unsplash görsel arama"
+                  className="flex-1"
                 />
                 <Button
                   type="button"
@@ -1331,7 +1345,7 @@ export default function BlogDetailPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
-                      {unsplashPhotos.length} resim bulundu
+                      <span className="tabular-nums">{unsplashPhotos.length}</span> resim bulundu
                     </p>
                     <Button
                       type="button"
@@ -1369,7 +1383,7 @@ export default function BlogDetailPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute top-1.5 left-1.5 bg-black/60 hover:bg-foreground/60 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          className="absolute left-1.5 top-1.5 z-10 rounded-lg bg-foreground/70 p-1.5 text-background opacity-0 transition-opacity group-hover:opacity-100 hover:bg-foreground"
                           title="Resmi Unsplash'ta incele"
                         >
                           <ExternalLink className="w-3 h-3" />
@@ -1389,10 +1403,12 @@ export default function BlogDetailPage() {
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Resim aramak için yukarıdaki arama kutusunu kullanın</p>
-                </div>
+                <EmptyState
+                  className="border-0 bg-transparent"
+                  icon={<ImageIcon />}
+                  title="Arama yapın"
+                  description="Blogunuzun konusuyla ilgili bir terim yazın; Unsplash arşivinden telifsiz kapak görselleri listelensin."
+                />
               )}
             </div>
 
@@ -1450,7 +1466,7 @@ export default function BlogDetailPage() {
                   <Bell className="w-4 h-4 text-warning" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-foreground">Yayını Zamanla</h3>
+                  <h3 className="text-base font-semibold text-foreground-strong">Yayını Zamanla</h3>
                   <p className="text-xs text-muted-foreground">Belirtilen tarihte otomatik yayınlanır</p>
                 </div>
               </div>
@@ -1464,15 +1480,15 @@ export default function BlogDetailPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">
+                <label className="mb-2 block text-sm font-medium text-foreground-strong">
                   Yayın Tarihi ve Saati
                 </label>
-                <input
+                <Input
                   type="datetime-local"
                   value={scheduleDateTime}
                   min={getMinDateTime()}
                   onChange={(e) => setScheduleDateTime(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-border rounded-xl text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label="Yayın tarihi ve saati"
                 />
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
                   Seçilen tarih ve saatte blog otomatik olarak yayınlanacaktır.

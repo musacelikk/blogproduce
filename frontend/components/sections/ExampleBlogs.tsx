@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Calendar, User } from 'lucide-react';
+import { SectionHeading } from '@/components/sections/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 
 type BlogPost = {
@@ -55,24 +56,23 @@ const exampleBlogs: BlogPost[] = [
 
 export const ExampleBlogs = () => {
   return (
-    <section className="w-full bg-background py-16 sm:py-24">
+    <section className="w-full bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-12 text-center sm:mb-16"
         >
-          <h2 className="mb-4 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Örnek Bloglar
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            BlogProduce AI destekli blog üretim API&apos;si ile oluşturulmuş, prompt&apos;a göre özelleştirilmiş ve SEO optimizasyonlu profesyonel blog içeriklerinden örnekler
-          </p>
+          <SectionHeading
+            align="center"
+            eyebrow="Örnek bloglar"
+            title="Platformdan çıkan gerçek içerikler"
+            description="Hepsi BlogProduce ile üretildi: prompt'a göre özelleştirilmiş, SEO optimizasyonlu ve yayına hazır."
+          />
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
           {exampleBlogs.map((blog, index) => (
             <motion.article
               key={blog.id}
@@ -80,9 +80,9 @@ export const ExampleBlogs = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group overflow-hidden rounded-xl border border-border bg-card shadow-card transition-all duration-300 hover:shadow-card-hover"
+              className="group overflow-hidden rounded-xl border border-border bg-card shadow-card transition-[box-shadow,border-color,transform] duration-base ease-out-quart hover:-translate-y-0.5 hover:border-strong hover:shadow-card-hover"
             >
-              <div className="relative h-48 overflow-hidden bg-secondary">
+              <div className="relative h-48 overflow-hidden border-b border-border bg-surface-sunken">
                 <Image
                   src={blog.image}
                   alt={blog.title}
@@ -95,7 +95,7 @@ export const ExampleBlogs = () => {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="mb-3 line-clamp-2 text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
+                <h3 className="mb-3 line-clamp-2 text-lg font-semibold tracking-tight text-foreground-strong transition-colors duration-base ease-out-quart group-hover:text-primary">
                   {blog.title}
                 </h3>
                 <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">

@@ -1,6 +1,9 @@
 "use client"
 
-import { SectionTitle } from "@/components/ui/section-title"
+import { Quote } from "lucide-react"
+
+import { SectionHeading } from "@/components/sections/SectionHeading"
+import { Card } from "@/components/ui/card"
 
 type Testimonial = {
   id: number
@@ -22,24 +25,25 @@ const testimonials: Testimonial[] = [
 
 function TestimonialCard({ testimonial, className = "" }: { testimonial: Testimonial; className?: string }) {
   return (
-    <article
-      className={`rounded-xl border border-border bg-card p-6 shadow-card transition-shadow hover:shadow-card-hover md:p-8 ${className}`}
-    >
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
+    <Card className={`flex flex-col p-6 md:p-7 ${className}`}>
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+        <Quote className="h-4 w-4" />
+      </span>
+      <blockquote className="mt-5 flex-1 text-[15px] leading-relaxed text-foreground">
+        {testimonial.quote}
+      </blockquote>
+      <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
           {testimonial.author.charAt(0)}
-        </div>
+        </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-foreground">{testimonial.author}</div>
+          <div className="text-sm font-semibold text-foreground-strong">{testimonial.author}</div>
           <div className="text-xs text-muted-foreground">
             {testimonial.role} · {testimonial.company}
           </div>
         </div>
       </div>
-      <blockquote className="text-base font-medium leading-relaxed text-foreground">
-        &ldquo;{testimonial.quote}&rdquo;
-      </blockquote>
-    </article>
+    </Card>
   )
 }
 
@@ -49,14 +53,22 @@ export const TestimonialSection = () => {
   const mobileList = testimonials.slice(0, 6)
 
   return (
-    <section id="testimonials" className="relative overflow-hidden py-16 sm:py-24">
-      {/* Desktop — dual marquee */}
-      <div className="hidden lg:block">
-        <div className="mx-auto mb-12 max-w-7xl px-4 sm:px-6 lg:mb-16 lg:px-8">
-          <SectionTitle className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-            Müşterilerimiz ne diyor?
-          </SectionTitle>
-        </div>
+    <section
+      id="testimonials"
+      className="relative overflow-hidden border-y border-border bg-surface-sunken py-20 sm:py-28"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Referanslar"
+          title="Ekipler BlogProduce ile ne kazanıyor?"
+          description="Ajanslar, SaaS ekipleri ve geliştiriciler içerik üretimini haftalardan saatlere indiriyor."
+        />
+      </div>
+
+      {/* Desktop — çift yönlü marquee */}
+      <div className="relative mt-14 hidden lg:block">
+        <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-32 bg-[linear-gradient(90deg,var(--surface-sunken),transparent)]" />
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-32 bg-[linear-gradient(270deg,var(--surface-sunken),transparent)]" />
         <div className="mb-6 flex animate-scroll-left gap-6 hover:[animation-play-state:paused]">
           {duplicated.map((t, i) => (
             <TestimonialCard key={`${t.id}-${i}`} testimonial={t} className="w-[400px] shrink-0" />
@@ -69,13 +81,8 @@ export const TestimonialSection = () => {
         </div>
       </div>
 
-      {/* Mobile — stacked cards */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:hidden lg:px-8">
-        <div className="mb-12">
-          <SectionTitle className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Müşterilerimiz ne diyor?
-          </SectionTitle>
-        </div>
+      {/* Mobil — istiflenmiş kartlar */}
+      <div className="mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:hidden lg:px-8">
         <div className="relative">
           {mobileList.map((t, index) => (
             <div

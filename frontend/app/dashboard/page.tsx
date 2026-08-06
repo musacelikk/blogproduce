@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, FileText, Zap, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { Sparkles, FileText, Zap, Clock, AlertCircle, ArrowRight, CreditCard, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,17 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPosts, getCurrentUsage, type Post } from '@/lib/api';
+import { getPosts, getCurrentUsage, getEntitlement, type Entitlement, type Post } from '@/lib/api';
+
+const formatTokens = (value: number) => (Number(value) || 0).toLocaleString('tr-TR');
+
+/** Compact form for the big number on a tile — "1,5M", "500K". */
+const compactTokens = (value: number) => {
+  const n = Number(value) || 0;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}M`;
+  if (n >= 1_000) return `${(n / 1_000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}K`;
+  return n.toLocaleString('tr-TR');
+};
 
 const statusLabel: Record<string, string> = {
   queued: 'Kuyruğa Eklendi', generating: 'Üretiliyor', generated: 'Hazır',
@@ -57,6 +67,7 @@ const card = {
 export default function DashboardPage() {
   const [posts,     setPosts]     = useState<Post[]>([]);
   const [usage,     setUsage]     = useState<any>(null);
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -66,12 +77,14 @@ export default function DashboardPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const [postsData, usageData] = await Promise.all([
+      const [postsData, usageData, entitlementData] = await Promise.all([
         getPosts(),
         getCurrentUsage().catch(() => null),
+        getEntitlement().catch(() => null),
       ]);
       setPosts(postsData);
       setUsage(usageData);
+      setEntitlement(entitlementData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Veriler yüklenirken bir hata oluştu');
     } finally {
@@ -88,7 +101,18 @@ export default function DashboardPage() {
   const latestPost  = posts[0];
   const totalTokens = usage ? Number(usage.tokensIn || 0) + Number(usage.tokensOut || 0) : 0;
 
-  const stats = [
+  // The entitlement is the authority on quota; the raw ledger is the fallback.
+  const allowance   = entitlement?.tokenAllowance ?? 0;
+  const tokensUsed  = entitlement?.tokensUsedThisMonth ?? totalTokens;
+  const quotaPct    = allowance > 0 ? Math.min(100, (tokensUsed / allowance) * 100) : undefined;
+
+  const stats: Array<{
+    label: string;
+    value: string;
+    sub: string;
+    icon: typeof FileText;
+    progress?: number;
+  }> = [
     {
       label: 'Toplam Blog',
       value: totalPosts.toString(),
@@ -103,9 +127,14 @@ export default function DashboardPage() {
     },
     {
       label: 'Token Kullanımı',
-      value: totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}K` : totalTokens.toString(),
-      sub: usage ? `${Number(usage.tokensIn || 0).toLocaleString('tr-TR')} in / ${Number(usage.tokensOut || 0).toLocaleString('tr-TR')} out` : 'Henüz kullanım yok',
+      value: compactTokens(tokensUsed),
+      sub: allowance > 0
+        ? `${formatTokens(allowance)} tokenin %${Math.round(quotaPct ?? 0)} kadarı kullanıldı`
+        : usage
+          ? `${formatTokens(Number(usage.tokensIn || 0))} in / ${formatTokens(Number(usage.tokensOut || 0))} out`
+          : 'Henüz kullanım yok',
       icon: Zap,
+      progress: quotaPct,
     },
     {
       label: 'Son Blog',
@@ -157,7 +186,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-5 text-sm text-destructive">
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-destructive-muted p-5 text-sm text-destructive">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
           <p className="mb-1 font-semibold">Veri yüklenemedi</p>
@@ -189,11 +218,56 @@ export default function DashboardPage() {
           const Icon = s.icon;
           return (
             <motion.div key={s.label} custom={i} initial="hidden" animate="visible" variants={card}>
-              <StatCard label={s.label} value={s.value} hint={s.sub} icon={<Icon />} />
+              <StatCard label={s.label} value={s.value} hint={s.sub} icon={<Icon />} progress={s.progress} />
             </motion.div>
           );
         })}
       </div>
+
+      {/* Quota summary */}
+      {entitlement && (
+        <Card variant={entitlement.isExpired ? 'default' : 'emphasis'} className="p-5">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-eyebrow">Plan &amp; kota</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-semibold text-foreground-strong">{entitlement.planName}</h2>
+                {entitlement.isExpired ? (
+                  <Badge variant="destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    Süresi doldu
+                  </Badge>
+                ) : entitlement.isTrial && entitlement.trialDaysRemaining != null ? (
+                  <Badge variant="warning">
+                    <Clock className="h-3 w-3" />
+                    Deneme sürümü — {entitlement.trialDaysRemaining} gün kaldı
+                  </Badge>
+                ) : (
+                  <Badge variant="success">Aktif</Badge>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Kalan {formatTokens(entitlement.totalTokensRemaining)} token · ≈{' '}
+                {formatTokens(entitlement.estimatedArticlesRemaining)} blog daha üretebilirsiniz.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link href="/dashboard/billing">
+                  <Wallet />
+                  Token satın al
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/dashboard/plans">
+                  <CreditCard />
+                  {entitlement.isExpired ? 'Plan seçin' : 'Planı yükselt'}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <Card className="shadow-card">

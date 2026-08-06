@@ -628,7 +628,8 @@ export interface GeneratePostRequest {
   tone?: string;
   length?: string;
   seoMode?: boolean;
-  model?: 'gpt-4o-mini' | 'gpt-4.1-mini' | 'gpt-4.1';
+  /** Kalite seviyesi — backend seviyeyi kendi model eşlemesine çevirir. */
+  model?: ModelTier;
   format?: 'md' | 'html' | 'json';
   additionalContext?: string;
   targetAudience?: string;
@@ -1229,7 +1230,11 @@ export async function getAdminWorkspaceById(id: string): Promise<Workspace> {
 export interface PlanDefinition {
   id: string;
   name: string;
-  level: 'starter' | 'pro' | 'enterprise';
+  level: 'trial' | 'starter' | 'pro' | 'enterprise';
+  /** Stable catalog identifier ('trial' | 'starter' | 'pro' | 'enterprise'). */
+  key?: string | null;
+  /** Free-trial length in days. Only set on the trial plan. */
+  trialDays?: number | null;
   price: {
     monthly: number;
     yearly: number;
@@ -1238,6 +1243,10 @@ export interface PlanDefinition {
     maxBlogs: number | 'unlimited';
     maxTokensPerMonth: number | 'unlimited';
     maxWorkspaces: number | 'unlimited';
+    /** Quality tiers this plan may generate with. */
+    allowedTiers?: ModelTier[];
+    /** Tier used when the caller does not name one. */
+    defaultTier?: ModelTier;
     languages: string[];
     support: string;
     apiAccess: boolean;
@@ -1276,6 +1285,10 @@ export interface UserPlanInfo {
     daysRemaining: number | null;
   } | null;
   isFree: boolean;
+  /** Trial state — mirrors /billing/entitlement so the two never disagree. */
+  isTrial?: boolean;
+  trialEndsAt?: string | null;
+  trialDaysRemaining?: number | null;
 }
 
 export interface BillingHistoryItem {
@@ -1799,6 +1812,201 @@ export async function markAllNotificationsAsRead(): Promise<{ updated: number }>
 
 export async function createBroadcastNotification(payload: CreateBroadcastNotificationRequest) {
   const response = await apiRequest('/notifications/broadcast', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return response.data || response;
+}
+// ── Billing: entitlement, token packs, cost analysis ─────────────────────
+
+export type ModelTier = 'standard' | 'pro' | 'premium';
+
+export interface Entitlement {
+  planName: string;
+  planLevel: string;
+  isTrial: boolean;
+  trialEndsAt: string | null;
+  trialDaysRemaining: number | null;
+  isExpired: boolean;
+  tokenAllowance: number;
+  tokensUsedThisMonth: number;
+  tokensRemainingInPlan: number;
+  tokenBalance: number;
+  totalTokensRemaining: number;
+  allowedTiers: ModelTier[];
+  defaultTier: ModelTier;
+  maxWorkspaces: number | 'unlimited';
+  estimatedArticlesRemaining: number;
+}
+
+export interface TierInfo {
+  tier: ModelTier;
+  label: string;
+  description: string;
+}
+
+export interface TokenPack {
+  id: string;
+  key: string;
+  name: string;
+  tokens: number;
+  priceUsd: number;
+  popular: boolean;
+  active: boolean;
+}
+
+export interface TokenPurchase {
+  id: string;
+  tokens: number;
+  amountUsd: number;
+  status: string;
+  note: string | null;
+  createdAt: string;
+  tokenPack?: TokenPack | null;
+}
+
+export async function getEntitlement(): Promise<Entitlement> {
+  const response = await apiRequest('/billing/entitlement', { method: 'GET' });
+  return response.data || response;
+}
+
+export async function getModelTiers(): Promise<TierInfo[]> {
+  const response = await fetch(`${API_BASE_URL}/billing/tiers`, { method: 'GET' });
+  const body = await response.json();
+  return body.data || [];
+}
+
+export async function getTokenPacks(): Promise<TokenPack[]> {
+  const response = await fetch(`${API_BASE_URL}/billing/token-packs`, { method: 'GET' });
+  const body = await response.json();
+  return body.data || [];
+}
+
+export async function purchaseTokenPack(packId: string, reference?: string) {
+  const response = await apiRequest(`/billing/token-packs/${packId}/purchase`, {
+    method: 'POST',
+    body: JSON.stringify({ reference }),
+  });
+  return response.data || response;
+}
+
+export async function getTokenPurchases(): Promise<TokenPurchase[]> {
+  const response = await apiRequest('/billing/purchases', { method: 'GET' });
+  return response.data || response;
+}
+
+// ── Admin cost calculator ────────────────────────────────────────────────
+
+export interface TierEconomics {
+  tier: ModelTier;
+  model: string;
+  label: string;
+  description: string;
+  inputPricePerMillion: number;
+  outputPricePerMillion: number;
+  reasoningFactor: number;
+  blendedCostPerMillion: number;
+  avgTokensPerArticle: number;
+  avgCostPerArticle: number;
+}
+
+export interface PlanEconomics {
+  planId: string;
+  key: string | null;
+  name: string;
+  level: string;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  tokenAllowance: number | null;
+  defaultTier: ModelTier;
+  estimatedArticles: number | null;
+  costAtFullUsage: number | null;
+  grossMarginPct: number | null;
+  breakEvenArticles: number;
+}
+
+export interface CostActuals {
+  month: string;
+  providerCostUsd: number;
+  subscriptionRevenueUsd: number;
+  topUpRevenueUsd: number;
+  revenueUsd: number;
+  grossProfitUsd: number;
+  grossMarginPct: number | null;
+  tokensIn: number;
+  tokensOut: number;
+  totalTokens: number;
+  generationRequests: number;
+  articlesGenerated: number;
+  avgCostPerArticleUsd: number | null;
+  activeSubscriptions: number;
+}
+
+export interface ModelBreakdown {
+  model: string;
+  tier: ModelTier | null;
+  revisions: number;
+  tokensIn: number;
+  tokensOut: number;
+  inputPricePerMillion: number;
+  outputPricePerMillion: number;
+  totalCostUsd: number;
+  avgCostPerRevisionUsd: number;
+}
+
+export interface TokenPackEconomics {
+  key: string;
+  name: string;
+  tokens: number;
+  priceUsd: number;
+  pricePerMillionUsd: number;
+  marginByTier: Record<string, { costUsd: number; grossMarginPct: number }>;
+}
+
+export interface CostAnalysis {
+  tiers: TierEconomics[];
+  plans: PlanEconomics[];
+  tokenPacks: TokenPackEconomics[];
+  actuals: CostActuals;
+  models: ModelBreakdown[];
+}
+
+export interface PlanProjection {
+  tier: ModelTier;
+  model: string;
+  tokenAllowance: number;
+  monthlyPrice: number;
+  estimatedArticles: number;
+  costAtFullUsageUsd: number;
+  grossProfitUsd: number;
+  grossMarginPct: number | null;
+  costPerArticleUsd: number;
+  minPriceFor70PctMargin: number;
+}
+
+export async function getCostAnalysis(month?: string): Promise<CostAnalysis> {
+  const query = month ? `?month=${encodeURIComponent(month)}` : '';
+  const response = await apiRequest(`/billing/admin/cost-analysis${query}`, { method: 'GET' });
+  return response.data || response;
+}
+
+export async function projectPlanEconomics(input: {
+  tokenAllowance: number;
+  monthlyPrice: number;
+  tier?: ModelTier;
+}): Promise<PlanProjection> {
+  const response = await apiRequest('/billing/admin/cost-analysis/project', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return response.data || response;
+}
+
+export async function grantUserTokens(
+  userId: string,
+  payload: { tokens: number; amountUsd?: number; note?: string },
+) {
+  const response = await apiRequest(`/billing/admin/users/${userId}/grant-tokens`, {
     method: 'POST',
     body: JSON.stringify(payload),
   });

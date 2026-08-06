@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Bell, Shield, Key, CreditCard, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
+import { User, Bell, Shield, Key, CreditCard, Save, Mail, Phone, MapPin, Lock, Eye, EyeOff, Trash2, Loader2, AlertCircle, CheckCircle2, Receipt } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { cn } from '@/lib/utils';
 import { getProfile, updateProfile, updatePassword, deleteAccount } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
@@ -171,40 +173,49 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Ayarlar" description="Profil, güvenlik ve uygulama tercihlerinizi yönetin" />
+      <PageHeader
+        eyebrow="Hesap"
+        title="Ayarlar"
+        description="Profil, güvenlik ve uygulama tercihlerinizi yönetin"
+      />
 
       {/* Tabs Navigation */}
-      <Card className="p-1.5 shadow-card">
-        <div className="flex flex-wrap gap-1.5">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+      <div
+        role="tablist"
+        aria-label="Ayarlar bölümleri"
+        className="flex flex-wrap gap-1 rounded-xl border border-border bg-surface-raised p-1.5"
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-[background-color,color,box-shadow] duration-fast ease-out-quart ${
+                isActive
+                  ? 'bg-card text-foreground-strong shadow-card'
+                  : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Content */}
-      <Card className="p-5 shadow-card lg:p-6">
+      <Card className="p-5 lg:p-6">
         {/* Tab Header */}
-        <div className="mb-5 flex items-center gap-2.5 border-b border-border pb-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <ActiveTabIcon className="h-4 w-4 text-primary" />
+        <div className="mb-6 flex items-center gap-3 border-b border-border pb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+            <ActiveTabIcon className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-lg font-medium text-foreground">
+            <h2 className="text-base font-semibold text-foreground-strong">
               {tabs.find(t => t.id === activeTab)?.label}
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -311,7 +322,7 @@ export default function SettingsPage() {
               <select
                 value={accountData.language}
                 onChange={(e) => setAccountData({ ...accountData, language: e.target.value })}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={cn(fieldClasses, 'block h-10')}
               >
                 <option value="tr">Türkçe</option>
                 <option value="en">English</option>
@@ -325,7 +336,7 @@ export default function SettingsPage() {
               <select
                 value={accountData.timezone}
                 onChange={(e) => setAccountData({ ...accountData, timezone: e.target.value })}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={cn(fieldClasses, 'block h-10')}
               >
                 <option value="Europe/Istanbul">İstanbul (GMT+3)</option>
                 <option value="Europe/London">London (GMT+0)</option>
@@ -340,7 +351,7 @@ export default function SettingsPage() {
               <select
                 value={accountData.dateFormat}
                 onChange={(e) => setAccountData({ ...accountData, dateFormat: e.target.value })}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className={cn(fieldClasses, 'block h-10')}
               >
                 <option value="DD/MM/YYYY">GG/AA/YYYY</option>
                 <option value="MM/DD/YYYY">AA/GG/YYYY</option>
@@ -365,9 +376,12 @@ export default function SettingsPage() {
         {activeTab === 'notifications' && (
           <div className="space-y-4">
             {Object.entries(notifications).map(([key, value]) => (
-              <div key={key} className="flex items-start justify-between gap-3 rounded-xl bg-secondary p-4 sm:items-center">
+              <div
+                key={key}
+                className="flex items-start justify-between gap-4 rounded-xl border border-border bg-surface-raised p-4 sm:items-center"
+              >
                 <div>
-                  <p className="font-medium text-foreground">
+                  <p className="font-medium text-foreground-strong">
                     {key === 'email' && 'E-posta Bildirimleri'}
                     {key === 'blogGenerated' && 'Blog Üretildiğinde'}
                     {key === 'blogPublished' && 'Blog Yayınlandığında'}
@@ -389,7 +403,7 @@ export default function SettingsPage() {
                     onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
                     className="peer sr-only"
                   />
-                  <div className="peer h-6 w-11 rounded-full bg-secondary after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-card after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-card peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-ring"></div>
+                  <div className="peer h-6 w-11 shrink-0 rounded-full bg-muted-foreground/30 transition-colors duration-fast ease-out-quart after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-card after:shadow-card after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-card peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"></div>
                 </label>
               </div>
             ))}
@@ -408,7 +422,7 @@ export default function SettingsPage() {
                   type="password"
                   value={apiSettings.apiKey}
                   readOnly
-                  className="flex-1 bg-secondary font-mono"
+                  className="flex-1 bg-surface-sunken font-mono"
                 />
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 sm:flex-none">
@@ -462,26 +476,20 @@ export default function SettingsPage() {
         {/* Billing Tab */}
         {activeTab === 'billing' && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-secondary p-6">
-              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="rounded-xl border border-border bg-surface-raised p-6">
+              <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                  <h3 className="mb-1 text-lg font-medium text-foreground">
-                    Mevcut Plan
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Ücretsiz Plan
-                  </p>
+                  <p className="text-eyebrow mb-1.5">Mevcut plan</p>
+                  <h3 className="text-lg font-semibold text-foreground-strong">Ücretsiz Plan</h3>
                 </div>
-                <Button>
-                  Planı Yükselt
-                </Button>
+                <Button>Planı Yükselt</Button>
               </div>
               <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
                 <div>
                   <p className="mb-1 text-muted-foreground">
                     Kullanılan Blog
                   </p>
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-lg font-semibold text-foreground-strong tabular-nums">
                     12 / 50
                   </p>
                 </div>
@@ -489,7 +497,7 @@ export default function SettingsPage() {
                   <p className="mb-1 text-muted-foreground">
                     Sonraki Fatura
                   </p>
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-lg font-semibold text-foreground-strong">
                     Ücretsiz
                   </p>
                 </div>
@@ -497,7 +505,7 @@ export default function SettingsPage() {
                   <p className="mb-1 text-muted-foreground">
                     Ödeme Yöntemi
                   </p>
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-lg font-semibold text-foreground-strong">
                     Yok
                   </p>
                 </div>
@@ -505,15 +513,20 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="mb-4 text-lg font-medium text-foreground">
+              <h3 className="mb-4 text-base font-semibold text-foreground-strong">
                 Fatura Geçmişi
               </h3>
-              <div className="rounded-xl border border-border p-8 text-center">
-                <CreditCard className="mx-auto mb-4 h-12 w-12 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">
-                  Henüz fatura bulunmuyor
-                </p>
-              </div>
+              <EmptyState
+                icon={<Receipt />}
+                title="Henüz fatura oluşmadı"
+                description="Ücretli bir plana geçtiğinizde faturalarınız burada listelenir ve PDF olarak indirilebilir."
+                action={
+                  <Button variant="outline">
+                    <CreditCard />
+                    Planları İncele
+                  </Button>
+                }
+              />
             </div>
           </div>
         )}
@@ -522,13 +535,18 @@ export default function SettingsPage() {
         {activeTab === 'security' && (
           <div className="space-y-6">
             {error && (
-              <div className="rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
-                <p className="text-sm text-destructive">{error}</p>
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
             {success && (
-              <div className="rounded-xl border border-border bg-success-muted p-4">
-                <p className="text-sm text-success">{success}</p>
+              <div className="flex items-start gap-2.5 rounded-xl border border-success/30 bg-success-muted p-4 text-sm text-success">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{success}</span>
               </div>
             )}
             <div>
@@ -599,12 +617,12 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-t border-border pt-6">
-              <h3 className="mb-4 text-lg font-medium text-foreground">
+              <h3 className="mb-4 text-base font-semibold text-foreground-strong">
                 İki Faktörlü Doğrulama
               </h3>
-              <div className="flex flex-col justify-between gap-3 rounded-xl bg-secondary p-4 sm:flex-row sm:items-center">
+              <div className="flex flex-col justify-between gap-3 rounded-xl border border-border bg-surface-raised p-4 sm:flex-row sm:items-center">
                 <div>
-                  <p className="font-medium text-foreground">
+                  <p className="font-medium text-foreground-strong">
                     2FA Aktif Değil
                   </p>
                   <p className="text-sm text-muted-foreground">

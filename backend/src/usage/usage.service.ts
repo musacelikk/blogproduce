@@ -6,30 +6,9 @@ import { User } from '../entities/user.entity';
 import { Post } from '../entities/post.entity';
 import { PostRevision } from '../entities/post-revision.entity';
 import { Workspace } from '../entities/workspace.entity';
+import { calculateCostUsd } from '../billing/model-tiers';
 
-// Model pricing per 1M tokens (2025-2026)
-// Tiers: standart → gpt-4.1-mini · pro → gpt-4.1 · premium → claude-opus-5
-const PRICING: Record<string, { input: number; output: number }> = {
-  // OpenAI
-  'gpt-4o-mini': { input: 0.15, output: 0.60 },
-  'gpt-4.1-mini': { input: 0.40, output: 1.60 },
-  'gpt-4.1': { input: 2.00, output: 8.00 },
 
-  // Anthropic (premium tier)
-  'claude-opus-5': { input: 5.00, output: 25.00 },
-  'claude-opus-4-8': { input: 5.00, output: 25.00 },
-  'claude-sonnet-5': { input: 3.00, output: 15.00 },
-  'claude-haiku-4-5': { input: 1.00, output: 5.00 },
-
-  // Legacy models (for backward compatibility)
-  'gpt-4o': { input: 0.15, output: 0.60 }, // Map to gpt-4o-mini pricing
-  'gpt-4': { input: 2.00, output: 8.00 }, // Map to gpt-4.1 pricing
-  'gpt-4-turbo': { input: 0.40, output: 1.60 }, // Map to gpt-4.1-mini pricing
-  'gpt-3.5-turbo': { input: 0.15, output: 0.60 }, // Map to gpt-4o-mini pricing
-};
-
-const DEFAULT_PRICING = { input: 0.40, output: 1.60 }; // Default to gpt-4.1-mini (Orta seviye)
-const MONTHLY_LIMIT_USD = 10.0;
 
 @Injectable()
 export class UsageService {
@@ -47,26 +26,6 @@ export class UsageService {
     @InjectRepository(Workspace)
     private workspacesRepository: Repository<Workspace>,
   ) {}
-
-  /**
-   * Check if user has exceeded monthly limit
-   */
-  async checkMonthlyLimit(userId: string): Promise<void> {
-    const currentMonth = this.getCurrentMonth();
-    const ledger = await this.usageLedgerRepository.findOne({
-      where: { userId, month: currentMonth },
-    });
-
-    // Postgres decimal columns hydrate as strings — coerce before any numeric use.
-    const currentCost = Number(ledger?.estimatedCostUsd || 0);
-
-    if (currentCost >= MONTHLY_LIMIT_USD) {
-      this.logger.warn(`User ${userId} exceeded monthly limit: $${currentCost.toFixed(2)}`);
-      throw new ForbiddenException(
-        `Monthly usage limit exceeded. Current usage: $${currentCost.toFixed(2)} / $${MONTHLY_LIMIT_USD}. Please wait until next month or contact support.`,
-      );
-    }
-  }
 
   /**
    * Record token usage and calculate cost
@@ -172,21 +131,11 @@ export class UsageService {
   }
 
   /**
-   * Calculate cost based on model and tokens
+   * Cost of a generation. Pricing lives in billing/model-tiers so the ledger,
+   * plan margins and the admin cost calculator can never drift apart.
    */
   private calculateCost(model: string, tokensIn: number, tokensOut: number): number {
-    // Exact match first, then longest-prefix match (providers may return dated ids
-    // like "gpt-4.1-2025-04-14"), then default.
-    let pricing = PRICING[model];
-    if (!pricing) {
-      const prefixKey = Object.keys(PRICING)
-        .filter((key) => model.startsWith(key))
-        .sort((a, b) => b.length - a.length)[0];
-      pricing = prefixKey ? PRICING[prefixKey] : DEFAULT_PRICING;
-    }
-    const inputCost = (tokensIn / 1_000_000) * pricing.input;
-    const outputCost = (tokensOut / 1_000_000) * pricing.output;
-    return inputCost + outputCost;
+    return calculateCostUsd(model, tokensIn, tokensOut);
   }
 
   /**

@@ -57,48 +57,44 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full px-4 pb-16 pt-32 sm:px-6 sm:pb-24 sm:pt-40 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <main className="w-full pb-20 pt-32 sm:pb-28 sm:pt-40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-12 text-center sm:mb-16"
+            className="mx-auto max-w-2xl text-center"
           >
-            <h1 className="mb-6 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-              İletişim
+            <p className="text-eyebrow">İletişim</p>
+            <h1 className="mt-3 text-balance text-display-xl text-foreground-strong">
+              Konuşalım
             </h1>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Sorularınız, önerileriniz veya destek talepleriniz için bizimle iletişime geçin.
+            <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+              Sorularınız, önerileriniz veya destek talepleriniz için bize yazın; bir iş günü içinde
+              dönüş yapıyoruz.
             </p>
           </motion.div>
 
-          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2 md:gap-12">
+          <div className="mx-auto mt-16 grid max-w-5xl gap-10 md:grid-cols-2 md:gap-12 lg:gap-16">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="space-y-8"
             >
-              <div>
-                <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                  Bize Ulaşın
-                </h2>
-                <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
-                  Aşağıdaki iletişim bilgilerinden bize ulaşabilir veya iletişim formunu
-                  kullanabilirsiniz.
-                </p>
-              </div>
+              <h2 className="text-display-md text-foreground-strong">Bize ulaşın</h2>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Aşağıdaki kanallardan doğrudan iletişime geçebilir veya formu kullanabilirsiniz.
+              </p>
 
-              <div className="space-y-6">
+              <div className="mt-10 space-y-6">
                 {contactDetails.map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent">
-                      <Icon className="h-5 w-5 text-accent-foreground" />
-                    </div>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                      <Icon className="h-5 w-5" />
+                    </span>
                     <div className="min-w-0">
-                      <h3 className="mb-1 font-semibold text-foreground">{label}</h3>
-                      <p className="text-muted-foreground">{value}</p>
+                      <h3 className="text-sm font-semibold text-foreground-strong">{label}</h3>
+                      <p className="mt-1 leading-relaxed text-muted-foreground">{value}</p>
                     </div>
                   </div>
                 ))}
@@ -111,13 +107,11 @@ export default function ContactPage() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="rounded-xl border border-border bg-card p-6 shadow-card md:p-8"
             >
-              <h2 className="mb-4 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Mesaj Gönder
-              </h2>
-              <p className="mb-8 text-base text-muted-foreground">
-                Bize ulaşmak için formu doldurun
+              <h2 className="text-lg font-semibold text-foreground-strong">Mesaj gönderin</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Formu doldurun, ekibimiz size dönsün.
               </p>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                 <Input
                   placeholder="Ad Soyad"
                   name="name"
@@ -150,7 +144,7 @@ export default function ContactPage() {
                 />
 
                 {submitStatus === 'success' && (
-                  <div className="rounded-lg border border-border bg-success-muted p-4">
+                  <div className="rounded-lg border border-success/20 bg-success-muted p-4">
                     <p className="text-sm text-success">
                       Mesajınız başarıyla gönderildi! En kısa sürede size dönüş yapacağız.
                     </p>
@@ -158,14 +152,14 @@ export default function ContactPage() {
                 )}
 
                 {submitStatus === 'error' && (
-                  <div className="rounded-lg border border-border bg-[var(--destructive-muted)] p-4">
+                  <div className="rounded-lg border border-destructive/20 bg-destructive-muted p-4">
                     <p className="text-sm text-destructive">
                       {errorMessage || 'Mesaj gönderilirken bir hata oluştu. Lütfen tekrar deneyin.'}
                     </p>
                   </div>
                 )}
 
-                <Button type="submit" disabled={isSubmitting} className="w-full">
+                <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
                   {isSubmitting ? (
                     'Gönderiliyor...'
                   ) : (

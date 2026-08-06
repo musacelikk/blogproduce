@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
-  Mail, Lock, User, ArrowRight, ArrowLeft,
+  Mail, Lock, User, ArrowRight, ArrowLeft, AlertCircle,
   CheckCircle2, Star, Users, TrendingUp,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -85,7 +85,8 @@ export default function RegisterPage() {
             transition={{ duration: 0.55, delay: 0.1 }}
             className="mb-8 mt-12"
           >
-            <h2 className="mb-3 text-3xl font-semibold leading-tight tracking-tight text-foreground xl:text-4xl">
+            <p className="text-eyebrow mb-3">Ücretsiz hesap</p>
+            <h2 className="text-display-md mb-3 text-foreground-strong">
               Bugün başlayın,<br />yarın yayınlayın
             </h2>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground xl:text-base">
@@ -106,7 +107,9 @@ export default function RegisterPage() {
                   <Icon className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-lg font-semibold leading-none text-primary">{value}</p>
+                  <p className="text-lg font-semibold leading-none text-primary tabular-nums">
+                    {value}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
                 </div>
               </div>
@@ -177,20 +180,39 @@ export default function RegisterPage() {
             Ana Sayfaya Dön
           </Link>
 
+          {/* Brand mark — the only identity cue on small screens, where the left panel is hidden */}
+          <Link href="/" className="mb-5 inline-flex items-center gap-2.5 lg:hidden">
+            <Image
+              src="/images/logo.png"
+              alt="BlogProduce"
+              width={200}
+              height={200}
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-base font-semibold tracking-tight text-foreground-strong">
+              BlogProduce
+            </span>
+          </Link>
+
           <div className="rounded-xl border border-border bg-card p-6 shadow-card sm:p-8">
             <div className="mb-6">
-              <h1 className="mb-1.5 text-2xl font-semibold tracking-tight text-foreground">
+              <p className="text-eyebrow mb-2">Hesap</p>
+              <h1 className="mb-1.5 text-2xl font-semibold tracking-tight text-foreground-strong">
                 Hesap Oluştur
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 Ücretsiz başlayın, istediğiniz zaman yükseltin
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="rounded-lg border border-destructive/30 bg-[var(--destructive-muted)] px-3.5 py-3 text-sm text-destructive">
-                  {error}
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-[var(--destructive-muted)] px-3.5 py-3 text-sm text-destructive"
+                >
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
@@ -250,7 +272,7 @@ export default function RegisterPage() {
                 </label>
               </div>
 
-              <Button type="submit" disabled={isSubmitting} className="h-11 w-full">
+              <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? 'Hesap oluşturuluyor…' : (
                   <>Kayıt Ol <ArrowRight className="h-4 w-4" /></>
                 )}

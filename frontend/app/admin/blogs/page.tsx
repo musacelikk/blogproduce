@@ -21,10 +21,12 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Input, fieldClasses } from '@/components/ui/input';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableHeader,
@@ -53,6 +55,16 @@ const statusIcons = {
   generated: CheckCircle2,
   failed: XCircle,
   published: CheckCircle2,
+};
+
+const statusLabels: Record<string, string> = {
+  draft: 'Taslak',
+  queued: 'Kuyrukta',
+  generating: 'Üretiliyor',
+  generated: 'Hazır',
+  failed: 'Başarısız',
+  published: 'Yayında',
+  scheduled: 'Zamanlandı',
 };
 
 export default function AdminBlogsPage() {
@@ -123,10 +135,35 @@ export default function AdminBlogsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Yükleniyor...</p>
+      /* Skeleton mirrors the page: header, four stat tiles, filter bar, card grid. */
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="mb-6 space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-7 w-52" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-[102px] rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-[74px] w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <Skeleton className="mb-2 h-4 w-full" />
+              <Skeleton className="mb-3 h-4 w-2/3" />
+              <Skeleton className="mb-4 h-5 w-20 rounded-full" />
+              <div className="space-y-2">
+                {[...Array(4)].map((__, j) => (
+                  <Skeleton key={j} className="h-3 w-40" />
+                ))}
+              </div>
+              <div className="mt-4 border-t border-border pt-4">
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -135,22 +172,26 @@ export default function AdminBlogsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
+        eyebrow="Yönetim"
         title="Blog Yönetimi"
         description="Tüm blogları görüntüleyin ve yönetin"
       />
 
       {error && (
-        <div className="flex items-start gap-3 rounded-xl border border-border bg-[var(--destructive-muted)] p-4">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-[var(--destructive-muted)] p-4 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-destructive">Hata</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">{error}</p>
+            <p className="font-semibold">Bloglar yüklenemedi</p>
+            <p className="mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
       {/* Summary & Stats */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Toplam Blog" value={posts.length} icon={<FileText />} />
         <StatCard
           label="Hazır"
@@ -186,7 +227,7 @@ export default function AdminBlogsPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Durum filtresi"
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className={cn(fieldClasses, 'block h-10')}
             >
               <option value="all">Tüm Durumlar</option>
               <option value="draft">Taslak</option>
@@ -233,22 +274,22 @@ export default function AdminBlogsPage() {
               return (
                 <div
                   key={post.id}
-                  className="flex flex-col rounded-xl border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover"
+                  className="flex flex-col rounded-xl border border-border bg-card p-5 shadow-card transition-[box-shadow,border-color,transform] duration-base ease-out-quart hover:-translate-y-0.5 hover:border-strong hover:shadow-card-hover"
                 >
-                  <h3 className="line-clamp-2 text-base font-semibold text-foreground">
+                  <h3 className="line-clamp-2 text-base font-semibold text-foreground-strong">
                     {post.title}
                   </h3>
                   <div className="mt-2">
                     <Badge variant={statusVariant}>
                       <StatusIcon className={isGenerating ? 'h-3 w-3 animate-spin' : 'h-3 w-3'} />
-                      {post.status}
+                      {statusLabels[post.status] ?? post.status}
                     </Badge>
                   </div>
 
                   <div className="mt-4 flex-1 space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="h-4 w-4 shrink-0" />
-                      <span>
+                      <span className="tabular-nums">
                         {new Date(post.createdAt).toLocaleDateString('tr-TR', {
                           year: 'numeric',
                           month: 'long',
@@ -303,9 +344,27 @@ export default function AdminBlogsPage() {
           </div>
         ) : (
           <EmptyState
-            icon={<FileText />}
-            title="Blog bulunamadı"
-            description="Arama veya durum filtresini değiştirerek tekrar deneyin."
+            icon={posts.length === 0 ? <FileText /> : <Search />}
+            title={posts.length === 0 ? 'Sistemde henüz blog yok' : 'Eşleşen blog bulunamadı'}
+            description={
+              posts.length === 0
+                ? 'Kullanıcılar blog ürettikçe tüm içerikler burada listelenir ve buradan yönetilebilir.'
+                : 'Aramanız veya seçtiğiniz durum filtresi hiçbir blogla eşleşmedi. Filtreleri temizleyip tekrar deneyin.'
+            }
+            action={
+              posts.length > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                  }}
+                >
+                  <XCircle />
+                  Filtreleri Temizle
+                </Button>
+              ) : undefined
+            }
           />
         )
       ) : filteredPosts.length > 0 ? (
@@ -318,7 +377,7 @@ export default function AdminBlogsPage() {
               <TableHead>Workspace</TableHead>
               <TableHead>Format</TableHead>
               <TableHead>Model</TableHead>
-              <TableHead>Tarih</TableHead>
+              <TableHead className="text-right">Tarih</TableHead>
               <TableHead className="text-right">İşlemler</TableHead>
             </TableRow>
           </TableHeader>
@@ -332,12 +391,14 @@ export default function AdminBlogsPage() {
               return (
                 <TableRow key={post.id}>
                   <TableCell className="max-w-[280px]">
-                    <span className="line-clamp-1 font-medium text-foreground">{post.title}</span>
+                    <span className="line-clamp-1 font-medium text-foreground-strong">
+                      {post.title}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant}>
                       <StatusIcon className={isGenerating ? 'h-3 w-3 animate-spin' : 'h-3 w-3'} />
-                      {post.status}
+                      {statusLabels[post.status] ?? post.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -361,17 +422,17 @@ export default function AdminBlogsPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {latestRevision?.model || '-'}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
                       <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      <span>
+                      <span className="tabular-nums">
                         {new Date(post.createdAt).toLocaleDateString('tr-TR', {
                           year: 'numeric',
                           month: 'short',
-                          day: 'numeric',
+                          day: '2-digit',
                         })}
                       </span>
-                    </div>
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
@@ -417,9 +478,27 @@ export default function AdminBlogsPage() {
         </Table>
       ) : (
         <EmptyState
-          icon={<FileText />}
-          title="Blog bulunamadı"
-          description="Arama veya durum filtresini değiştirerek tekrar deneyin."
+          icon={posts.length === 0 ? <FileText /> : <Search />}
+          title={posts.length === 0 ? 'Sistemde henüz blog yok' : 'Eşleşen blog bulunamadı'}
+          description={
+            posts.length === 0
+              ? 'Kullanıcılar blog ürettikçe tüm içerikler burada listelenir ve buradan yönetilebilir.'
+              : 'Aramanız veya seçtiğiniz durum filtresi hiçbir blogla eşleşmedi. Filtreleri temizleyip tekrar deneyin.'
+          }
+          action={
+            posts.length > 0 ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                <XCircle />
+                Filtreleri Temizle
+              </Button>
+            ) : undefined
+          }
         />
       )}
     </div>

@@ -51,8 +51,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="dashboard-shell min-h-screen flex flex-col" data-dashboard-page>
       <DashboardSidebar />
-      <div 
-        className={`transition-all duration-300 flex flex-col flex-1 ${
+      <div
+        className={`flex flex-1 flex-col transition-[margin] duration-slow ease-out-quart ${
           isCollapsed ? 'lg:ml-[68px]' : 'lg:ml-60'
         }`}
       >
@@ -60,13 +60,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         <main className="dashboard-main mt-14 flex-1 p-6 lg:p-8">
           <div className="dashboard-main-inner mx-auto w-full max-w-7xl">
             {!isDashboardHome && (
-              <div className="dashboard-hero mb-6 rounded-xl px-5 py-4">
+              <div className="dashboard-hero mb-6 rounded-xl px-5 py-4 shadow-card">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/20">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/20 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.18)]">
                     <Sparkles className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-foreground/70">
                       BlogProduce Studio
                     </p>
                     <p className="text-sm font-semibold text-primary-foreground">
@@ -88,7 +88,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 href="https://bilalorhanlar.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-foreground"
+                className="transition-colors duration-fast ease-out-quart hover:text-foreground"
               >
                 Bilal ORHANLAR
               </a>
@@ -96,15 +96,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </p>
             <span className="hidden text-border md:inline">•</span>
             <div className="flex items-center gap-3">
-              <Link href="/terms" className="transition-colors hover:text-foreground">
+              <Link href="/terms" className="transition-colors duration-fast ease-out-quart hover:text-foreground">
                 Kullanım Şartları
               </Link>
               <span className="text-border">•</span>
-              <Link href="/privacy" className="transition-colors hover:text-foreground">
+              <Link href="/privacy" className="transition-colors duration-fast ease-out-quart hover:text-foreground">
                 Gizlilik
               </Link>
               <span className="text-border">•</span>
-              <Link href="/cookie" className="transition-colors hover:text-foreground">
+              <Link href="/cookie" className="transition-colors duration-fast ease-out-quart hover:text-foreground">
                 Çerezler
               </Link>
             </div>

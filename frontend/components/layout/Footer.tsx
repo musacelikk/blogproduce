@@ -10,17 +10,20 @@ const socialLinks = [
   { href: "https://twitter.com", icon: Twitter, label: "Twitter" },
   { href: "https://linkedin.com", icon: Linkedin, label: "LinkedIn" },
   { href: "https://github.com", icon: Github, label: "GitHub" },
-  { href: "mailto:hello@blogproduce.com", icon: Mail, label: "Email" },
+  { href: "mailto:hello@blogproduce.com", icon: Mail, label: "E-posta" },
 ]
 
-const footerLinks = [
-  { href: "/", label: "Ana Sayfa" },
+const productLinks = [
   { href: "/solutions", label: "Çözümler" },
   { href: "/pricing", label: "Fiyatlandırma" },
-  { href: "/docs", label: "API Docs" },
+  { href: "/docs", label: "API Dokümantasyonu" },
+  { href: "/faq", label: "SSS" },
+]
+
+const companyLinks = [
   { href: "/about", label: "Hakkımızda" },
   { href: "/contact", label: "İletişim" },
-  { href: "/faq", label: "SSS" },
+  { href: "/", label: "Ana Sayfa" },
 ]
 
 const legalLinks = [
@@ -33,9 +36,9 @@ const legalLinks = [
 export const Footer = () => {
   return (
     <footer className="border-t border-border bg-card">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-4 md:gap-8">
-          <div className="md:col-span-2">
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-4">
             <Link href="/" className="inline-flex items-center" aria-label="BlogProduce ana sayfa">
               <Image
                 src="/images/logo.png"
@@ -45,40 +48,38 @@ export const Footer = () => {
                 className="h-10 w-auto object-contain"
               />
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted-foreground">
               AI destekli blog içerik üretim platformu. Prompt yazın, SEO uyumlu profesyonel blog
               içerikleri dakikalar içinde hazır.
             </p>
+            <Link
+              href="mailto:hello@blogproduce.com"
+              className="mt-5 inline-block text-sm font-medium text-accent-foreground transition-colors duration-fast ease-out-quart hover:underline"
+            >
+              hello@blogproduce.com
+            </Link>
             <div className="mt-6 flex items-center gap-2">
               {socialLinks.map((social) => (
                 <Link
                   key={social.label}
                   href={social.href}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-raised text-muted-foreground transition-colors duration-fast ease-out-quart hover:border-strong hover:bg-accent hover:text-accent-foreground"
                   aria-label={social.label}
                 >
                   <social.icon className="h-4 w-4" />
                 </Link>
               ))}
             </div>
-            <div className="mt-4">
-              <Link
-                href="mailto:hello@blogproduce.com"
-                className="text-sm font-medium text-accent-foreground transition-colors hover:underline"
-              >
-                hello@blogproduce.com
-              </Link>
-            </div>
           </div>
 
-          <div>
-            <h4 className="mb-4 text-sm font-semibold text-foreground">Sayfalar</h4>
-            <ul className="space-y-3">
-              {footerLinks.map((link) => (
+          <div className="lg:col-span-2">
+            <h4 className="text-eyebrow">Ürün</h4>
+            <ul className="mt-5 space-y-3">
+              {productLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="text-sm text-muted-foreground transition-colors duration-fast ease-out-quart hover:text-foreground"
                   >
                     {link.label}
                   </Link>
@@ -87,15 +88,34 @@ export const Footer = () => {
             </ul>
           </div>
 
-          <div>
-            <h4 className="mb-4 text-sm font-semibold text-foreground">Güncel Kalın</h4>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Güncellemeler ve içerik ipuçları için bültenimize katılın.
-            </p>
-            <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
-              <Input type="email" placeholder="E-posta adresiniz" aria-label="E-posta adresiniz" />
-              <Button type="submit">Abone Ol</Button>
-            </form>
+          <div className="lg:col-span-2">
+            <h4 className="text-eyebrow">Kurumsal</h4>
+            <ul className="mt-5 space-y-3">
+              {companyLinks.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-muted-foreground transition-colors duration-fast ease-out-quart hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:col-span-4">
+            <div className="rounded-xl border border-border bg-surface-sunken p-6">
+              <h4 className="text-sm font-semibold text-foreground-strong">Güncel kalın</h4>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Ürün güncellemeleri ve içerik ipuçları için bültenimize katılın. Ayda bir e-posta,
+                spam yok.
+              </p>
+              <form className="mt-5 flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+                <Input type="email" placeholder="E-posta adresiniz" aria-label="E-posta adresiniz" />
+                <Button type="submit">Abone Ol</Button>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -106,18 +126,18 @@ export const Footer = () => {
               href="https://bilalorhanlar.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors hover:text-foreground"
+              className="transition-colors duration-fast ease-out-quart hover:text-foreground"
             >
               Bilal ORHANLAR
             </a>
             . Tüm hakları saklıdır.
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {legalLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="text-xs text-muted-foreground transition-colors duration-fast ease-out-quart hover:text-foreground"
               >
                 {link.label}
               </Link>

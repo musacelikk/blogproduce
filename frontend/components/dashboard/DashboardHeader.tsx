@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Bell, LogOut, Settings, ChevronDown, Check, Zap, Menu, X } from 'lucide-react';
+import { Bell, LogOut, Settings, ChevronDown, Check, Zap, Menu, X, Clock, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSidebar } from '@/contexts/SidebarContext';
-import { logout, getNotifications, getUnreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead, getCurrentPlan, getCurrentUsage, type Notification } from '@/lib/api';
-import type { UserPlanInfo, UsageLedger } from '@/lib/api';
+import { logout, getNotifications, getUnreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead, getCurrentPlan, getCurrentUsage, getEntitlement, type Notification } from '@/lib/api';
+import type { UserPlanInfo, UsageLedger, Entitlement } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
 const pageMetadata: Record<string, { title: string; description: string }> = {
@@ -17,7 +17,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/dashboard/blogs':      { title: 'Bloglarım',                description: 'Tüm içeriklerinizi yönetin' },
   '/dashboard/workspaces': { title: "Workspace'lerim",          description: 'İçeriklerinizi organize edin' },
   '/dashboard/plans':      { title: 'Planlar & Fiyatlandırma',  description: 'İhtiyacınıza uygun planı seçin' },
-  '/dashboard/billing':    { title: 'Fatura Geçmişi',           description: 'Abonelik ve ödeme geçmişiniz' },
+  '/dashboard/billing':    { title: 'Faturalandırma',           description: 'Plan, token kotası ve satın alımlarınız' },
   '/dashboard/history':    { title: 'Geçmiş',                   description: 'Tüm aktivite geçmişiniz' },
   '/dashboard/reports':    { title: 'Raporlar & Analitik',      description: 'Blog performansınızı görüntüleyin' },
   '/dashboard/settings':   { title: 'Ayarlar',                  description: 'Hesap ayarlarınızı yönetin' },
@@ -29,6 +29,7 @@ export function DashboardHeader() {
   const [user, setUser]                         = useState<any>(null);
   const [planInfo, setPlanInfo]                 = useState<UserPlanInfo | null>(null);
   const [usage, setUsage]                       = useState<UsageLedger | null>(null);
+  const [entitlement, setEntitlement]           = useState<Entitlement | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications]       = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount]           = useState(0);
@@ -44,12 +45,14 @@ export function DashboardHeader() {
     loadUnreadCount();
     const loadPlanAndUsage = async () => {
       try {
-        const [plan, usageData] = await Promise.all([
+        const [plan, usageData, ent] = await Promise.all([
           getCurrentPlan().catch(() => null),
           getCurrentUsage().catch(() => null),
+          getEntitlement().catch(() => null),
         ]);
         setPlanInfo(plan ?? null);
         setUsage(usageData ?? null);
+        setEntitlement(ent ?? null);
       } catch {}
     };
     loadPlanAndUsage();
@@ -97,10 +100,22 @@ export function DashboardHeader() {
 
   const initials = user?.name?.charAt(0)?.toUpperCase() ?? 'U';
 
-  const total    = usage ? Number(usage.tokensIn) + Number(usage.tokensOut) : 0;
-  const maxNum   = typeof planInfo?.currentPlan?.features?.maxTokensPerMonth === 'number'
-    ? planInfo.currentPlan.features.maxTokensPerMonth : null;
-  const showToken = total > 0 || maxNum != null;
+  // The entitlement is the authority on quota; the raw ledger is only a fallback
+  // while it loads or if the endpoint is unreachable.
+  const total    = entitlement
+    ? entitlement.tokensUsedThisMonth
+    : usage ? Number(usage.tokensIn) + Number(usage.tokensOut) : 0;
+  const maxNum   = entitlement
+    ? entitlement.tokenAllowance
+    : typeof planInfo?.currentPlan?.features?.maxTokensPerMonth === 'number'
+      ? planInfo.currentPlan.features.maxTokensPerMonth : null;
+  const showToken = total > 0 || (maxNum != null && maxNum > 0);
+  const quotaPct = maxNum != null && maxNum > 0 ? Math.min(100, (total / maxNum) * 100) : 0;
+
+  const trialDays    = entitlement?.trialDaysRemaining ?? null;
+  const isExpired    = Boolean(entitlement?.isExpired);
+  const showTrialPill = Boolean(entitlement && (isExpired || (entitlement.isTrial && trialDays != null)));
+  const trialUrgent  = trialDays != null && trialDays <= 2;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4 sm:px-5">
@@ -132,29 +147,58 @@ export function DashboardHeader() {
       {/* Right */}
       <div className="flex items-center gap-2">
 
+        {/* Trial / expired pill — visible on every dashboard screen */}
+        {showTrialPill && (
+          <Link
+            href="/dashboard/plans"
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors duration-fast ease-out-quart ${
+              isExpired
+                ? 'bg-destructive-muted text-destructive hover:bg-destructive/15'
+                : trialUrgent
+                  ? 'bg-warning-muted text-warning hover:bg-warning/15'
+                  : 'bg-accent text-accent-foreground hover:bg-secondary'
+            }`}
+            title={isExpired ? 'Aboneliğiniz sona erdi' : 'Deneme sürümü'}
+          >
+            {isExpired ? <AlertTriangle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+            <span className="hidden sm:inline">
+              {isExpired ? 'Aboneliğiniz sona erdi — plan seçin' : `Deneme sürümü — ${trialDays} gün kaldı`}
+            </span>
+            <span className="sm:hidden">{isExpired ? 'Plan seçin' : `${trialDays} gün`}</span>
+          </Link>
+        )}
+
         {/* Plan badge */}
-        <Link
-          href="/dashboard/plans"
-          className="hidden items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground transition-colors hover:bg-secondary sm:inline-flex"
-        >
-          {planInfo?.currentPlan?.name ?? (planInfo?.isFree ? 'Ücretsiz' : '—')}
-          <span className="text-[10px] font-normal opacity-70">
-            · {planInfo?.subscription?.daysRemaining != null && planInfo.subscription.daysRemaining >= 0
-              ? `${planInfo.subscription.daysRemaining}g`
-              : '∞'}
-          </span>
-        </Link>
+        {!showTrialPill && (
+          <Link
+            href="/dashboard/plans"
+            className="hidden items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground transition-colors duration-fast ease-out-quart hover:bg-secondary sm:inline-flex"
+          >
+            {entitlement?.planName ?? planInfo?.currentPlan?.name ?? (planInfo?.isFree ? 'Ücretsiz' : '—')}
+            <span className="text-[10px] font-normal opacity-70">
+              · {planInfo?.subscription?.daysRemaining != null && planInfo.subscription.daysRemaining >= 0
+                ? `${planInfo.subscription.daysRemaining}g`
+                : '∞'}
+            </span>
+          </Link>
+        )}
 
         {/* Token badge */}
         {showToken && (
           <Link
             href="/dashboard/usage"
-            className="hidden items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary md:inline-flex"
+            className={`hidden items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-[11px] font-medium transition-colors duration-fast ease-out-quart hover:bg-secondary md:inline-flex ${
+              quotaPct >= 90
+                ? 'border-destructive/30 text-destructive'
+                : quotaPct >= 75
+                  ? 'border-warning/30 text-warning'
+                  : 'border-border text-muted-foreground'
+            }`}
             title="Token kullanımı"
           >
-            <Zap className="h-3 w-3 text-accent-foreground" />
+            <Zap className={`h-3 w-3 ${quotaPct >= 75 ? '' : 'text-accent-foreground'}`} />
             {total >= 1000 ? `${(total / 1000).toFixed(1)}K` : total}
-            {maxNum != null ? ` / ${maxNum >= 1000 ? `${(maxNum / 1000).toFixed(0)}K` : maxNum}` : ''} token
+            {maxNum != null && maxNum > 0 ? ` / ${maxNum >= 1000 ? `${(maxNum / 1000).toFixed(0)}K` : maxNum}` : ''} token
           </Link>
         )}
 
@@ -266,7 +310,7 @@ export function DashboardHeader() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-[var(--destructive-muted)]"
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive-muted"
                 >
                   <LogOut className="h-4 w-4" />
                   Çıkış Yap

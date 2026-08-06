@@ -79,7 +79,7 @@ function AdminContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background" data-admin-page>
       <AdminSidebar />
       <div
-        className={`relative z-10 flex min-h-screen flex-col transition-all duration-300 ${
+        className={`relative z-10 flex min-h-screen flex-col transition-[margin] duration-slow ease-out-quart ${
           isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
         }`}
       >

@@ -38,9 +38,9 @@ export const PortfolioNavbar = () => {
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
+          "fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow] duration-base ease-out-quart",
           isScrolled
-            ? "border-b border-border bg-card backdrop-blur-md"
+            ? "border-b border-border bg-card/85 shadow-card backdrop-blur-md"
             : "border-b border-transparent bg-transparent",
         )}
       >
@@ -57,16 +57,16 @@ export const PortfolioNavbar = () => {
               />
             </Link>
 
-            <div className="hidden items-center gap-8 md:flex">
+            <div className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "text-sm transition-colors hover:text-foreground",
+                    "rounded-lg px-3 py-2 text-sm transition-colors duration-fast ease-out-quart",
                     isActive(item.href)
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground",
+                      ? "bg-accent font-medium text-accent-foreground"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                   )}
                 >
                   {item.label}
@@ -125,26 +125,31 @@ export const PortfolioNavbar = () => {
               </Button>
             </div>
 
-            <nav className="mt-12 flex flex-col gap-6">
+            <nav className="mt-12 flex flex-col divide-y divide-border border-y border-border">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-3xl font-semibold tracking-tight text-foreground transition-colors hover:text-primary"
+                  className={cn(
+                    "py-4 text-2xl font-semibold tracking-tight transition-colors duration-fast ease-out-quart",
+                    isActive(item.href)
+                      ? "text-accent-foreground"
+                      : "text-foreground-strong hover:text-primary",
+                  )}
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
 
-            <div className="mt-auto flex flex-col gap-3">
-              <Button asChild variant="outline" size="lg">
+            <div className="mt-auto flex flex-col gap-3 pt-8">
+              <Button asChild variant="outline" size="xl">
                 <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                   Giriş
                 </Link>
               </Button>
-              <Button asChild size="lg">
+              <Button asChild size="xl">
                 <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
                   Ücretsiz Başla
                 </Link>

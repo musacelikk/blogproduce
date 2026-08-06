@@ -2,94 +2,70 @@
 
 import { Search, Mic, Code2, Hash, ImageIcon, Type } from 'lucide-react';
 
+import { SectionHeading } from '@/components/sections/SectionHeading';
+
 const features = [
   {
     icon: Search,
     title: 'SEO anahtar kelimeleri',
-    description: 'Bloglarınızı arama motorları için optimize edin; doğru anahtar kelimeleri ekleyin.',
+    description:
+      'Hedeflediğiniz kelimeler başlıklara, meta etiketlerine ve gövde metnine doğal biçimde yerleşir.',
   },
   {
     icon: Hash,
-    title: 'Kelime sayısı',
-    description: 'İdeal kelime limitini belirleyerek blog uzunluğunu kontrol edin.',
+    title: 'Kelime sayısı kontrolü',
+    description: 'İdeal uzunluğu siz belirleyin; içerik o hedefe göre kurgulanır.',
   },
   {
     icon: Mic,
-    title: 'Ses ve ton',
-    description: 'Markanıza veya kişiliğinize uygun ses ve tonu seçin.',
+    title: 'Marka sesi ve ton',
+    description: 'Kurumsaldan samimiye, her içerik aynı marka sesiyle çıkar.',
   },
   {
     icon: ImageIcon,
     title: 'Görseller ve tablolar',
-    description: 'Bölüm görselleri ve yapılandırılmış tablolarla zengin içerik üretin.',
+    description: 'Bölüm görselleri ve yapılandırılmış tablolarla yayına hazır bir yazı teslim alın.',
   },
   {
     icon: Type,
-    title: 'Blog başlıkları',
-    description: 'AI ile çekici ve yaratıcı blog başlıkları oluşturun.',
+    title: 'Başlık alternatifleri',
+    description: 'Tıklanma oranı yüksek başlık seçenekleri arasından seçim yapın.',
   },
   {
     icon: Code2,
     title: 'API entegrasyonu',
-    description: 'RESTful API ile içeriği sitenize veya uygulamanıza tek tıkla gömün.',
+    description: 'RESTful API ile içeriği sitenize veya uygulamanıza tek istekle gömün.',
   },
-];
-
-const stats = [
-  { value: '10K+', label: 'Günlük İçerik' },
-  { value: '50+', label: 'Dil Desteği' },
-  { value: '%100', label: 'SEO Uyumlu' },
 ];
 
 export const FeatureHighlightsSection = () => {
   return (
-    <section className="border-t border-border py-16 sm:py-24">
+    <section className="border-y border-border bg-card py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-20">
-          <div>
-            <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl lg:text-5xl">
-              Özellikler
-            </h2>
-            <p className="mt-6 leading-relaxed text-muted-foreground">
-              BlogProduce, içerik üretimini tam olarak özelleştirmenizi sağlar. Anahtar kelimeden
-              tona, kelime sayısından görsellere kadar her parametreyi siz belirleyin.
-            </p>
-            <p className="mt-4 leading-relaxed text-muted-foreground">
-              RESTful API ile üretilen içerikleri doğrudan sisteminize entegre edin. Gelişmiş SEO
-              optimizasyonu ile içerikleriniz arama motorlarında öne çıksın.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Özellikler
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {features.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <span
-                    key={f.title}
-                    title={f.description}
-                    className="inline-flex cursor-default items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-primary" />
-                    {f.title}
-                  </span>
-                );
-              })}
-            </div>
+        <SectionHeading
+          align="center"
+          eyebrow="Özellikler"
+          title="Her parametre sizde, sonuç yayına hazır"
+          description="Anahtar kelimeden tona, uzunluktan görsele kadar üretimin tamamını siz yönetirsiniz. Çıktı, doğrudan yayınlanabilecek olgunlukta gelir."
+        />
 
-            <dl className="mt-12 grid grid-cols-3 gap-4">
-              {stats.map((stat) => (
-                <div key={stat.label} className="rounded-xl bg-secondary p-4 text-center">
-                  <dt className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
-                    {stat.value}
-                  </dt>
-                  <dd className="mt-1 text-xs text-muted-foreground">{stat.label}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+        <div className="mt-16 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <div key={feature.title}>
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-5 text-base font-semibold text-foreground-strong">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

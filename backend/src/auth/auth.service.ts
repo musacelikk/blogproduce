@@ -19,6 +19,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { BillingService } from '../billing/billing.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
@@ -33,6 +34,7 @@ export class AuthService {
     private configService: ConfigService,
     @Inject(forwardRef(() => WorkspacesService))
     private workspacesService: WorkspacesService,
+    private billingService: BillingService,
   ) {}
 
   private generateRefreshToken(): string {
@@ -151,6 +153,13 @@ export class AuthService {
     } catch (error) {
       // Workspace oluşturma hatası kritik değil, kayıt işlemi devam edebilir
       console.error('Failed to create default workspace:', error);
+    }
+
+    // Her yeni üyeye ücretsiz deneme tanımla — başarısız olsa da kayıt tamamlanır.
+    try {
+      await this.billingService.startTrial(savedUser.id);
+    } catch (error) {
+      console.error('Failed to start trial:', error);
     }
 
     // Generate tokens

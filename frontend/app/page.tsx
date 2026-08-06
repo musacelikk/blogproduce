@@ -5,7 +5,6 @@ import { PartnersCarousel } from '@/components/sections/PartnersCarousel';
 import { TestimonialSection } from '@/components/sections/TestimonialSection';
 import { HomepageBlogs } from '@/components/sections/HomepageBlogs';
 import { PricingSection } from '@/components/sections/PricingSection';
-import { GradientBar } from '@/components/ui/gradient-bar';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -47,14 +46,13 @@ export default async function Page() {
     <>
       <BankingScaleHero />
       <NelerSunuyoruzSection />
+      <FeatureHighlightsSection />
       <PartnersCarousel />
       <TestimonialSection />
       <HomepageBlogs />
       <div className="hidden md:block">
         <PricingSection />
       </div>
-      <FeatureHighlightsSection />
-      <GradientBar />
     </>
   );
 }

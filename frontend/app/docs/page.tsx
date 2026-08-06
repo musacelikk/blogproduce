@@ -41,13 +41,13 @@ function CodeBlock({ children, lang = 'text' }: { children: string; lang?: strin
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="my-4 overflow-hidden rounded-xl border border-border bg-secondary">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <span className="font-mono text-xs text-muted-foreground">{lang}</span>
+    <div className="my-5 overflow-hidden rounded-xl border border-border bg-surface-sunken shadow-card">
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5">
+        <span className="font-mono text-xs font-medium text-muted-foreground">{lang}</span>
         <button
           type="button"
           onClick={copy}
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors duration-fast ease-out-quart hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Kopyala"
         >
           {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
@@ -90,9 +90,9 @@ function DocTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
 
 function SectionHeading({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
-    <h2 className="mb-4 flex items-center gap-2.5 text-xl font-semibold tracking-tight text-foreground">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent">
-        <Icon className="h-4 w-4 text-accent-foreground" />
+    <h2 className="mb-5 flex items-center gap-3 text-display-md text-foreground-strong">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+        <Icon className="h-5 w-5" />
       </span>
       {children}
     </h2>
@@ -133,20 +133,20 @@ export default function DocsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55 }}
-          className="mx-auto max-w-7xl px-4 pb-12 pt-28 sm:px-6 sm:pb-16 sm:pt-36 lg:px-8"
+          className="mx-auto max-w-7xl px-4 pb-16 pt-32 sm:px-6 sm:pb-20 sm:pt-40 lg:px-8"
         >
-          <Badge className="mb-5 uppercase tracking-wide">
+          <Badge className="mb-6 uppercase tracking-[0.08em]">
             <Code2 className="h-3.5 w-3.5" />
             API Dokümantasyonu
           </Badge>
-          <h1 className="mb-4 text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+          <h1 className="max-w-3xl text-balance text-display-lg text-foreground-strong">
             BlogProduce API
           </h1>
-          <p className="mb-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
             Yayınlanmış blog yazılarınızı listeleyin, tekil içerik çekin ve uygulamanıza entegre edin.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-foreground">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-3 py-1 text-xs font-medium text-foreground">
               Base URL: <InlineCode>{API_BASE}</InlineCode>
             </span>
             <Badge variant="outline">v1</Badge>
@@ -155,8 +155,8 @@ export default function DocsPage() {
         </motion.div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <div className="flex flex-col gap-10 lg:flex-row lg:gap-14">
+      <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <div className="flex flex-col gap-12 lg:flex-row lg:gap-16">
 
           {/* Sidebar */}
           <aside className="shrink-0 self-start lg:sticky lg:top-24 lg:w-56 xl:w-60">
@@ -168,7 +168,7 @@ export default function DocsPage() {
                   className={
                     activeId === id
                       ? 'flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-accent-foreground'
-                      : 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground'
+                      : 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-fast ease-out-quart hover:bg-secondary hover:text-foreground'
                   }
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -179,11 +179,13 @@ export default function DocsPage() {
 
             {/* API Key CTA */}
             <div className="mt-8 rounded-xl border border-border bg-card p-5 shadow-card">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
-                <Key className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <p className="mb-1 text-sm font-semibold text-foreground">API anahtarı gerekli</p>
-              <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Key className="h-5 w-5" />
+              </span>
+              <p className="mt-4 text-sm font-semibold text-foreground-strong">
+                API anahtarı gerekli
+              </p>
+              <p className="mb-4 mt-1.5 text-xs leading-relaxed text-muted-foreground">
                 Giriş yapıp dashboard üzerinden API anahtarı oluşturun.
               </p>
               <Button asChild size="sm" className="w-full">
@@ -217,9 +219,9 @@ export default function DocsPage() {
                     'Zengin metadata: SEO verisi, etiketler, yazar bilgisi',
                     'Güvenli erişim: API anahtarı ile kimlik doğrulama',
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
-                        <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+                    <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                        <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
                       {item}
                     </li>

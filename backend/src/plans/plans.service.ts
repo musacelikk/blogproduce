@@ -45,12 +45,13 @@ export class PlansService {
 
     const now = new Date();
 
-    // Abonelik yok, planId yok → ücretsiz
+    // Abonelik yok, planId yok → ücretsiz (veya seed edilmemiş deneme)
     if (!subscription && !user.planId) {
       return {
         currentPlan: null,
         subscription: null,
         isFree: true,
+        ...this.trialInfo(user, now),
       };
     }
 
@@ -75,20 +76,25 @@ export class PlansService {
           daysRemaining,
         },
         isFree: false,
+        isTrial: false,
+        trialEndsAt: null,
+        trialDaysRemaining: null,
       };
     }
 
-    // planId var ama abonelik yok (manuel atama veya ücretsiz plan referansı)
+    // planId var ama abonelik yok (deneme sürümü veya manuel atama)
     if (user.planId) {
       const plan = await this.planRepository.findOne({
         where: { id: user.planId },
       });
-      const isFreePlan = !plan || (plan.level === 'starter' && plan.price?.monthly === 0 && plan.price?.yearly === 0);
+      const isFreePlan =
+        !plan || (Number(plan.price?.monthly ?? 0) === 0 && Number(plan.price?.yearly ?? 0) === 0);
 
       return {
         currentPlan: plan,
         subscription: null,
         isFree: isFreePlan,
+        ...this.trialInfo(user, now),
       };
     }
 
@@ -96,6 +102,26 @@ export class PlansService {
       currentPlan: null,
       subscription: null,
       isFree: true,
+      ...this.trialInfo(user, now),
+    };
+  }
+
+  /**
+   * Trial state, shared by every branch above so this endpoint never disagrees
+   * with /billing/entitlement about whether a user is still in their trial.
+   */
+  private trialInfo(user: User, now: Date) {
+    if (!user.trialEndsAt) {
+      return { isTrial: false, trialEndsAt: null, trialDaysRemaining: null };
+    }
+
+    return {
+      isTrial: true,
+      trialEndsAt: user.trialEndsAt,
+      trialDaysRemaining: Math.max(
+        0,
+        Math.ceil((user.trialEndsAt.getTime() - now.getTime()) / 86_400_000),
+      ),
     };
   }
 

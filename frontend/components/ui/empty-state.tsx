@@ -24,7 +24,7 @@ function EmptyState({ icon, title, description, action, className, ...props }: E
           {icon}
         </div>
       )}
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <h3 className="text-base font-semibold text-foreground-strong">{title}</h3>
       {description && (
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
       )}

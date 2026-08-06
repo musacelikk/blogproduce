@@ -17,7 +17,7 @@ export default async function FAQPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full pb-12 md:pb-16">
+      <main className="w-full">
         <FAQHeader />
         <FAQSection type="page" title="Sık Sorulan Sorular" faqs={pageFAQs} />
         <FAQContact />

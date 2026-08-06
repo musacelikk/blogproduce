@@ -42,6 +42,17 @@ export class User {
   @Column({ name: 'plan_id', type: 'uuid', nullable: true })
   planId: string | null;
 
+  /** End of the free trial granted at registration. Null once the user converts. */
+  @Column({ name: 'trial_ends_at', type: 'timestamptz', nullable: true })
+  trialEndsAt: Date | null;
+
+  /**
+   * Pay-as-you-go balance in tokens. Spent only after the monthly plan
+   * allowance is used up; never expires.
+   */
+  @Column({ name: 'token_balance', type: 'bigint', default: 0 })
+  tokenBalance: number;
+
   // Şifre sıfırlama için token ve sona erme zamanı
   @Column({ name: 'reset_password_token', type: 'varchar', nullable: true })
   resetPasswordToken: string | null;

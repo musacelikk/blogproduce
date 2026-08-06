@@ -6,6 +6,7 @@ import {
   BLOG_CONTENT_SCHEMA_NAME,
   GeneratedBlogContent,
 } from './blog-content.schema';
+import { ModelTier, TIER_DEFINITIONS, normalizeTier } from '../billing/model-tiers';
 import {
   BlogPromptInput,
   buildDraftPrompt,
@@ -55,32 +56,26 @@ export class BlogGeneratorService {
   ) {}
 
   /**
-   * Map pricing tiers to concrete models.
-   * ucuz/standard → gpt-4.1-mini · orta/pro → gpt-4.1 · pahalı/premium → claude-opus-5
-   * Explicit model ids pass through unchanged.
+   * Resolve a tier name (or an explicit model id) to the model we will call.
+   * Tier → model mapping lives in billing/model-tiers so pricing, quota and
+   * generation can never disagree about what "premium" means.
    */
   resolveModel(modelOrTier?: string): string {
-    const fallback = this.configService.get<string>('OPENAI_MODEL') || 'gpt-4.1-mini';
+    const fallback =
+      this.configService.get<string>('OPENAI_MODEL') || TIER_DEFINITIONS[ModelTier.STANDARD].model;
     if (!modelOrTier) return fallback;
 
-    const normalized = modelOrTier.trim().toLowerCase();
-    let resolved: string;
-    if (['ucuz', 'cheap', 'standard', 'basic'].includes(normalized)) {
-      resolved = 'gpt-4.1-mini';
-    } else if (['orta', 'medium', 'pro'].includes(normalized)) {
-      resolved = 'gpt-4.1';
-    } else if (['pahali', 'pahalı', 'expensive', 'premium'].includes(normalized)) {
-      resolved = 'claude-opus-5';
-    } else {
-      resolved = modelOrTier;
-    }
+    const tier = normalizeTier(modelOrTier);
+    const resolved = tier ? TIER_DEFINITIONS[tier].model : modelOrTier;
 
     // Degrade gracefully when the resolved provider has no API key configured.
     const provider = this.llm.providerFor(resolved);
     if (!this.llm.isProviderAvailable(provider)) {
-      const substitute = provider === 'anthropic' ? 'gpt-4.1' : 'claude-opus-5';
-      const substituteProvider = this.llm.providerFor(substitute);
-      if (this.llm.isProviderAvailable(substituteProvider)) {
+      const substitute =
+        provider === 'anthropic'
+          ? TIER_DEFINITIONS[ModelTier.STANDARD].model
+          : TIER_DEFINITIONS[ModelTier.PRO].model;
+      if (this.llm.isProviderAvailable(this.llm.providerFor(substitute))) {
         this.logger.warn(`Provider for ${resolved} not configured; substituting ${substitute}`);
         return substitute;
       }
@@ -95,7 +90,7 @@ export class BlogGeneratorService {
 
     // Pipeline depth: cheap tier gets outline+draft; pro/premium adds the editor pass.
     const multiStage = (this.configService.get<string>('AI_PIPELINE_MODE') || 'multi') !== 'single';
-    const isPremiumish = model !== 'gpt-4.1-mini';
+    const isPremiumish = model !== TIER_DEFINITIONS[ModelTier.STANDARD].model;
 
     // ── Stage 1: outline (fast model; non-fatal on failure) ─────────────────
     let outlineJson: string | null = null;

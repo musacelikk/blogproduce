@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SectionHeading } from '@/components/sections/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 /* ─── Showcase: mockup ile büyük bölümler ─── */
 const showcases = [
@@ -117,19 +119,19 @@ function Section({ showcase }: { showcase: typeof showcases[0] }) {
       }`}
     >
       {/* Text */}
-      <motion.div variants={fadeUp} className="flex flex-col gap-5">
-        <Badge className="w-fit uppercase tracking-wide">{showcase.tag}</Badge>
-        <h2 className="text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-3xl lg:text-4xl">
+      <motion.div variants={fadeUp} className="flex flex-col">
+        <p className="text-eyebrow">{showcase.tag}</p>
+        <h2 className="mt-3 text-balance text-display-md text-foreground-strong">
           {showcase.title}
         </h2>
-        <p className="text-base leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
           {showcase.description}
         </p>
-        <ul className="mt-1 flex flex-col gap-2.5">
+        <ul className="mt-6 flex flex-col gap-3">
           {showcase.bullets.map((b) => (
-            <li key={b} className="flex items-center gap-2.5 text-sm">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary">
-                <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+            <li key={b} className="flex items-center gap-3 text-sm">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+                <Check className="h-3 w-3" strokeWidth={3} />
               </span>
               <span className="font-medium text-foreground">{b}</span>
             </li>
@@ -139,7 +141,7 @@ function Section({ showcase }: { showcase: typeof showcases[0] }) {
 
       {/* Mockup */}
       <motion.div variants={fadeUp}>
-        <div className="overflow-hidden rounded-xl border border-border bg-secondary shadow-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface-sunken shadow-elevated">
           <Image
             src={showcase.image}
             alt={showcase.title}
@@ -167,16 +169,14 @@ function ExtrasGrid() {
       {extras.map((item) => {
         const Icon = item.icon;
         return (
-          <motion.div
-            key={item.title}
-            variants={fadeUp}
-            className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent">
-              <Icon className="h-5 w-5 text-accent-foreground" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground">{item.title}</h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
+          <motion.div key={item.title} variants={fadeUp}>
+            <Card className="h-full p-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Icon className="h-5 w-5" />
+              </span>
+              <h3 className="mt-5 text-base font-semibold text-foreground-strong">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
+            </Card>
           </motion.div>
         );
       })}
@@ -190,133 +190,139 @@ export default function SolutionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full pb-16 pt-32 sm:pb-24 sm:pt-40">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main className="w-full">
 
-          {/* ── Hero ── */}
-          <motion.div
-            ref={heroRef}
-            initial="hidden"
-            animate={heroInView ? 'visible' : 'hidden'}
-            variants={stagger}
-            className="mb-16 text-center sm:mb-24"
-          >
-            <motion.div variants={fadeUp}>
-              <Badge className="mb-6 uppercase tracking-wide">
-                <Sparkles className="h-3.5 w-3.5" />
-                Çözümlerimiz
-              </Badge>
-            </motion.div>
-            <motion.h1
-              variants={fadeUp}
-              className="mx-auto mb-6 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl lg:text-6xl"
+        {/* ── Hero ── */}
+        <section className="border-b border-border pb-20 pt-32 sm:pb-28 sm:pt-40">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              ref={heroRef}
+              initial="hidden"
+              animate={heroInView ? 'visible' : 'hidden'}
+              variants={stagger}
+              className="mx-auto max-w-3xl text-center"
             >
-              İçerik üretiminin <span className="text-primary">her adımı</span> burada
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              className="mx-auto mb-10 max-w-2xl text-base text-muted-foreground sm:text-lg"
-            >
-              AI ile üret, panelinizden yönet, API ile yayınla. Baştan sona entegre bir içerik altyapısı.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/register">
-                  Ücretsiz Başla
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/pricing">Fiyatları Gör</Link>
-              </Button>
-            </motion.div>
-          </motion.div>
-
-          {/* ── Stats strip ── */}
-          <motion.dl
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-16 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card sm:mb-24 md:grid-cols-4"
-          >
-            {[
-              { val: '50+', label: 'Dil Desteği' },
-              { val: 'GPT-4o', label: 'AI Modeli' },
-              { val: 'REST', label: 'API Entegrasyonu' },
-              { val: '%100', label: 'SEO Uyumlu' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center justify-center bg-card px-4 py-6 text-center"
+              <motion.div variants={fadeUp}>
+                <Badge className="mb-6 uppercase tracking-[0.08em]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Çözümlerimiz
+                </Badge>
+              </motion.div>
+              <motion.h1
+                variants={fadeUp}
+                className="text-balance text-display-xl text-foreground-strong"
               >
-                <dt className="text-2xl font-semibold tracking-tight text-primary md:text-3xl">
-                  {stat.val}
-                </dt>
-                <dd className="mt-1 text-xs font-medium text-muted-foreground">{stat.label}</dd>
-              </div>
-            ))}
-          </motion.dl>
+                İçerik üretiminin <span className="text-primary">her adımı</span> burada
+              </motion.h1>
+              <motion.p
+                variants={fadeUp}
+                className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground"
+              >
+                AI ile üretin, panelden yönetin, API ile yayınlayın — baştan sona entegre bir içerik
+                altyapısı.
+              </motion.p>
+              <motion.div
+                variants={fadeUp}
+                className="mt-10 flex flex-col justify-center gap-3 sm:flex-row"
+              >
+                <Button asChild size="xl">
+                  <Link href="/register">
+                    Ücretsiz Başla
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="xl">
+                  <Link href="/pricing">Fiyatları Gör</Link>
+                </Button>
+              </motion.div>
+            </motion.div>
 
-          {/* ── Showcase sections ── */}
-          <div className="mb-16 flex flex-col gap-20 sm:mb-24 md:gap-28">
-            {showcases.map((s) => (
-              <Section key={s.tag} showcase={s} />
-            ))}
+            {/* ── Güven şeridi ── */}
+            <motion.dl
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card sm:mt-20 md:grid-cols-4"
+            >
+              {[
+                { val: '50+', label: 'Dil desteği' },
+                { val: 'GPT-4o', label: 'AI modeli' },
+                { val: 'REST', label: 'API entegrasyonu' },
+                { val: '%100', label: 'SEO uyumlu' },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex flex-col items-center justify-center bg-card px-4 py-7 text-center"
+                >
+                  <dt className="text-2xl font-semibold tracking-tight tabular-nums text-primary md:text-3xl">
+                    {stat.val}
+                  </dt>
+                  <dd className="mt-1.5 text-sm text-muted-foreground">{stat.label}</dd>
+                </div>
+              ))}
+            </motion.dl>
           </div>
+        </section>
 
-          {/* ── Section title ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="mb-10 text-center"
-          >
-            <h2 className="mb-3 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-              Ve daha fazlası
-            </h2>
-            <p className="mx-auto max-w-xl text-sm text-muted-foreground md:text-base">
-              Her iş akışına uyum sağlayan esnek özellik seti.
-            </p>
-          </motion.div>
-
-          {/* ── Extras grid ── */}
-          <div className="mb-16 sm:mb-24">
-            <ExtrasGrid />
-          </div>
-
-          {/* ── CTA ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.55 }}
-            className="rounded-xl border border-border bg-accent p-8 text-center shadow-card md:p-16"
-          >
-            <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-accent-foreground">
-              Hemen başlayın
-            </p>
-            <h2 className="mx-auto mb-4 max-w-xl text-2xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
-              AI ile içerik üretiminde yeni bir çağ
-            </h2>
-            <p className="mx-auto mb-8 max-w-lg text-sm text-muted-foreground md:text-base">
-              Ücretsiz hesap oluştur, ilk blogunu dakikalar içinde yayınla.
-            </p>
-            <div className="flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/register">
-                  Ücretsiz Dene
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/docs">API Dökümanı</Link>
-              </Button>
+        {/* ── Showcase bölümleri ── */}
+        <section className="border-b border-border bg-card py-20 sm:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-20 md:gap-28">
+              {showcases.map((s) => (
+                <Section key={s.tag} showcase={s} />
+              ))}
             </div>
-          </motion.div>
+          </div>
+        </section>
 
-        </div>
+        {/* ── Ek özellikler ── */}
+        <section className="py-20 sm:py-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+              align="center"
+              eyebrow="Ve daha fazlası"
+              title="Her iş akışına uyum sağlayan esnek özellik seti"
+            />
+            <div className="mt-14">
+              <ExtrasGrid />
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="pb-20 sm:pb-28">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.55 }}
+            >
+              <Card variant="emphasis" className="p-10 text-center md:p-16">
+                <p className="text-eyebrow">Hemen başlayın</p>
+                <h2 className="mx-auto mt-3 max-w-xl text-balance text-display-md text-foreground-strong">
+                  AI ile içerik üretiminde yeni bir çağ
+                </h2>
+                <p className="mx-auto mt-4 max-w-lg leading-relaxed text-muted-foreground">
+                  Ücretsiz hesap oluşturun, ilk blogunuzu dakikalar içinde yayınlayın.
+                </p>
+                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                  <Button asChild size="xl">
+                    <Link href="/register">
+                      Ücretsiz Dene
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="xl">
+                    <Link href="/docs">API Dokümantasyonu</Link>
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        </section>
+
       </main>
     </div>
   );

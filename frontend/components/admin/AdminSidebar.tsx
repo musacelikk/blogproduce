@@ -21,6 +21,7 @@ import {
   Mail,
   Bell,
   Receipt,
+  Calculator,
   Home,
   MousePointerClick,
   UserCog,
@@ -56,6 +57,7 @@ const sidebarGroups: { label: string; items: { name: string; href: string; icon:
     items: [
       { name: 'Planlar', href: '/admin/plans', icon: CreditCard },
       { name: 'Satışlar', href: '/admin/sales', icon: Receipt },
+      { name: 'Maliyet Analizi', href: '/admin/costs', icon: Calculator },
     ],
   },
   {
@@ -88,14 +90,14 @@ export function AdminSidebar() {
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         aria-label={isMobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
-        className="fixed left-4 top-4 z-50 rounded-lg border border-border bg-card p-2 text-foreground shadow-card transition-colors hover:bg-secondary lg:hidden"
+        className="fixed left-4 top-4 z-50 rounded-lg border border-border bg-card p-2 text-foreground shadow-card transition-colors duration-fast ease-out-quart hover:bg-secondary lg:hidden"
       >
         {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Sidebar */}
       <aside
-        className={`fixed bottom-0 left-0 top-16 z-40 flex flex-col border-r border-border bg-card transition-all duration-300 ${
+        className={`fixed bottom-0 left-0 top-16 z-40 flex flex-col border-r border-border bg-card transition-[width,transform] duration-slow ease-out-quart ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${isCollapsed ? 'w-64 lg:w-20' : 'w-64 lg:w-64'}`}
       >
@@ -107,7 +109,7 @@ export function AdminSidebar() {
             </div>
             {!isCollapsed && (
               <div className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-foreground">
+                <span className="block truncate text-sm font-semibold text-foreground-strong">
                   Admin Panel
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">BlogProduce</span>
@@ -117,7 +119,7 @@ export function AdminSidebar() {
           {/* Toggle - Desktop */}
           <button
             onClick={toggleSidebar}
-            className="absolute -right-3 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-card transition-colors hover:bg-accent hover:text-accent-foreground lg:flex"
+            className="absolute -right-3 top-1/2 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-card transition-colors duration-fast ease-out-quart hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:flex"
             aria-label={isCollapsed ? 'Menüyü aç' : 'Menüyü daralt'}
           >
             {isCollapsed ? (
@@ -129,13 +131,13 @@ export function AdminSidebar() {
         </div>
 
         {/* Menu Items - gruplu */}
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-3">
           {sidebarGroups.map((group) => (
             <div key={group.label} className="space-y-1">
-              {!isCollapsed && (
-                <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {group.label}
-                </p>
+              {isCollapsed ? (
+                <div className="mx-auto hidden h-px w-6 bg-border lg:block" aria-hidden />
+              ) : (
+                <p className="text-eyebrow px-3 pb-1 text-muted-foreground">{group.label}</p>
               )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {
@@ -146,15 +148,18 @@ export function AdminSidebar() {
                       key={item.href}
                       href={item.href}
                       onClick={() => setIsMobileOpen(false)}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors ${
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition-colors duration-fast ease-out-quart ${
                         isActive
-                          ? 'bg-accent font-medium text-accent-foreground'
+                          ? 'bg-accent font-medium text-accent-foreground before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[3px] before:-translate-y-1/2 before:rounded-r-full before:bg-primary before:content-[""]'
                           : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                       } ${isCollapsed ? 'lg:justify-center lg:px-2' : ''}`}
                       title={isCollapsed ? item.name : undefined}
                     >
                       <Icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="truncate text-sm font-medium">{item.name}</span>}
+                      {!isCollapsed && (
+                        <span className="truncate text-sm font-medium">{item.name}</span>
+                      )}
                     </Link>
                   );
                 })}
@@ -167,13 +172,13 @@ export function AdminSidebar() {
         <div className="flex-shrink-0 border-t border-border p-3">
           <button
             onClick={handleLogout}
-            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${
+            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors duration-fast ease-out-quart hover:bg-[var(--destructive-muted)] hover:text-destructive ${
               isCollapsed ? 'lg:justify-center lg:px-2' : ''
             }`}
             title={isCollapsed ? 'Çıkış Yap' : undefined}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium">Çıkış Yap</span>}
+            {!isCollapsed && <span>Çıkış Yap</span>}
           </button>
         </div>
       </aside>
@@ -181,7 +186,7 @@ export function AdminSidebar() {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-foreground/20 lg:hidden"
+          className="fixed inset-0 z-30 bg-foreground/40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}

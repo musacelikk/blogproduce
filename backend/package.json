@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "create-admin": "ts-node -r tsconfig-paths/register scripts/create-admin.ts",
     "worker": "ts-node -r tsconfig-paths/register src/worker/worker.main.ts",
-    "worker:prod": "node dist/worker/worker.main.js"
+    "worker:prod": "node dist/worker/worker.main.js",
+    "seed:catalog": "ts-node -r tsconfig-paths/register scripts/seed-catalog.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

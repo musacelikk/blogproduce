@@ -1,128 +1,194 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { ArrowRight, Lightbulb, ShieldCheck, Users, Compass, Target } from 'lucide-react';
+
+import { SectionHeading } from '@/components/sections/SectionHeading';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 const values = [
   {
+    icon: Lightbulb,
     title: 'İnovasyon',
     description:
-      "En gelişmiş AI teknolojilerini kullanarak, prompt'a göre özelleştirilebilir blog üretim API'si geliştiriyoruz.",
+      "En gelişmiş AI modellerini kullanarak, prompt'a göre özelleştirilebilir bir blog üretim API'si geliştiriyoruz.",
   },
   {
+    icon: ShieldCheck,
     title: 'Kalite',
     description:
-      'Ürettiğimiz her blog içeriğinde SEO optimizasyonu, okunabilirlik ve kalite standartlarını garanti ediyoruz.',
+      'Ürettiğimiz her içerikte SEO optimizasyonu, okunabilirlik ve tutarlı kalite standardını garanti ediyoruz.',
   },
   {
+    icon: Users,
     title: 'Kullanıcı Odaklılık',
     description:
-      'Web arayüzü ve RESTful API ile kullanıcı deneyimini sürekli iyileştirmek için çalışıyoruz.',
+      'Web arayüzü ve RESTful API tarafında deneyimi kullanıcı geri bildirimleriyle sürekli iyileştiriyoruz.',
   },
 ];
+
+const stats = [
+  { value: '2024', label: 'Kuruluş yılı' },
+  { value: '50+', label: 'Desteklenen dil' },
+  { value: '3B+', label: 'Günlük üretilen içerik' },
+  { value: '%99', label: 'SEO uyumluluk oranı' },
+];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.25, 1, 0.5, 1] as const } },
+};
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full px-4 pb-16 pt-32 sm:px-6 sm:pb-24 sm:pt-40 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-12 text-center sm:mb-16"
-          >
-            <h1 className="mb-6 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-              Hakkımızda
+      {/* ── Hero ── */}
+      <section className="border-b border-border pb-20 pt-32 sm:pb-28 sm:pt-40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="max-w-3xl">
+            <p className="text-eyebrow">Hakkımızda</p>
+            <h1 className="mt-3 text-balance text-display-xl text-foreground-strong">
+              İçerik üretimini geliştiricilerin hızına taşıyoruz
             </h1>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              BlogProduce, AI destekli blog içerik üretim uygulaması ve RESTful API&apos;si olarak,
-              içerik üreticileri ve geliştiricilerin hayatını kolaylaştırmayı hedefliyor.
-              Prompt&apos;a göre size özel, SEO optimizasyonlu blog içerikleri üretiyoruz.
+            <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
+              BlogProduce, AI destekli blog üretim uygulaması ve RESTful API&apos;si. Prompt&apos;a
+              göre size özel, SEO optimizasyonlu içerikleri dakikalar içinde üretiyoruz.
             </p>
+            <div className="mt-10 flex flex-wrap gap-3">
+              <Button asChild size="xl">
+                <Link href="/register">
+                  Ücretsiz Başla
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="xl">
+                <Link href="/contact">Bize Ulaşın</Link>
+              </Button>
+            </div>
           </motion.div>
+        </div>
 
-          <div className="mb-12 grid items-center gap-8 md:grid-cols-2 md:gap-12 lg:mb-16">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Misyonumuz
-              </h2>
-              <p className="mb-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-                BlogProduce olarak, içerik üreticileri ve geliştiricilerin blog üretim süreçlerini
-                hızlandırmayı hedefliyoruz. Prompt&apos;a göre size özel, SEO optimizasyonlu blog
-                içerikleri üreterek, zamanınızı tasarruf etmenizi ve daha fazla içerik
-                oluşturmanızı sağlıyoruz.
-              </p>
-              <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
-                En gelişmiş yapay zeka teknolojilerini kullanarak, web arayüzü veya RESTful API ile
-                entegre edilebilen, kaliteli ve SEO dostu blog içerikleri üretmeyi mümkün
-                kılıyoruz. Sitenizde, uygulamanızda veya otomasyon sistemlerinizde kullanılabilir.
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="rounded-xl border border-border bg-accent p-8 text-center shadow-card md:p-12"
-            >
-              <div className="mb-2 text-5xl font-semibold tracking-tight text-primary md:text-6xl">
-                2024
+        <div className="mx-auto mt-16 max-w-7xl px-4 sm:mt-20 sm:px-6 lg:px-8">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card md:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-card px-6 py-7">
+                <dt className="text-2xl font-semibold tracking-tight tabular-nums text-primary md:text-3xl">
+                  {stat.value}
+                </dt>
+                <dd className="mt-1.5 text-sm text-muted-foreground">{stat.label}</dd>
               </div>
-              <p className="text-lg text-muted-foreground">Kuruluş Yılı</p>
-            </motion.div>
-          </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
-          <div className="grid items-center gap-8 md:grid-cols-2 md:gap-12">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="rounded-xl border border-border bg-card p-6 shadow-card md:p-12"
-            >
-              <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Vizyonumuz
-              </h2>
-              <p className="mb-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-                Gelecekte, blog içerik üretim süreçlerinde AI destekli API&apos;lerin vazgeçilmez
-                bir araç haline gelmesini öngörüyoruz. Her geliştirici ve içerik üreticisi, kendi
-                sistemlerine entegre edebileceği güçlü blog üretim API&apos;lerine ihtiyaç duyacak.
+      {/* ── Misyon & Vizyon ── */}
+      <section className="border-b border-border bg-card py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Neden buradayız"
+            title="Misyonumuz ve vizyonumuz"
+            description="Her ekibin kendi sistemine gömebileceği, güvenilir bir içerik altyapısı kurmak istiyoruz."
+          />
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            variants={fadeUp}
+            className="mt-16 grid gap-12 md:grid-cols-2 md:gap-16"
+          >
+            <div className="md:border-r md:border-border md:pr-16">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Target className="h-5 w-5" />
+              </span>
+              <h3 className="mt-6 text-display-md text-foreground-strong">Misyonumuz</h3>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                İçerik üreticileri ve geliştiricilerin blog üretim süreçlerini hızlandırmak.
+                Prompt&apos;a göre size özel, SEO optimizasyonlu içerikler üreterek zamandan tasarruf
+                etmenizi ve daha fazla yayın yapmanızı sağlıyoruz.
               </p>
-              <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
-                Bu vizyon doğrultusunda, sürekli gelişen AI teknolojimiz ve kullanıcı odaklı
-                yaklaşımımızla, blog üretim API&apos;si sektöründe lider konumda olmayı
-                hedefliyoruz. Prompt&apos;a göre özelleştirilebilir, SEO optimizasyonlu ve entegre
-                edilebilir çözümler sunmaya devam edeceğiz.
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Üretilen içerik web arayüzünden yönetilebilir, RESTful API ile sitenize,
+                uygulamanıza veya otomasyon sistemlerinize doğrudan entegre edilebilir.
               </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <h2 className="mb-6 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                Değerlerimiz
-              </h2>
-              <ul className="space-y-6">
-                {values.map((value) => (
-                  <li key={value.title} className="flex items-start gap-4">
-                    <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary">
-                      <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                    </span>
-                    <div>
-                      <h3 className="mb-1 font-semibold text-foreground">{value.title}</h3>
-                      <p className="leading-relaxed text-muted-foreground">{value.description}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+            </div>
+
+            <div>
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Compass className="h-5 w-5" />
+              </span>
+              <h3 className="mt-6 text-display-md text-foreground-strong">Vizyonumuz</h3>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Blog üretim süreçlerinde AI destekli API&apos;lerin vazgeçilmez bir araç haline
+                geleceğini öngörüyoruz. Her geliştirici, kendi sistemine entegre edebileceği güçlü
+                bir üretim katmanına ihtiyaç duyacak.
+              </p>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Bu doğrultuda, sürekli gelişen AI teknolojimiz ve kullanıcı odaklı yaklaşımımızla
+                özelleştirilebilir, SEO optimizasyonlu ve entegre edilebilir çözümler sunmaya devam
+                edeceğiz.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Değerler ── */}
+      <section className="py-20 sm:py-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            align="center"
+            eyebrow="Değerlerimiz"
+            title="Her kararımızın arkasındaki üç ilke"
+          />
+
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {values.map((value) => {
+              const Icon = value.icon;
+              return (
+                <Card key={value.title} className="p-8">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-6 text-lg font-semibold text-foreground-strong">
+                    {value.title}
+                  </h3>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">{value.description}</p>
+                </Card>
+              );
+            })}
           </div>
         </div>
-      </main>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="pb-20 sm:pb-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Card variant="emphasis" className="p-10 text-center md:p-16">
+            <p className="text-eyebrow">Hemen başlayın</p>
+            <h2 className="mx-auto mt-3 max-w-2xl text-balance text-display-md text-foreground-strong">
+              İlk blogunuzu bugün yayınlayın
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg leading-relaxed text-muted-foreground">
+              Ücretsiz hesap oluşturun, kredi kartı gerekmeden deneyin.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button asChild size="xl">
+                <Link href="/register">
+                  Ücretsiz Başla
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="xl">
+                <Link href="/docs">API Dokümantasyonu</Link>
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }

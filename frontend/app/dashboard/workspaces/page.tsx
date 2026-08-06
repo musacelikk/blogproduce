@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton, CardSkeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, type Workspace } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -159,20 +159,21 @@ export default function WorkspacesPage() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Available colors for workspace
+  // Available colors for workspace. Stored `value`s are unchanged — only the rendered
+  // swatch is expressed through design tokens so workspaces stay on-palette.
   const workspaceColors = [
-    { value: 'blue', label: 'Mavi', class: 'bg-gradient-to-br from-blue-500 to-blue-600' },
-    { value: 'purple', label: 'Mor', class: 'bg-gradient-to-br from-purple-500 to-purple-600' },
-    { value: 'pink', label: 'Pembe', class: 'bg-gradient-to-br from-pink-500 to-pink-600' },
-    { value: 'indigo', label: 'İndigo', class: 'bg-gradient-to-br from-indigo-500 to-indigo-600' },
-    { value: 'green', label: 'Yeşil', class: 'bg-gradient-to-br from-green-500 to-green-600' },
-    { value: 'yellow', label: 'Sarı', class: 'bg-gradient-to-br from-yellow-500 to-yellow-600' },
-    { value: 'red', label: 'Kırmızı', class: 'bg-gradient-to-br from-red-500 to-red-600' },
-    { value: 'teal', label: 'Teal', class: 'bg-gradient-to-br from-teal-500 to-teal-600' },
-    { value: 'orange', label: 'Turuncu', class: 'bg-gradient-to-br from-orange-500 to-orange-600' },
-    { value: 'cyan', label: 'Cyan', class: 'bg-gradient-to-br from-cyan-500 to-cyan-600' },
-    { value: 'gray', label: 'Gri', class: 'bg-gradient-to-br from-gray-500 to-gray-600' },
-    { value: 'black', label: 'Siyah', class: 'bg-gradient-to-br from-black to-black' },
+    { value: 'blue', label: 'Mavi', class: 'bg-gradient-to-br from-chart-1 to-chart-1-soft' },
+    { value: 'purple', label: 'Mor', class: 'bg-gradient-to-br from-chart-4 to-chart-4-soft' },
+    { value: 'pink', label: 'Pembe', class: 'bg-gradient-to-br from-chart-4-soft to-destructive' },
+    { value: 'indigo', label: 'İndigo', class: 'bg-gradient-to-br from-chart-1-soft to-chart-4' },
+    { value: 'green', label: 'Yeşil', class: 'bg-gradient-to-br from-chart-2 to-chart-2-soft' },
+    { value: 'yellow', label: 'Sarı', class: 'bg-gradient-to-br from-chart-3 to-chart-3-soft' },
+    { value: 'red', label: 'Kırmızı', class: 'bg-gradient-to-br from-destructive to-chart-3' },
+    { value: 'teal', label: 'Teal', class: 'bg-gradient-to-br from-chart-2-soft to-brand-secondary' },
+    { value: 'orange', label: 'Turuncu', class: 'bg-gradient-to-br from-warning to-chart-3-soft' },
+    { value: 'cyan', label: 'Cyan', class: 'bg-gradient-to-br from-brand-secondary to-chart-5-soft' },
+    { value: 'gray', label: 'Gri', class: 'bg-gradient-to-br from-muted-foreground to-border' },
+    { value: 'black', label: 'Siyah', class: 'bg-gradient-to-br from-foreground-strong to-foreground' },
   ];
 
   // Generate avatar color based on workspace name or saved color
@@ -194,15 +195,39 @@ export default function WorkspacesPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+      <div className="space-y-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <Skeleton className="h-10 w-40 rounded-lg" />
+          </div>
         </div>
-        <Skeleton className="h-16 w-full rounded-xl" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Skeleton mirrors the workspace card: avatar, name, id row, action pair. */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
-            <CardSkeleton key={i} />
+            <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-card">
+              <div className="flex flex-col items-center">
+                <Skeleton className="mb-3 h-20 w-20 rounded-full" />
+                <Skeleton className="mb-2 h-5 w-32" />
+                <Skeleton className="h-4 w-44" />
+              </div>
+              <div className="mt-4 flex flex-col items-center gap-1.5">
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex gap-2">
+                  <Skeleton className="h-9 flex-1 rounded-lg" />
+                  <Skeleton className="h-9 flex-1 rounded-lg" />
+                </div>
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -210,8 +235,9 @@ export default function WorkspacesPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
+        eyebrow="İçerik"
         title="Workspace&apos;ler"
         description="İçeriklerinizi projelere göre düzenleyin"
         actions={
@@ -555,16 +581,13 @@ export default function WorkspacesPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {workspaces.map((workspace) => {
             const initials = getInitials(workspace.name);
             const avatarColor = generateAvatarColor(workspace);
 
             return (
-            <Card
-              key={workspace.id}
-              className="group relative p-5 shadow-card transition-shadow hover:shadow-card-hover"
-            >
+            <Card key={workspace.id} variant="interactive" className="group relative p-5">
               <div className="absolute right-3 top-3 z-10">
                 <Button
                   variant="ghost"
@@ -590,7 +613,7 @@ export default function WorkspacesPage() {
                     {initials}
                   </span>
                 </div>
-                <h3 className="mb-1 text-lg font-semibold text-foreground">
+                <h3 className="mb-1 text-lg font-semibold text-foreground-strong">
                   {workspace.name}
                 </h3>
                 {workspace.description && (

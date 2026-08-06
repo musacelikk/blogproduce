@@ -14,8 +14,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, Loader2, Download, Copy, Check, AlertCircle, Briefcase, Users, PartyPopper, BookOpen, Settings, Sparkles as SparklesIcon, Book, Search, Rocket, Zap, Gem, RefreshCw, ExternalLink, X } from 'lucide-react';
-import { generatePost, getPost, getWorkspaces, createWorkspace, searchUnsplashPhotos, triggerUnsplashDownload, type UnsplashPhoto } from '@/lib/api';
+import { Sparkles, Loader2, Download, Copy, Check, AlertCircle, Briefcase, Users, PartyPopper, BookOpen, Settings, Sparkles as SparklesIcon, Book, Search, Rocket, Zap, Gem, RefreshCw, ExternalLink, X, Lock, ArrowUpRight, Coins } from 'lucide-react';
+import Link from 'next/link';
+import {
+  generatePost,
+  getPost,
+  getWorkspaces,
+  createWorkspace,
+  searchUnsplashPhotos,
+  triggerUnsplashDownload,
+  getEntitlement,
+  getModelTiers,
+  type UnsplashPhoto,
+  type Entitlement,
+  type TierInfo,
+  type ModelTier,
+} from '@/lib/api';
 import { trackBlogGeneration, trackFormSubmit, trackButtonClick, trackCustomEvent } from '@/lib/analytics';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -34,6 +48,48 @@ const WORKSPACE_COLORS = [
   { value: 'gray',   class: 'bg-muted-foreground' },
   { value: 'black',  class: 'bg-foreground' },
 ];
+
+/** Kalite seviyeleri her zaman bu sırayla gösterilir — plan dışı olanlar da dahil. */
+const TIER_ORDER: ModelTier[] = ['standard', 'pro', 'premium'];
+
+/** Görsel kimlik + API erişilemezse kullanılacak yedek metinler. */
+const TIER_META: Record<ModelTier, { label: string; description: string; Icon: typeof Rocket }> = {
+  standard: {
+    label: 'Standart',
+    description: 'Günlük içerik ve yüksek hacimli üretim için hızlı ve ekonomik.',
+    Icon: Rocket,
+  },
+  pro: {
+    label: 'Pro',
+    description: 'SEO odaklı bloglar için daha derin akıl yürütme ve akıcı dil.',
+    Icon: Zap,
+  },
+  premium: {
+    label: 'Premium',
+    description: 'Rehber ve pillar içerikler için en yüksek kalite.',
+    Icon: Gem,
+  },
+};
+
+/** Bir blog için kabaca harcanan token — seviye başına yaklaşık değer. */
+const TIER_TOKEN_ESTIMATE: Record<ModelTier, number> = {
+  standard: 6000,
+  pro: 12000,
+  premium: 20000,
+};
+
+/** Uzunluk seçimi tahmini token maliyetini ölçekler. */
+const LENGTH_TOKEN_FACTOR: Record<string, number> = {
+  kısa: 0.6,
+  orta: 1,
+  uzun: 1.6,
+};
+
+/** Seçili seviye ve uzunluk için yuvarlanmış token tahmini. */
+function estimateTokens(tier: ModelTier, contentLength?: string): number {
+  const factor = LENGTH_TOKEN_FACTOR[contentLength || 'orta'] ?? 1;
+  return Math.round((TIER_TOKEN_ESTIMATE[tier] * factor) / 500) * 500;
+}
 
 /** Consistent form field label used across this screen. */
 function FieldLabel({
@@ -82,7 +138,7 @@ const blogSchema = z.object({
   contentLength: z.enum(['kısa', 'orta', 'uzun']).optional(),
   seoMode: z.boolean().optional(),
   language: z.enum(['tr', 'en']).optional(),
-  model: z.enum(['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.1']).optional(),
+  model: z.enum(['standard', 'pro', 'premium']).optional(),
 });
 
 type BlogFormData = z.infer<typeof blogSchema>;
@@ -112,6 +168,9 @@ function GenerateBlogPageContent() {
   const [isSearchingImages, setIsSearchingImages] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [postFormat, setPostFormat] = useState<string>('md'); // Track post format for preview
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  const [tierInfos, setTierInfos] = useState<TierInfo[]>([]);
+  const [isEntitlementLoading, setIsEntitlementLoading] = useState(true);
 
   const {
     register,
@@ -126,9 +185,34 @@ function GenerateBlogPageContent() {
       contentLength: 'orta',
       seoMode: false,
       language: 'tr',
-      model: 'gpt-4.1-mini', // Default to medium tier
+      model: 'standard', // Entitlement yüklenince defaultTier ile güncellenir
     },
   });
+
+  // Kalite seviyeleri ve plan hakları
+  useEffect(() => {
+    let cancelled = false;
+    const loadEntitlement = async () => {
+      try {
+        const [ent, tiers] = await Promise.all([getEntitlement(), getModelTiers()]);
+        if (cancelled) return;
+        setEntitlement(ent);
+        setTierInfos(tiers);
+        if (ent?.defaultTier) {
+          setValue('model', ent.defaultTier);
+        }
+      } catch (err) {
+        console.error('Failed to load entitlement:', err);
+      } finally {
+        if (!cancelled) setIsEntitlementLoading(false);
+      }
+    };
+    loadEntitlement();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load workspaces on mount
   useEffect(() => {
@@ -294,7 +378,14 @@ function GenerateBlogPageContent() {
         })(),
         length: lengthMap[data.contentLength || 'orta'] || 'medium',
         seoMode: data.seoMode || false,
-        model: data.model || 'gpt-4.1-mini',
+        model: (() => {
+          // Kullanıcının seçtiği kalite seviyesi; plan dışıysa plana geri düş.
+          const requested = data.model || entitlement?.defaultTier || 'standard';
+          if (!entitlement) return requested;
+          return entitlement.allowedTiers.includes(requested)
+            ? requested
+            : entitlement.defaultTier;
+        })(),
         // Only include optional fields if they have values
         ...(data.additionalContext && data.additionalContext.trim() && { additionalContext: data.additionalContext }),
         ...(targetAudienceTags.length > 0 && { targetAudience: targetAudienceTags.join(', ') }),
@@ -470,6 +561,18 @@ function GenerateBlogPageContent() {
     
     return html;
   };
+
+  // ── Kalite seviyesi + token bakiyesi ────────────────────────────────────
+  const allowedTiers = entitlement?.allowedTiers ?? TIER_ORDER;
+  const requestedTier = (watch('model') || entitlement?.defaultTier || 'standard') as ModelTier;
+  // Plan dışı bir seviye seçili kalmışsa plana geri düş.
+  const selectedTier = allowedTiers.includes(requestedTier)
+    ? requestedTier
+    : entitlement?.defaultTier || allowedTiers[0] || 'standard';
+  const estimatedCost = estimateTokens(selectedTier, watch('contentLength'));
+  const isPlanExpired = entitlement?.isExpired ?? false;
+  const hasEnoughTokens = entitlement ? entitlement.totalTokensRemaining >= estimatedCost : true;
+  const isBlockedByPlan = isPlanExpired || !hasEnoughTokens;
 
   return (
     <div className="space-y-6">
@@ -845,80 +948,109 @@ function GenerateBlogPageContent() {
                 </div>
               </div>
 
-              {/* Model seviyesi */}
+              {/* Kalite seviyesi */}
               <div>
-                <FieldLabel>Model Seviyesi</FieldLabel>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {[
-                    {
-                      value: 'gpt-4o-mini',
-                      Icon: Rocket,
-                      title: 'Ucuz',
-                      subtitle: 'gpt-4o-mini',
-                      price: '$0.15 / $0.60',
-                      description: 'Yüksek hacim içerik',
-                      useCases: 'Kategori açıklaması, kısa blog, ürün metni',
-                    },
-                    {
-                      value: 'gpt-4.1-mini',
-                      Icon: Zap,
-                      title: 'Orta',
-                      subtitle: 'gpt-4.1-mini',
-                      price: '$0.40 / $1.60',
-                      description: 'Default SEO blog',
-                      useCases: 'SEO kaliteli blog (önerilen)',
-                      recommended: true,
-                    },
-                    {
-                      value: 'gpt-4.1',
-                      Icon: Gem,
-                      title: 'Pahalı',
-                      subtitle: 'gpt-4.1',
-                      price: '$2.00 / $8.00',
-                      description: 'Premium/Pillar content',
-                      useCases: 'Ana sayfa rehber, pillar content',
-                    },
-                  ].map((model) => {
-                    const selectedModel = watch('model') || 'gpt-4.1-mini';
-                    const isSelected = selectedModel === model.value;
-                    const IconComponent = model.Icon;
-                    return (
-                      <label
-                        key={model.value}
-                        className={`relative cursor-pointer rounded-xl border p-4 transition-colors ${
-                          isSelected
-                            ? 'border-primary bg-accent'
-                            : 'border-border bg-card hover:border-primary/40 hover:bg-secondary'
-                        }`}
-                      >
-                        <input type="radio" value={model.value} {...register('model')} className="sr-only" />
-                        <div className="flex items-start justify-between gap-2">
-                          <span
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                              isSelected
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary text-muted-foreground'
+                <FieldLabel hint="(Yazının üretileceği model kalitesi)">Kalite Seviyesi</FieldLabel>
+                {isEntitlementLoading ? (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {TIER_ORDER.map((tier) => (
+                      <Skeleton key={tier} className="h-36 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {TIER_ORDER.map((tier) => {
+                      const meta = TIER_META[tier];
+                      const info = tierInfos.find((t) => t.tier === tier);
+                      const label = info?.label || meta.label;
+                      const description = info?.description || meta.description;
+                      const TierIcon = meta.Icon;
+                      const isAllowed = allowedTiers.includes(tier);
+                      const isSelected = isAllowed && selectedTier === tier;
+                      const isDefault = entitlement?.defaultTier === tier;
+                      const tierCost = estimateTokens(tier, watch('contentLength'));
+
+                      if (!isAllowed) {
+                        return (
+                          <div
+                            key={tier}
+                            aria-disabled="true"
+                            className="relative rounded-xl border border-border bg-surface-sunken p-4"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <TierIcon className="h-4 w-4" />
+                              </span>
+                              <Lock className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <p className="mt-3 text-sm font-semibold text-muted-foreground">{label}</p>
+                            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                              {description}
+                            </p>
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              ≈ {tierCost.toLocaleString('tr-TR')} token / blog
+                            </p>
+                            <Link
+                              href="/dashboard/plans"
+                              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent-foreground underline-offset-4 transition-colors duration-base ease-out-quart hover:underline"
+                            >
+                              Planınızı yükseltin
+                              <ArrowUpRight className="h-3 w-3" />
+                            </Link>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <label
+                          key={tier}
+                          className={`relative cursor-pointer rounded-xl border p-4 transition-[background-color,border-color] duration-base ease-out-quart ${
+                            isSelected
+                              ? 'border-primary bg-accent'
+                              : 'border-border bg-card hover:border-primary/40 hover:bg-secondary'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            value={tier}
+                            {...register('model')}
+                            className="sr-only"
+                          />
+                          <div className="flex items-start justify-between gap-2">
+                            <span
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary text-muted-foreground'
+                              }`}
+                            >
+                              <TierIcon className="h-4 w-4" />
+                            </span>
+                            {isDefault && !isSelected && (
+                              <Badge variant="outline" className="bg-card">
+                                Önerilen
+                              </Badge>
+                            )}
+                            {isSelected && <Check className="h-4 w-4 text-accent-foreground" />}
+                          </div>
+                          <p
+                            className={`mt-3 text-sm font-semibold ${
+                              isSelected ? 'text-accent-foreground' : 'text-foreground'
                             }`}
                           >
-                            <IconComponent className="h-4 w-4" />
-                          </span>
-                          {model.recommended && (
-                            <Badge variant="outline" className="bg-card">
-                              Önerilen
-                            </Badge>
-                          )}
-                          {isSelected && !model.recommended && (
-                            <Check className="h-4 w-4 text-accent-foreground" />
-                          )}
-                        </div>
-                        <p className="mt-3 text-sm font-semibold text-foreground">{model.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{model.description}</p>
-                        <p className="mt-2 font-mono text-[11px] text-muted-foreground">{model.subtitle}</p>
-                        <p className="text-[11px] text-muted-foreground">{model.price}</p>
-                      </label>
-                    );
-                  })}
-                </div>
+                            {label}
+                          </p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                            {description}
+                          </p>
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            ≈ {tierCost.toLocaleString('tr-TR')} token / blog
+                          </p>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* SEO */}
@@ -1046,9 +1178,24 @@ function GenerateBlogPageContent() {
               </div>
 
               <div>
+                {entitlement && (
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2">
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Coins className="h-3.5 w-3.5 text-accent-foreground" />
+                      Kalan: {entitlement.totalTokensRemaining.toLocaleString('tr-TR')} token · ≈
+                      {' '}
+                      {entitlement.estimatedArticlesRemaining.toLocaleString('tr-TR')} blog
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Bu üretim ≈ {estimatedCost.toLocaleString('tr-TR')} token
+                    </span>
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  disabled={isLoading || isPolling || !watch('workspaceId') || !watch('topic')}
+                  disabled={
+                    isLoading || isPolling || !watch('workspaceId') || !watch('topic') || isBlockedByPlan
+                  }
                   className="w-full"
                   onClick={(e) => {
                     console.log('Button clicked');
@@ -1080,11 +1227,28 @@ function GenerateBlogPageContent() {
                     </>
                   )}
                 </Button>
-                {(!watch('workspaceId') || !watch('topic')) && (
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    {!watch('workspaceId') && 'Workspace seçin • '}
-                    {!watch('topic') && 'Konu girin'}
-                  </p>
+                {isBlockedByPlan ? (
+                  <div className="mt-2 flex items-start gap-2 rounded-lg border border-border bg-warning-muted p-3 text-xs text-warning">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      {isPlanExpired
+                        ? 'Planınızın süresi doldu. Yeni blog üretmek için planınızı yenileyin.'
+                        : `Kalan tokenınız bu üretim için yetersiz (≈ ${estimatedCost.toLocaleString('tr-TR')} token gerekiyor).`}{' '}
+                      <Link
+                        href="/dashboard/plans"
+                        className="font-medium underline underline-offset-4"
+                      >
+                        Planları inceleyin
+                      </Link>
+                    </span>
+                  </div>
+                ) : (
+                  (!watch('workspaceId') || !watch('topic')) && (
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      {!watch('workspaceId') && 'Workspace seçin • '}
+                      {!watch('topic') && 'Konu girin'}
+                    </p>
+                  )
                 )}
               </div>
             </form>

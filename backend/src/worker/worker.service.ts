@@ -10,6 +10,7 @@ import { GenerationJob, JobStatus } from '../entities/generation-job.entity';
 import { SqsService, GeneratePostMessage, PublishPostMessage } from '../queue/sqs.service';
 import { UsageService } from '../usage/usage.service';
 import { BlogGeneratorService, BlogGenerationResult } from '../ai/blog-generator.service';
+import { BillingService } from '../billing/billing.service';
 import { LlmRefusalError } from '../ai/llm.service';
 
 @Injectable()
@@ -41,6 +42,7 @@ export class WorkerService {
     private dataSource: DataSource,
     private sqsService: SqsService,
     private usageService: UsageService,
+    private billingService: BillingService,
     private blogGenerator: BlogGeneratorService,
   ) {
     // Get region from config or parse from queue URL
@@ -217,8 +219,9 @@ export class WorkerService {
         throw new Error(`Post not found or missing author: ${body.postId}`);
       }
 
-      // Check monthly usage limit before generating
-      await this.usageService.checkMonthlyLimit(post.authorId);
+      // Plan, tier permission and token balance are all checked here. Returns the
+      // tier the job actually runs on (the plan default when none was requested).
+      const tier = await this.billingService.authorizeGeneration(post.authorId, body.model);
 
       // Atomically claim the post. This both moves it to GENERATING and acts as the
       // idempotency lock: a concurrent delivery of the same message loses the race.
@@ -245,13 +248,19 @@ export class WorkerService {
         seoMode: body.seoMode,
         keywords: body.keywords,
         outline: body.outline,
-        modelOrTier: body.model,
+        modelOrTier: tier,
       });
 
       // Record usage per pipeline stage (stages may run on different models)
       for (const stage of result.stages) {
         await this.usageService.recordUsage(post.authorId, stage.model, stage.tokensIn, stage.tokensOut);
       }
+
+      // Anything spent past the monthly allowance comes out of purchased tokens.
+      await this.billingService.settleTokenBalance(
+        post.authorId,
+        result.tokensIn + result.tokensOut,
+      );
 
       await this.saveGenerationResult(body.postId, result);
 
@@ -337,9 +346,9 @@ export class WorkerService {
       };
     }
 
-    if (error instanceof ForbiddenException || errorMessage.includes('Monthly usage limit exceeded')) {
+    if (error instanceof ForbiddenException || /aylık kullanım limiti|token bakiyeniz|deneme süreniz|aboneliğinizin süresi/i.test(errorMessage)) {
       return {
-        message: 'Aylık kullanım limiti aşıldı. Limitiniz yenilendiğinde yeniden deneyebilirsiniz.',
+        message: errorMessage,
         retryable: false,
       };
     }

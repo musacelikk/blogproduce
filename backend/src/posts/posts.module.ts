@@ -14,9 +14,10 @@ import { Project } from '../entities/project.entity';
 import { QueueModule } from '../queue/queue.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { CommonModule } from '../common/common.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
-  imports: [
+  imports: [BillingModule, 
     TypeOrmModule.forFeature([Post, Workspace, Tag, PostRevision, GenerationJob, Organization, Project]),
     ScheduleModule.forRoot(),
     QueueModule,
