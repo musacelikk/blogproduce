@@ -740,10 +740,16 @@ export class PostsService {
   /**
    * Remove a post and everything that points at it.
    *
-   * `generation_jobs` and `post_tags` have no cascade, so they must go first or
-   * the delete fails on a foreign-key violation; revisions, seo and postAssets
-   * are handled by CASCADE. All of it in one transaction so a partial failure
-   * cannot leave a post with half its relations gone.
+   * `generation_jobs`, `post_tags` and `usage_events` have no cascade, so they
+   * must be dealt with first or the delete fails on a foreign-key violation;
+   * revisions, seo and postAssets are handled by CASCADE. All of it in one
+   * transaction so a partial failure cannot leave a post with half its
+   * relations gone.
+   *
+   * `usage_events` is detached rather than deleted: it records what a
+   * generation cost us in tokens and money, and that has to survive for
+   * billing even once the post it produced is gone. Its `post_id` is nullable
+   * for exactly this reason.
    */
   private async deleteWithRelations(post: Post): Promise<void> {
     await this.postsRepository.manager.transaction(async (manager) => {
@@ -758,6 +764,13 @@ export class PostsService {
         .createQueryBuilder()
         .delete()
         .from('post_tags')
+        .where('"post_id" = :postId', { postId: post.id })
+        .execute();
+
+      await manager
+        .createQueryBuilder()
+        .update('usage_events')
+        .set({ post_id: null })
         .where('"post_id" = :postId', { postId: post.id })
         .execute();
 
