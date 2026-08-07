@@ -627,6 +627,28 @@ function PostsSection() {
         </Callout>
       </div>
 
+      <SubTitle>Delete a post</SubTitle>
+      <Endpoint method="DELETE" path="/api/v1/posts/{id}" />
+      <div className="mt-4 space-y-4">
+        <CodeBlock
+          title="Request / response"
+          language="bash"
+          code={`curl -X DELETE "${API_BASE_URL}/api/v1/posts/POST_ID" \\
+  -H "Authorization: Bearer bg_secret_YOUR_KEY"
+
+# 200 OK
+# {
+#   "success": true,
+#   "data": { "id": "9c8d7e6f-...", "deleted": true }
+# }`}
+        />
+        <Callout>
+          Deletion is <strong>permanent</strong>: the post, all of its revisions and its SEO
+          metadata are removed and cannot be recovered. Usage records are kept for billing.
+          A post that belongs to another project returns <code className="text-[13px]">404</code>.
+        </Callout>
+      </div>
+
       <SubTitle>Publish a post</SubTitle>
       <Endpoint method="POST" path="/api/v1/posts/{id}/publish" />
       <div className="mt-4">

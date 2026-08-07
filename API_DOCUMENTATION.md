@@ -124,6 +124,7 @@ replays the original response instead of creating a duplicate job.
 | `GET` | `/api/v1/posts` | List posts. Query: `status`, `limit` (max 100), `cursor`. |
 | `GET` | `/api/v1/posts/{id}` | Get one post. Query: `format`. |
 | `PATCH` | `/api/v1/posts/{id}` | Update `title`, `excerpt`, `content`, `slug`. Draft/generated/review only. |
+| `DELETE` | `/api/v1/posts/{id}` | Permanently delete the post, its revisions and SEO data. Irreversible; usage records are kept for billing. |
 | `POST` | `/api/v1/posts/{id}/publish` | Publish. Optional `slug` in the body. |
 
 ### Published content

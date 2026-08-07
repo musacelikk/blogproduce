@@ -87,6 +87,25 @@ function makeFakeDb() {
       return qb;
     },
 
+    /**
+     * The usage_events detach runs as raw SQL: the query-builder path resolved
+     * the table name to the UsageEvent entity and demanded property names,
+     * which failed at runtime. The fake accepts exactly that one statement so
+     * a drive-by rewrite back to the query builder fails loudly here.
+     */
+    async query(sql: string, params: unknown[] = []) {
+      const match = /^UPDATE\s+usage_events\s+SET\s+post_id\s*=\s*NULL\s+WHERE\s+post_id\s*=\s*\$1$/i.exec(
+        sql.trim(),
+      );
+      if (!match) {
+        throw new Error(`fake db does not understand: ${sql}`);
+      }
+      const [postId] = params as [string];
+      state.tables.usage_events = state.tables.usage_events.map((r) =>
+        r.post_id === postId ? { ...r, post_id: null } : r,
+      );
+    },
+
     async remove(_entity: unknown, post: { id: string }) {
       const blocking = Object.entries(state.tables).find(([, rows]) =>
         rows.some((r) => r.post_id === post.id),

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Post,
   Get,
   Patch,
@@ -117,6 +118,20 @@ export class ApiController {
     @Body() dto: UpdatePostApiDto,
   ) {
     const result = await this.apiService.updatePost(organization, project, id, dto);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  /** Permanently deletes the post, its revisions and SEO data. Irreversible. */
+  @Delete('posts/:id')
+  async deletePost(
+    @CurrentOrganization() organization: Organization,
+    @CurrentProject() project: Project,
+    @Param('id') id: string,
+  ) {
+    const result = await this.apiService.deletePost(organization, project, id);
     return {
       success: true,
       data: result,

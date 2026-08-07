@@ -26,6 +26,7 @@ which content the request can see.
 | `GET` | `/api/v1/posts` | List posts. Query: `status`, `limit` (max 100), `cursor`. |
 | `GET` | `/api/v1/posts/{id}` | Get one post. Query: `format` = `json \| md \| html`. |
 | `PATCH` | `/api/v1/posts/{id}` | Update `title`, `excerpt`, `content`, `slug` (draft/generated/review only). |
+| `DELETE` | `/api/v1/posts/{id}` | Permanently delete the post and its revisions (irreversible). |
 | `POST` | `/api/v1/posts/{id}/publish` | Publish a post. Optional `slug` in body. |
 | `POST` | `/api/v1/publish` | Publish by `postId` in the body. |
 | `GET` | `/api/v1/published` | List live posts. Query: `limit`, `cursor`. |

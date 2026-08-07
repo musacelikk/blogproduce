@@ -316,6 +316,31 @@ export class ApiService {
     }
   }
 
+  /**
+   * Delete a post through the partner API.
+   *
+   * Scoped by organization + project — the same predicate every other API read
+   * uses — so an API key can only ever delete its own project's posts, and a
+   * foreign id is indistinguishable from a missing one (404, not 403: revealing
+   * that a post exists in someone else's project is itself a leak).
+   */
+  async deletePost(organization: Organization, project: Project, postId: string) {
+    const post = await this.postsRepository.findOne({
+      where: { id: postId, organizationId: organization.id, projectId: project.id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    await this.postsService.hardDelete(post);
+    this.logger.log(
+      `API deleted post ${postId} (org ${organization.id}, project ${project.id})`,
+    );
+
+    return { id: postId, deleted: true };
+  }
+
   async updatePost(organization: Organization, project: Project, postId: string, dto: UpdatePostApiDto) {
     try {
       const post = await this.postsRepository.findOne({

@@ -572,7 +572,7 @@ export class PostsService {
 
     // Dashboard için: Tüm kullanıcılar (admin dahil) sadece kendi bloglarını görebilir
     // Admin paneli için ayrı endpoint kullanılmalı (/admin/posts/:id)
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -595,7 +595,7 @@ export class PostsService {
 
     // Dashboard için: Tüm kullanıcılar (admin dahil) sadece kendi bloglarını güncelleyebilir
     // Admin paneli için ayrı endpoint kullanılmalı (/admin/posts/:id)
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
     
@@ -702,7 +702,7 @@ export class PostsService {
 
     // Dashboard için: Tüm kullanıcılar (admin dahil) sadece kendi bloglarını silebilir
     // Admin paneli için ayrı endpoint kullanılmalı (/admin/posts/:id)
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -751,6 +751,29 @@ export class PostsService {
    * billing even once the post it produced is gone. Its `post_id` is nullable
    * for exactly this reason.
    */
+  /**
+   * Whether this user may manage this post from the dashboard surface.
+   *
+   * A post normally belongs to a workspace; fall back to authorship for rows
+   * that predate the workspace backfill. The old inline check (`post.workspace
+   * && owner !== user`) silently *passed* when workspace was null — which made
+   * every unlinked API-created post editable and deletable by any logged-in
+   * user. Absence of a workspace must narrow access, never widen it.
+   */
+  private ownsPost(post: Post, user: User): boolean {
+    if (post.workspace) return post.workspace.ownerId === user.id;
+    return !!post.authorId && post.authorId === user.id;
+  }
+
+  /**
+   * Delete a post whose ownership the caller has already verified — the partner
+   * API scopes by organization/project rather than workspace, so the dashboard
+   * checks above do not apply there. Same cascade as every other delete.
+   */
+  async hardDelete(post: Post): Promise<void> {
+    await this.deleteWithRelations(post);
+  }
+
   private async deleteWithRelations(post: Post): Promise<void> {
     await this.postsRepository.manager.transaction(async (manager) => {
       await manager
@@ -767,12 +790,13 @@ export class PostsService {
         .where('"post_id" = :postId', { postId: post.id })
         .execute();
 
-      await manager
-        .createQueryBuilder()
-        .update('usage_events')
-        .set({ post_id: null })
-        .where('"post_id" = :postId', { postId: post.id })
-        .execute();
+      // Raw SQL on purpose: giving .update() the table name makes TypeORM
+      // resolve the registered UsageEvent entity and demand *property* names
+      // (postId, not post_id) — which threw EntityPropertyNotFoundError at
+      // runtime. Plain SQL has no such double meaning.
+      await manager.query('UPDATE usage_events SET post_id = NULL WHERE post_id = $1', [
+        post.id,
+      ]);
 
       await manager.remove(Post, post);
     });
@@ -793,7 +817,7 @@ export class PostsService {
     }
 
     // Check access
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -854,7 +878,7 @@ export class PostsService {
     }
 
     // Check access
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -904,7 +928,7 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
@@ -943,7 +967,7 @@ export class PostsService {
       throw new NotFoundException('Post not found');
     }
 
-    if (post.workspace && post.workspace.ownerId !== user.id) {
+    if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
 
