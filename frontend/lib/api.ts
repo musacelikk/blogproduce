@@ -2114,3 +2114,138 @@ export async function grantUserTokens(
   });
   return response.data || response;
 }
+
+// ---------------------------------------------------------------- Sites API
+
+export interface Site {
+  id: string;
+  name: string;
+  domain?: string | null;
+  description?: string | null;
+  workspaceId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getSites(workspaceId?: string): Promise<Site[]> {
+  const query = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
+  const response = await apiRequest(`/sites${query}`, { method: 'GET' });
+  return response.data || response;
+}
+
+export async function createSite(input: {
+  name: string;
+  workspaceId: string;
+  domain?: string;
+  description?: string;
+}): Promise<Site> {
+  const response = await apiRequest('/sites', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return response.data || response;
+}
+
+// ------------------------------------------------------------- Autopilot API
+
+export interface AutopilotConfig {
+  id: string;
+  siteId: string;
+  workspaceId: string;
+  enabled: boolean;
+  postsPerWeek: number;
+  maxPostsPerMonth: number;
+  postsThisMonth: number;
+  monthAnchor: string | null;
+  tier: string;
+  language: string;
+  tone: string;
+  length: string;
+  seoMode: boolean;
+  autoPublish: boolean;
+  niche: string | null;
+  targetAudience: string | null;
+  keywords: string | null;
+  excludedTopics: string | null;
+  lastRunAt: string | null;
+  topicsPlannedAt: string | null;
+  lastError: string | null;
+}
+
+export type AutopilotConfigInput = Partial<
+  Pick<
+    AutopilotConfig,
+    | 'enabled'
+    | 'postsPerWeek'
+    | 'maxPostsPerMonth'
+    | 'tier'
+    | 'language'
+    | 'tone'
+    | 'length'
+    | 'seoMode'
+    | 'autoPublish'
+    | 'niche'
+    | 'targetAudience'
+    | 'keywords'
+    | 'excludedTopics'
+  >
+>;
+
+export interface TopicIdea {
+  id: string;
+  configId: string;
+  title: string;
+  slug: string;
+  angle: string | null;
+  primaryKeyword: string | null;
+  status: 'planned' | 'used' | 'rejected';
+  postId: string | null;
+  attempts: number;
+  usedAt: string | null;
+  createdAt: string;
+}
+
+export interface AutopilotTier {
+  tier: string;
+  label: string;
+  description: string;
+  estimatedCostPerArticleUsd: number;
+}
+
+export async function getAutopilotTiers(): Promise<AutopilotTier[]> {
+  const response = await apiRequest('/autopilot/tiers', { method: 'GET' });
+  return response.data || response;
+}
+
+/** Returns null when autopilot has never been configured for this site. */
+export async function getAutopilotConfig(siteId: string): Promise<AutopilotConfig | null> {
+  const response = await apiRequest(`/autopilot/sites/${siteId}`, { method: 'GET' });
+  return response.data ?? null;
+}
+
+export async function saveAutopilotConfig(
+  siteId: string,
+  input: AutopilotConfigInput,
+): Promise<AutopilotConfig> {
+  const response = await apiRequest(`/autopilot/sites/${siteId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+  return response.data || response;
+}
+
+export async function getAutopilotTopics(siteId: string): Promise<TopicIdea[]> {
+  const response = await apiRequest(`/autopilot/sites/${siteId}/topics`, { method: 'GET' });
+  return response.data || response;
+}
+
+export async function planAutopilotTopics(siteId: string): Promise<{ added: number }> {
+  const response = await apiRequest(`/autopilot/sites/${siteId}/topics/plan`, {
+    method: 'POST',
+  });
+  return response.data || response;
+}
+
+export async function rejectAutopilotTopic(topicId: string): Promise<void> {
+  await apiRequest(`/autopilot/topics/${topicId}/reject`, { method: 'POST' });
+}

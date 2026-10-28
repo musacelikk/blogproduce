@@ -1,11 +1,12 @@
 {
   "scripts": {
     "build": "npm --prefix backend install --include=dev && npm --prefix backend run build",
+    "build:slim": "npm run build && npm --prefix backend prune --omit=dev",
     "start": "npm --prefix backend run start:prod",
     "start:api": "npm --prefix backend run start:prod",
     "start:worker": "npm --prefix backend run worker:prod"
   },
-  "dependencies": {
-    "openai": "^6.15.0"
+  "engines": {
+    "node": "20.x"
   }
 }

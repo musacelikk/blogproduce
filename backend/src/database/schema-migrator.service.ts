@@ -5,12 +5,14 @@ import { DataSource } from 'typeorm';
 import { BILLING_SCHEMA_001 } from './migrations/001-billing-schema';
 import { TRY_AND_BANK_TRANSFER_002 } from './migrations/002-try-and-bank-transfer';
 import { LINK_API_POSTS_003 } from './migrations/003-link-api-posts-to-workspace';
+import { AUTOPILOT_004 } from './migrations/004-autopilot';
 
 /** Applied in order on every boot. Append new files here; never reorder. */
 export const ALL_MIGRATIONS = [
   ...BILLING_SCHEMA_001,
   ...TRY_AND_BANK_TRANSFER_002,
   ...LINK_API_POSTS_003,
+  ...AUTOPILOT_004,
 ];
 
 export interface SchemaStatement {
@@ -76,9 +78,7 @@ export class SchemaMigratorService implements OnModuleInit {
             // Keep booting: a half-applied schema with a loud log is easier to
             // diagnose than a restart loop, and the failure is already visible
             // on the affected queries.
-            this.logger.error(
-              `Şema adımı başarısız: ${this.describe(statement.sql)} — ${message}`,
-            );
+            this.logger.error(`Şema adımı başarısız: ${this.describe(statement.sql)} — ${message}`);
           }
         }
       }

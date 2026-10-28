@@ -5,7 +5,7 @@ import { Asset, AssetType } from '../entities/asset.entity';
 import { Workspace } from '../entities/workspace.entity';
 import { User } from '../entities/user.entity';
 import { S3Service } from '../storage/s3.service';
-import sharp from 'sharp';
+import { imageSize } from 'image-size';
 import type { Express } from 'express-serve-static-core';
 
 @Injectable()
@@ -49,12 +49,17 @@ export class AssetsService {
     let height: number | null = null;
 
     if (assetType === AssetType.IMAGE) {
+      // Header-only dimension read. This used to go through sharp, which pulls
+      // in libvips: ~16MB of platform binaries on disk and ~22MB of resident
+      // memory in every process that imports it, to produce two integers.
+      // `image-size` parses just the header bytes and covers every format in
+      // ALLOWED_UPLOAD_MIMES (jpeg, png, webp, gif, avif).
       try {
-        const metadata = await sharp(file.buffer).metadata();
-        width = metadata.width || null;
-        height = metadata.height || null;
+        const dimensions = imageSize(file.buffer);
+        width = dimensions.width || null;
+        height = dimensions.height || null;
       } catch (error) {
-        // Ignore if not an image or sharp fails
+        // Unreadable header — the upload still succeeds, just without dimensions.
       }
     }
 
@@ -151,11 +156,7 @@ export class AssetsService {
     if (mimetype.startsWith('video/')) {
       return AssetType.VIDEO;
     }
-    if (
-      mimetype.includes('pdf') ||
-      mimetype.includes('document') ||
-      mimetype.includes('text')
-    ) {
+    if (mimetype.includes('pdf') || mimetype.includes('document') || mimetype.includes('text')) {
       return AssetType.DOCUMENT;
     }
     return AssetType.OTHER;
@@ -173,4 +174,3 @@ export class AssetsService {
     }
   }
 }
-

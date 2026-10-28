@@ -46,6 +46,27 @@ fails on a re-run — `CREATE TYPE`, `CREATE EXTENSION` — as `optional: true`.
 
 Required env: `backend/.env` needs `DATABASE_URL` (or `DB_*`), `JWT_SECRET`, `OPENAI_API_KEY`, and the `SQS_*` queue URLs plus AWS credentials for generation to work end-to-end. `ANTHROPIC_API_KEY` is optional — it enables the premium (Claude) tier. `frontend/.env` needs `NEXT_PUBLIC_API_URL`.
 
+`AUTOPILOT_ENABLED=false` stops every autopilot config at once; anything else (including unset)
+leaves autopilot running, though each config still defaults to `enabled = false`.
+
+**Hosting cost levers.** Both processes are billed on observed memory, so:
+
+- **The heap cap is baked into the entrypoints**, not left to a dashboard variable:
+  `start:prod` and `worker:prod` pass `--max-old-space-size=${NODE_HEAP_MB:-320}` (384 for the
+  worker, which holds larger AI responses). Unflagged, V8 grants itself a ~2240MB ceiling on this
+  hardware and defers GC accordingly; the flag takes that to ~512MB, which is what actually lowers
+  billed RSS. Override per service with `NODE_HEAP_MB` — but raise it rather than lower it blindly,
+  since too low a cap trades a memory bill for OOM restarts.
+- **The connection pool is sized per process** (`POOL_SIZE` in `database/typeorm.config.ts`): 10 for
+  the API, 3 for the worker, which handles one SQS message at a time and spends most of each job
+  awaiting a provider. `buildTypeOrmOptions(config, 'worker')` selects it, and `role` sizes *only*
+  the pool — the entity list must stay identical between the two.
+- `npm run build:slim` in place of `npm run build` drops ~155MB of build tooling from the image.
+  It also removes `ts-node`, so `create-admin`, `seed:catalog` and `migrate:billing` stop working
+  on that box until dev dependencies are reinstalled — only use it if those are run elsewhere.
+- The Node major is pinned in `engines` (`20.x`). Don't unpin it: `marked` must stay on v4 because
+  v12+ is ESM-only and `require()`-ing it crashes the backend at startup on Node 18/20.
+
 ## Architecture
 
 ### Content generation is asynchronous and spans two processes
@@ -56,7 +77,20 @@ A generation request never produces content in the HTTP response. The flow is:
 2. **Worker process** (`worker/worker.service.ts`) long-polls SQS, calls the AI pipeline, writes a new `PostRevision`, and moves the post to `DRAFT`.
 3. Client polls `GET /api/v1/jobs/:jobId` until `succeeded`, then publishes.
 
-Both processes bootstrap the **full `AppModule`** (`worker.main.ts` uses `createApplicationContext`), so anything registered globally — including `@nestjs/schedule` crons — runs in both. Scheduled work must therefore claim its rows atomically (see `publishScheduledPosts`), or it executes twice.
+The two processes have **separate root modules**. `main.ts` boots `AppModule`; `worker.main.ts` boots
+`WorkerAppModule` (`worker/worker-app.module.ts`), which is only Config + TypeORM + `DatabaseModule`
++ `WorkerModule`. The worker previously bootstrapped the full `AppModule`, so a process that merely
+consumes SQS also constructed every controller, guard, passport strategy, interceptor and Express
+itself — roughly 27MB resident for code it could never reach.
+
+Both share one connection factory, `database/typeorm.config.ts`: `ALL_ENTITIES` plus
+`buildTypeOrmOptions()`. **Add a new entity there, not to a module.** TypeORM selects all mapped
+columns, so an entity missing from the list a process boots with breaks every query against that
+table — and two hand-maintained copies is how that happens.
+
+Crons therefore now run **only in the API process**. Scheduled work must still claim its rows
+atomically (see `publishScheduledPosts`, `AutopilotService.runDue`): correctness never depended on
+the module layout, and the API itself may run more than one instance.
 
 **SQS owns retry accounting.** The worker never re-enqueues: a transient failure is signalled by *not* deleting the message, letting the visibility timeout redeliver it. `classifyError()` decides retryable vs terminal, and `ApproximateReceiveCount` (requested via `MessageSystemAttributeNames`) is the attempt counter. `claimPost()` moves the post to `GENERATING` with a conditional UPDATE that doubles as the idempotency lock and reclaims leases older than `WORKER_JOB_TIMEOUT_MS` from crashed workers.
 
@@ -69,6 +103,43 @@ Both processes bootstrap the **full `AppModule`** (`worker.main.ts` uses `create
 Two Anthropic-specific constraints are baked into `completeAnthropic()` and easy to reintroduce by accident: **`temperature` is rejected** by Claude 5 models, and **thinking is on by default and shares the `max_tokens` budget** with the response — which is why Anthropic requests get 32K while OpenAI gets 16K. Depth is controlled with `output_config.effort`, not a token budget.
 
 Prompts live in `blog-prompts.ts` and are the main lever on output quality — the writer persona, the anti-cliché rules, and the editor checklist are all there rather than scattered across services.
+
+### Autopilot (`backend/src/autopilot/`)
+
+End-to-end unattended publishing, configured **per site**: understand the site → plan topics →
+generate → publish. One `AutopilotConfig` row per site (`site_id` is unique), and a queue of
+`TopicIdea` rows it draws from.
+
+**Topics are planned in batches, never per article.** `TopicPlannerService` asks for ~25 topics in a
+single call and the run loop consumes one per tick. This is the subsystem's main cost decision:
+planning a batch costs about $0.0014, while a planning call per article would cost over an order of
+magnitude more for the same output. The planner is also **pinned to `gpt-4o-mini`** regardless of the
+tier the config buys for its articles — `PLANNER_MODEL` in that file, asserted by
+`topic-planner.service.spec.ts`. Don't route it through `resolveModel()`; planning quality is not
+what customers are paying a tier for.
+
+**Autopilot adds no generation path of its own.** It calls `PostsService.generate()`, so it passes
+through the same `authorizeGeneration()` gate, slug uniquing and workspace→org/project bridge as a
+dashboard request. A config can therefore never generate beyond the owner's plan.
+
+Three independent spend limits, because cadence alone is not a budget:
+- `posts_per_week` spaces runs (`7 / postsPerWeek` days between them).
+- `max_posts_per_month` is a hard monthly ceiling. Its counter rolls over against `month_anchor` —
+  **check the rollover before the cap**, or a config that once hit the ceiling stays capped forever.
+- `AUTOPILOT_ENABLED=false` is the operator kill switch for every config at once.
+
+**A failed run must not consume its topic.** A quota or provider error leaves the idea `planned` and
+increments `attempts`, so it is retried; only after `MAX_ENQUEUE_ATTEMPTS` is it rejected, so one
+poison topic cannot stall the queue behind it. Burning a topic on a billing error would silently
+cost the customer an article they never received.
+
+`auto_publish` does **not** publish inline. It marks the finished post `SCHEDULED`, handing it to
+`publishScheduledPosts` — which already claims each post atomically and fires the `post.published`
+webhook. A second publish path would have to reimplement both guarantees. Only a `DRAFT` post is
+eligible, so a post still `QUEUED`/`GENERATING`, or one that `FAILED`, is never published.
+
+Tests in `autopilot.service.spec.ts` assert the spend guarantees — the monthly cap, the month
+rollover, the conditional-UPDATE claim, and that a billing failure does not consume a topic.
 
 ### Billing (`backend/src/billing/`)
 
@@ -129,7 +200,12 @@ on every tier. Those are the assertions that break if someone edits a price care
 
 ### Image uploads (`backend/src/assets/`, `backend/src/storage/`)
 
-`POST /assets/upload` (multipart, JWT) → S3 → an `assets` row with dimensions from `sharp`.
+`POST /assets/upload` (multipart, JWT) → S3 → an `assets` row with dimensions from `image-size`.
+
+Dimensions are a **header-only** read. This used to go through `sharp`, which pulls in libvips:
+~16MB of platform binaries on disk and ~22MB of resident memory in every process that imports it,
+to produce two integers. `image-size` parses just the header and covers every format in
+`ALLOWED_UPLOAD_MIMES`. Reach for `sharp` again only if actual image *processing* is needed.
 
 **The claimed `Content-Type` is not trusted.** `file-type.util.ts` reads magic bytes and the
 controller overwrites `file.mimetype` with what it finds; a mismatch is a 400. SVG is refused
@@ -183,7 +259,12 @@ The `PublicApiController` (`/api/v1/public/projects/…`) has **no guard** by de
 
 Next.js app router with three shells distinguished by `data-*` attributes on the page root (`data-admin-page`, `data-dashboard-page`, `data-login-page`); `globals.css` hides the public navbar/footer based on them. `middleware.ts` additionally maps the `admin.` subdomain onto `/admin/*` routes in production.
 
-`lib/api.ts` is the single API client — it owns token refresh (single-flight) and the `{success, data}` envelope unwrapping. Design tokens are CSS variables in `app/globals.css` consumed by `tailwind.config.ts` as **plain values, not `hsl()` wrappers** (`var(--primary)`, not `hsl(var(--primary))`). Shared primitives in `components/ui/` (Button, Card, Badge, Table, PageHeader, StatCard, EmptyState) — prefer them over hand-rolled markup, and use token classes (`bg-card`, `text-muted-foreground`) rather than hardcoded colors.
+`lib/api.ts` is the single API client — it owns token refresh (single-flight, with a one-shot retry on 401). It does **not** unwrap the `{success, data}` envelope: `apiRequest` returns the parsed body as-is, and each wrapper does `response.data || response`, because only some controllers wrap. Follow that per-function pattern rather than unwrapping centrally; a central unwrap would corrupt the responses that are already bare. Design tokens live in `app/globals.css` as **"R G B" channel triplets** (`--primary-rgb: 32 62 236`), with a plain `--primary` derived from each for `var()` consumers. `tailwind.config.ts` maps its colour scale to `rgb(var(--x-rgb) / <alpha-value>)` — that indirection is what makes opacity modifiers (`bg-primary/10`) work, since Tailwind v3 cannot apply an alpha channel to a var holding a literal colour and silently drops the modifier instead. Shared primitives in `components/ui/` (Button, Card, Badge, Table, PageHeader, StatCard, EmptyState) — prefer them over hand-rolled markup, and use token classes (`bg-card`, `text-muted-foreground`) rather than hardcoded colors.
+
+Autopilot is configured at `/dashboard/autopilot`, which is also the only place a customer can
+create a `Site` — the sites API had no UI before it. The page shows a live monthly cost projection
+from the selected tier and cadence, capped by the monthly ceiling, so the spend consequence of a
+cadence is visible before it is saved.
 
 ## Conventions
 

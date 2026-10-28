@@ -7,7 +7,7 @@ import { logout } from '@/lib/api';
 import {
   LayoutDashboard, FileText, History, Settings, LogOut,
   Sparkles, ChevronLeft, ChevronRight, CreditCard, BarChart3,
-  BookOpen, Folder, Receipt,
+  BookOpen, Folder, Receipt, Bot,
 } from 'lucide-react';
 
 const sidebarGroups: { label?: string; items: { name: string; href: string; icon: typeof LayoutDashboard }[] }[] = [
@@ -16,6 +16,7 @@ const sidebarGroups: { label?: string; items: { name: string; href: string; icon
     items: [
       { name: 'Dashboard',  href: '/dashboard',          icon: LayoutDashboard },
       { name: 'Blog Üret',  href: '/dashboard/generate', icon: Sparkles },
+      { name: 'Otopilot',   href: '/dashboard/autopilot', icon: Bot },
     ],
   },
   {
