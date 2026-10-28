@@ -1,4 +1,3 @@
-import { GenerateBlogRequest, GenerateBlogResponse } from '@/types/blog';
 import { auth, decodeJwtPayload } from './auth';
 
 function resolveApiBaseUrl(): string {
@@ -180,25 +179,6 @@ export async function resetPassword(token: string, newPassword: string): Promise
     },
     body: JSON.stringify({ token, newPassword }),
   });
-}
-
-// Blog API
-export async function generateBlog(
-  data: GenerateBlogRequest,
-): Promise<GenerateBlogResponse> {
-  try {
-    const response = await apiRequest('/api/blog/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-
-    return response;
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred',
-    };
-  }
 }
 
 // Blog Viewing API (with API Key authentication)

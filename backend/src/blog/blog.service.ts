@@ -2,9 +2,6 @@ import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { GenerateBlogDto } from './dto/generate-blog.dto';
-import { BlogGeneratorService } from '../ai/blog-generator.service';
-import { SeoService } from './seo.service';
 import { Post, PostStatus } from '../entities/post.entity';
 import { PostRevision } from '../entities/post-revision.entity';
 import { PostSeo } from '../entities/post-seo.entity';
@@ -13,62 +10,12 @@ import { Project } from '../entities/project.entity';
 import { Workspace } from '../entities/workspace.entity';
 import { User } from '../entities/user.entity';
 import { ApiKey } from '../entities/api-key.entity';
-import { ApiKeyQuotaService } from '../auth/services/api-key-quota.service';
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
 import { encodeCursor, decodeCursor } from '../common/utils/cursor.util';
 import { jsonToMarkdown, convertContentFormat, parseFormat } from '../common/utils/content-format.util';
 import { ContentFormat } from '../entities/post-revision.entity';
 import { getPublishedRevision, sortRevisionsDesc } from '../common/utils/revision.util';
-
-export interface GenerateBlogResponse {
-  title: string;
-  content_markdown: string; // Primary content format (safe)
-  content_html?: string; // Optional sanitized HTML
-  excerpt?: string;
-  cover_image_url?: string;
-  cover_image_credit?: {
-    name: string;
-    photographer_url: string;
-    photo_url: string;
-  };
-  tags?: Array<{ id: string; name: string; slug: string }>;
-  categories?: Array<{ id: string; name: string; slug: string }>;
-  toc?: Array<{ id: string; title: string; level: number }>; // Table of contents
-  faq?: Array<{ question: string; answer: string }>;
-  schema_jsonld?: {
-    article?: Record<string, any>;
-    faqPage?: Record<string, any>;
-  };
-  reading_time?: number; // Reading time in minutes
-  // Legacy SEO fields (kept for backward compatibility)
-  seo?: {
-    metaTitle: string;
-    metaDescription: string;
-    titleAlternatives: string[];
-    h1Structure: string[];
-    h2Structure: string[];
-    faq: Array<{ question: string; answer: string }>;
-    jsonLdSchema: {
-      article?: Record<string, any>;
-      faqPage?: Record<string, any>;
-    };
-    internalLinks: Array<{ text: string; url: string; anchor: string }>;
-    slug: string;
-    canonicalUrl: string;
-    tableOfContents: Array<{ id: string; title: string; level: number }>;
-    coverImagePrompt: string;
-    coverImageAltText: string;
-    coverImageUrl?: string;
-    coverImageCredit?: {
-      name: string;
-      photographerUrl: string;
-      photoUrl: string;
-    };
-    readabilityScore: number;
-    aiFootprintReduced: boolean;
-  };
-}
 
 @Injectable()
 export class BlogService {
@@ -88,140 +35,8 @@ export class BlogService {
     @InjectRepository(ApiKey)
     private apiKeyRepository: Repository<ApiKey>,
     private configService: ConfigService,
-    private seoService: SeoService,
-    private quotaService: ApiKeyQuotaService,
     private htmlSanitizer: HtmlSanitizerService,
-    private blogGenerator: BlogGeneratorService,
   ) {}
-
-  async generateBlog(dto: GenerateBlogDto, apiKeyId?: string): Promise<GenerateBlogResponse> {
-    try {
-      const seoEnabled = dto.options?.seo?.enabled === true;
-
-      // Pre-check the API key token budget with a conservative estimate
-      if (apiKeyId) {
-        const estimatedTotalTokens =
-          Math.ceil((dto.topic.length + (dto.additionalContext?.length || 0)) / 4) + 8000;
-        await this.quotaService.checkTokenBudget(apiKeyId, estimatedTotalTokens);
-      }
-
-      // Multi-stage AI pipeline (outline -> draft -> polish) with provider routing
-      const result = await this.blogGenerator.generate({
-        topic: dto.topic,
-        language: dto.language,
-        tone: dto.tone,
-        length: dto.length,
-        targetAudience: dto.targetAudience,
-        additionalContext: dto.additionalContext,
-        seoMode: seoEnabled,
-        modelOrTier: dto.model,
-      });
-
-      // Record actual token usage against the API key budget
-      if (apiKeyId) {
-        await this.quotaService.recordTokenUsage(apiKeyId, result.tokensIn + result.tokensOut);
-      }
-
-      let contentMarkdown = result.blog.content;
-      if (contentMarkdown && this.htmlSanitizer.isDangerous(contentMarkdown)) {
-        contentMarkdown = this.htmlSanitizer.sanitize(contentMarkdown, true);
-      }
-
-      const title = result.blog.title;
-      const readingTime = calculateReadingTime(contentMarkdown);
-      const excerpt = result.blog.excerpt || this.generateExcerpt(contentMarkdown, title);
-      const contentHtml = this.htmlSanitizer.sanitize(markdownToHtml(contentMarkdown), true);
-
-      const response: GenerateBlogResponse = {
-        title,
-        content_markdown: contentMarkdown,
-        content_html: contentHtml,
-        excerpt,
-        reading_time: readingTime,
-        toc: result.blog.metadata.toc,
-        faq: result.blog.metadata.faq,
-      };
-
-      const generatedSeo = result.blog.metadata.seo;
-      const slug = generatedSeo.slug || this.seoService.generateSlug(title);
-
-      const articleSchema: Record<string, any> = {
-        '@context': 'https://schema.org',
-        '@type': 'Article',
-        headline: title,
-        description: generatedSeo.metaDescription || excerpt,
-      };
-      const faqSchema =
-        result.blog.metadata.faq.length > 0
-          ? {
-              '@context': 'https://schema.org',
-              '@type': 'FAQPage',
-              mainEntity: result.blog.metadata.faq.map((item) => ({
-                '@type': 'Question',
-                name: item.question,
-                acceptedAnswer: { '@type': 'Answer', text: item.answer },
-              })),
-            }
-          : undefined;
-
-      response.schema_jsonld = {
-        article: articleSchema,
-        ...(faqSchema ? { faqPage: faqSchema } : {}),
-      };
-
-      if (seoEnabled) {
-        // Cover image (Unsplash) + internal link suggestions run in parallel
-        const [coverImage, internalLinks, readabilityScore] = await Promise.all([
-          this.seoService.findCoverImage(title, dto.topic),
-          this.seoService.suggestInternalLinks(contentMarkdown, dto.topic, dto.workspaceId),
-          this.seoService.analyzeReadability(contentMarkdown),
-        ]);
-
-        if (coverImage.url) {
-          response.cover_image_url = coverImage.url;
-          if (coverImage.credit) {
-            response.cover_image_credit = {
-              name: coverImage.credit.name,
-              photographer_url: coverImage.credit.photographerUrl,
-              photo_url: coverImage.credit.photoUrl,
-            };
-          }
-        }
-
-        // Legacy SEO shape for backward compatibility
-        response.seo = {
-          metaTitle: generatedSeo.metaTitle || title.substring(0, 60),
-          metaDescription: generatedSeo.metaDescription || excerpt,
-          titleAlternatives: [title],
-          h1Structure: [title],
-          h2Structure: result.blog.metadata.toc.filter((t) => t.level === 2).map((t) => t.title),
-          faq: result.blog.metadata.faq,
-          jsonLdSchema: response.schema_jsonld,
-          internalLinks,
-          slug,
-          canonicalUrl: `/blog/${slug}`,
-          tableOfContents: result.blog.metadata.toc,
-          coverImagePrompt: coverImage.prompt,
-          coverImageAltText: coverImage.altText,
-          coverImageUrl: coverImage.url,
-          coverImageCredit: coverImage.credit,
-          readabilityScore,
-          aiFootprintReduced: true,
-        };
-      }
-
-      return response;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        error.message || 'Failed to generate blog',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   private generateExcerpt(content: string, title: string, maxLength: number = 160): string {
     if (!content) {

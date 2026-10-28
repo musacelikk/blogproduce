@@ -1,6 +1,5 @@
 import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { BlogService } from './blog.service';
-import { GenerateBlogDto } from './dto/generate-blog.dto';
 import { ApiKeyOrJwtGuard } from '../auth/guards/api-key-or-jwt.guard';
 import { RateLimitGuard } from '../auth/guards/rate-limit.guard';
 import { TenantFilterGuard } from '../common/guards/tenant-filter.guard';
