@@ -173,6 +173,141 @@ body:has([data-login-page]) footer {
   --font-display: var(--font-inter-tight), 'Inter', system-ui, sans-serif;
 }
 
+/*
+ * Dark theme.
+ *
+ * Every token is redefined here as BOTH its "R G B" triplet (what Tailwind's
+ * colour scale reads, so opacity modifiers keep working) and its derived
+ * literal (what `var(--x)` consumers read).
+ *
+ * The literals are repeated deliberately. `--primary: rgb(var(--primary-rgb))`
+ * in `:root` is substituted using the triplet as seen *on the element where
+ * `--primary` is computed*. That resolves correctly only while the theme class
+ * sits on the same element as `:root` — redeclaring the literals makes the
+ * theme work wherever the class is applied, including on `body`.
+ */
+.dark {
+  /* Base */
+  --background-rgb: 9 11 17;
+  --foreground-rgb: 226 232 240;
+  --foreground-strong-rgb: 248 250 252;
+
+  /* Card / Surface */
+  --card-rgb: 19 22 31;
+  --card-foreground-rgb: 226 232 240;
+  --surface-raised-rgb: 26 30 41;
+  --surface-sunken-rgb: 13 16 23;
+
+  /* Popover */
+  --popover-rgb: 24 28 38;
+  --popover-foreground-rgb: 226 232 240;
+
+  /* Primary — the light brand blue (32 62 236) is far too dark to read on a
+     near-black surface, so it is lifted rather than reused. */
+  --primary-rgb: 118 141 255;
+  --primary-foreground-rgb: 10 13 25;
+
+  /* Secondary / Muted */
+  --secondary-rgb: 31 36 48;
+  --secondary-foreground-rgb: 226 232 240;
+  --muted-rgb: 31 36 48;
+  --muted-foreground-rgb: 156 171 190;
+
+  /* Accent */
+  --accent-rgb: 26 34 62;
+  --accent-foreground-rgb: 158 178 255;
+
+  /* Status — hues lifted for a dark background; the muted variants become deep
+     tints rather than near-white washes. */
+  --destructive-rgb: 248 113 113;
+  --destructive-foreground-rgb: 35 10 10;
+  --destructive-muted-rgb: 48 20 20;
+  --success-rgb: 52 211 153;
+  --success-foreground-rgb: 6 26 20;
+  --success-muted-rgb: 15 42 34;
+  --warning-rgb: 251 191 36;
+  --warning-foreground-rgb: 36 22 2;
+  --warning-muted-rgb: 48 34 8;
+  --info-rgb: 56 189 248;
+  --info-foreground-rgb: 6 24 35;
+  --info-muted-rgb: 14 38 52;
+
+  /* Borders / Inputs */
+  --border-rgb: 39 45 60;
+  --input-rgb: 39 45 60;
+  --ring-rgb: 118 141 255;
+
+  /* Brand */
+  --brand-primary-rgb: 118 141 255;
+  --brand-secondary-rgb: 56 212 255;
+  --brand-primary-dark-rgb: 92 117 240;
+
+  /* Data-viz — lifted so series stay distinguishable on a dark plot. */
+  --chart-1-rgb: 129 140 248;
+  --chart-1-soft-rgb: 165 180 252;
+  --chart-2-rgb: 52 211 153;
+  --chart-2-soft-rgb: 110 231 183;
+  --chart-3-rgb: 251 191 36;
+  --chart-3-soft-rgb: 253 224 71;
+  --chart-4-rgb: 167 139 250;
+  --chart-4-soft-rgb: 196 181 253;
+  --chart-5-rgb: 96 165 250;
+  --chart-5-soft-rgb: 147 197 253;
+
+  /* Derived literals — see the note above for why these are repeated. */
+  --background: rgb(var(--background-rgb));
+  --foreground: rgb(var(--foreground-rgb));
+  --foreground-strong: rgb(var(--foreground-strong-rgb));
+  --card: rgb(var(--card-rgb));
+  --card-foreground: rgb(var(--card-foreground-rgb));
+  --surface-raised: rgb(var(--surface-raised-rgb));
+  --surface-sunken: rgb(var(--surface-sunken-rgb));
+  --popover: rgb(var(--popover-rgb));
+  --popover-foreground: rgb(var(--popover-foreground-rgb));
+  --primary: rgb(var(--primary-rgb));
+  --primary-foreground: rgb(var(--primary-foreground-rgb));
+  --secondary: rgb(var(--secondary-rgb));
+  --secondary-foreground: rgb(var(--secondary-foreground-rgb));
+  --muted: rgb(var(--muted-rgb));
+  --muted-foreground: rgb(var(--muted-foreground-rgb));
+  --accent: rgb(var(--accent-rgb));
+  --accent-foreground: rgb(var(--accent-foreground-rgb));
+  --destructive: rgb(var(--destructive-rgb));
+  --destructive-foreground: rgb(var(--destructive-foreground-rgb));
+  --destructive-muted: rgb(var(--destructive-muted-rgb));
+  --success: rgb(var(--success-rgb));
+  --success-foreground: rgb(var(--success-foreground-rgb));
+  --success-muted: rgb(var(--success-muted-rgb));
+  --warning: rgb(var(--warning-rgb));
+  --warning-foreground: rgb(var(--warning-foreground-rgb));
+  --warning-muted: rgb(var(--warning-muted-rgb));
+  --info: rgb(var(--info-rgb));
+  --info-foreground: rgb(var(--info-foreground-rgb));
+  --info-muted: rgb(var(--info-muted-rgb));
+  --border: rgb(var(--border-rgb));
+  --border-strong: rgb(58 66 84);
+  --input: rgb(var(--input-rgb));
+  --ring: rgb(var(--ring-rgb));
+  --brand-primary: rgb(var(--brand-primary-rgb));
+  --brand-secondary: rgb(var(--brand-secondary-rgb));
+  --brand-primary-dark: rgb(var(--brand-primary-dark-rgb));
+  --chart-1: rgb(var(--chart-1-rgb));
+  --chart-1-soft: rgb(var(--chart-1-soft-rgb));
+  --chart-2: rgb(var(--chart-2-rgb));
+  --chart-2-soft: rgb(var(--chart-2-soft-rgb));
+  --chart-3: rgb(var(--chart-3-rgb));
+  --chart-3-soft: rgb(var(--chart-3-soft-rgb));
+  --chart-4: rgb(var(--chart-4-rgb));
+  --chart-4-soft: rgb(var(--chart-4-soft-rgb));
+  --chart-5: rgb(var(--chart-5-rgb));
+  --chart-5-soft: rgb(var(--chart-5-soft-rgb));
+}
+
+/* Browser-rendered UI (scrollbars, form controls, caret) follows the theme. */
+.dark {
+  color-scheme: dark;
+}
+
 @layer base {
   * {
     border-color: var(--border);

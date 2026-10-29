@@ -46,6 +46,9 @@ export class JobsController {
       data: {
         jobId: job.id,
         status: job.status,
+        // Which pipeline stage is running; null before it starts, once it
+        // finishes, and for jobs from a process that predates stage reporting.
+        stage: job.stage ?? null,
         postId: job.postId,
         error: job.error,
         createdAt: job.createdAt,

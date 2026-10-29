@@ -1,3 +1,4 @@
+import { buildDraftPrompt, buildPolishPrompt } from './blog-prompts';
 import { ConfigService } from '@nestjs/config';
 import { BlogGeneratorService } from './blog-generator.service';
 import { LlmService } from './llm.service';
@@ -130,5 +131,124 @@ describe('BlogGeneratorService content parsing', () => {
       metadata: { toc: [], faq: [], seo: {} },
     };
     expect(parse('', fallback)).toBe(fallback);
+  });
+});
+
+describe('internal linking', () => {
+  const base = { topic: 'İçerik kümesi nasıl kurulur' };
+
+  it('says nothing about internal links when the site has no other articles', () => {
+    const { system } = buildDraftPrompt(base, null);
+    expect(system).not.toMatch(/INTERNAL LINKS/);
+  });
+
+  it('instructs the writer to link published articles inline', () => {
+    const input = {
+      ...base,
+      relatedPosts: [
+        { title: 'Anahtar kelime araştırması', slug: 'anahtar-kelime-arastirmasi' },
+        { title: 'Teknik SEO kontrol listesi', slug: 'teknik-seo-kontrol-listesi' },
+      ],
+    };
+    const { system, user } = buildDraftPrompt(input, null);
+
+    expect(system).toMatch(/INTERNAL LINKS/);
+    // The paths must reach the model verbatim; a model inventing slugs would
+    // produce links that 404 on the customer's site.
+    expect(user).toContain('/blog/anahtar-kelime-arastirmasi');
+    expect(user).toContain('/blog/teknik-seo-kontrol-listesi');
+  });
+
+  it('keeps the rule in the editor pass, so polish cannot strip the links', () => {
+    const input = {
+      ...base,
+      relatedPosts: [{ title: 'Teknik SEO', slug: 'teknik-seo' }],
+    };
+    const { system } = buildPolishPrompt(input, '{}');
+    expect(system).toMatch(/INTERNAL LINKS/);
+  });
+});
+
+/** A service whose llm.complete always returns one valid schema response. */
+function buildGeneratingService(env: Record<string, string> = {}) {
+  const reply = {
+    content: JSON.stringify({
+      title: 'Başlık',
+      excerpt: 'Özet',
+      content: '# Başlık\n\nGövde.',
+      metadata: { toc: [], faq: [], seo: {} },
+    }),
+    model: 'gpt-4o-mini',
+    provider: 'openai',
+    tokensIn: 100,
+    tokensOut: 200,
+    latencyMs: 10,
+    responseId: 'r',
+  };
+  const llm = {
+    providerFor: (m: string) => (m.toLowerCase().startsWith('claude') ? 'anthropic' : 'openai'),
+    isProviderAvailable: () => true,
+    complete: jest.fn().mockResolvedValue(reply),
+  } as unknown as LlmService;
+  const config = { get: (key: string) => env[key] } as unknown as ConfigService;
+  return new BlogGeneratorService(llm, config);
+}
+
+describe('pipeline stage reporting', () => {
+  it('reports only the stages that actually run on the standard tier', async () => {
+    const service = buildGeneratingService();
+    const seen: string[] = [];
+
+    await service.generate({
+      topic: 'Konu',
+      modelOrTier: ModelTier.STANDARD,
+      onStage: (stage) => void seen.push(stage),
+    });
+
+    // Standard skips the editor pass, so promising the client a polish step
+    // would leave its progress bar stuck on a stage that never arrives.
+    expect(seen).toEqual(['outline', 'draft']);
+  });
+
+  it('reports the editor pass on a tier that runs it', async () => {
+    const service = buildGeneratingService();
+    const seen: string[] = [];
+
+    await service.generate({
+      topic: 'Konu',
+      modelOrTier: ModelTier.PREMIUM,
+      onStage: (stage) => void seen.push(stage),
+    });
+
+    expect(seen).toEqual(['outline', 'draft', 'polish']);
+  });
+
+  it('reports nothing extra in single-stage mode', async () => {
+    const service = buildGeneratingService({ AI_PIPELINE_MODE: 'single' });
+    const seen: string[] = [];
+
+    await service.generate({
+      topic: 'Konu',
+      modelOrTier: ModelTier.PREMIUM,
+      onStage: (stage) => void seen.push(stage),
+    });
+
+    expect(seen).toEqual(['draft']);
+  });
+
+  it('still produces an article when stage reporting fails', async () => {
+    // The callback writes to the database. A hiccup there must not cost an
+    // article the customer has already been billed for.
+    const service = buildGeneratingService();
+
+    const result = await service.generate({
+      topic: 'Konu',
+      modelOrTier: ModelTier.STANDARD,
+      onStage: () => {
+        throw new Error('db down');
+      },
+    });
+
+    expect(result.blog.content).toContain('Gövde.');
   });
 });

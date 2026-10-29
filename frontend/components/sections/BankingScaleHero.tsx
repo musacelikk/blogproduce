@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { GeneratorMockup } from "@/components/sections/mockups"
 import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -62,28 +62,11 @@ export const BankingScaleHero = () => {
             </p>
           </div>
 
-          {/* Ürün görüntüsü */}
+          {/* Ürün görüntüsü — statik ekran görüntüsü değil, token'lardan kurulu
+              bir mockup: her iki temada da doğru görünür ve ürün değiştikçe
+              eskimez. */}
           <div className="relative lg:pl-4">
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
-              <div className="flex items-center gap-1.5 border-b border-border bg-surface-raised px-4 py-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
-                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25" />
-                <span className="ml-3 truncate text-xs font-medium text-muted-foreground">
-                  blogproduce.com/dashboard
-                </span>
-              </div>
-              <div className="relative aspect-[16/10] bg-surface-sunken">
-                <Image
-                  src="/home.png"
-                  alt="BlogProduce paneli — blog üretim ekranı"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-contain object-top"
-                />
-              </div>
-            </div>
+            <GeneratorMockup />
           </div>
         </div>
       </div>

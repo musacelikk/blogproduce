@@ -15,17 +15,52 @@ export interface BlogPromptInput {
   seoMode?: boolean;
   keywords?: string[];
   outline?: string;
+  /**
+   * Other articles already published on the same site, for internal linking.
+   * Resolved by the worker at generation time, so every generation path — the
+   * dashboard, the partner API and autopilot — gets links without each one
+   * having to pass them along.
+   */
+  relatedPosts?: Array<{ title: string; slug: string }>;
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
-  tr: 'Turkish', en: 'English', de: 'German', fr: 'French', es: 'Spanish',
-  it: 'Italian', pt: 'Portuguese', ru: 'Russian', ar: 'Arabic', ja: 'Japanese',
-  ko: 'Korean', zh: 'Chinese', nl: 'Dutch', pl: 'Polish', sv: 'Swedish',
-  da: 'Danish', no: 'Norwegian', fi: 'Finnish', cs: 'Czech', hu: 'Hungarian',
-  ro: 'Romanian', el: 'Greek', he: 'Hebrew', hi: 'Hindi', th: 'Thai',
-  vi: 'Vietnamese', id: 'Indonesian', ms: 'Malay', uk: 'Ukrainian',
-  bg: 'Bulgarian', hr: 'Croatian', sk: 'Slovak', sl: 'Slovenian',
-  et: 'Estonian', lv: 'Latvian', lt: 'Lithuanian',
+  tr: 'Turkish',
+  en: 'English',
+  de: 'German',
+  fr: 'French',
+  es: 'Spanish',
+  it: 'Italian',
+  pt: 'Portuguese',
+  ru: 'Russian',
+  ar: 'Arabic',
+  ja: 'Japanese',
+  ko: 'Korean',
+  zh: 'Chinese',
+  nl: 'Dutch',
+  pl: 'Polish',
+  sv: 'Swedish',
+  da: 'Danish',
+  no: 'Norwegian',
+  fi: 'Finnish',
+  cs: 'Czech',
+  hu: 'Hungarian',
+  ro: 'Romanian',
+  el: 'Greek',
+  he: 'Hebrew',
+  hi: 'Hindi',
+  th: 'Thai',
+  vi: 'Vietnamese',
+  id: 'Indonesian',
+  ms: 'Malay',
+  uk: 'Ukrainian',
+  bg: 'Bulgarian',
+  hr: 'Croatian',
+  sk: 'Slovak',
+  sl: 'Slovenian',
+  et: 'Estonian',
+  lv: 'Latvian',
+  lt: 'Lithuanian',
 };
 
 export function resolveLanguageName(language?: unknown): string {
@@ -65,7 +100,9 @@ export function buildWriterSystemPrompt(input: BlogPromptInput): string {
       'Keep proper nouns and established technical terms in their conventional form.',
   );
 
-  parts.push(`TONE: ${tone}. Keep it consistent throughout, but never robotic — vary sentence length and rhythm.`);
+  parts.push(
+    `TONE: ${tone}. Keep it consistent throughout, but never robotic — vary sentence length and rhythm.`,
+  );
 
   parts.push(
     'QUALITY BAR:\n' +
@@ -95,6 +132,17 @@ export function buildWriterSystemPrompt(input: BlogPromptInput): string {
     );
   }
 
+  if (input.relatedPosts?.length) {
+    parts.push(
+      'INTERNAL LINKS: You will be given other articles already published on this site. ' +
+        'Link to two or three of them from the body, in Markdown, where the sentence genuinely ' +
+        'calls for it — a reader following the link should find what the sentence promised. ' +
+        'Write the anchor text as part of the prose; never append a "related posts" list, never ' +
+        'link the same article twice, and never force a link into a section it does not belong in. ' +
+        'Use the exact paths given; do not invent slugs. If none of them fit, link none.',
+    );
+  }
+
   parts.push(
     'OUTPUT CONTRACT: Return a single JSON object matching the provided schema. ' +
       '"content" holds the complete article in Markdown starting with exactly one H1 line. ' +
@@ -120,9 +168,12 @@ export function buildOutlinePrompt(input: BlogPromptInput): { system: string; us
   user += `Target length: ${lengthTarget}\n`;
   if (input.targetAudience) user += `Target audience: ${input.targetAudience}\n`;
   if (input.tone) user += `Tone: ${input.tone}\n`;
-  if (input.additionalContext) user += `\nAdditional context from the client:\n${input.additionalContext}\n`;
-  if (input.keywords?.length) user += `Target keywords to work in naturally: ${input.keywords.join(', ')}\n`;
-  if (input.outline) user += `\nThe client supplied this outline — follow its structure:\n${input.outline}\n`;
+  if (input.additionalContext)
+    user += `\nAdditional context from the client:\n${input.additionalContext}\n`;
+  if (input.keywords?.length)
+    user += `Target keywords to work in naturally: ${input.keywords.join(', ')}\n`;
+  if (input.outline)
+    user += `\nThe client supplied this outline — follow its structure:\n${input.outline}\n`;
 
   user +=
     '\nReturn a JSON object with exactly these fields:\n' +
@@ -141,19 +192,30 @@ export function buildOutlinePrompt(input: BlogPromptInput): { system: string; us
 }
 
 /** Stage 2 — full draft from the brief. */
-export function buildDraftPrompt(input: BlogPromptInput, outlineJson: string | null): { system: string; user: string } {
+export function buildDraftPrompt(
+  input: BlogPromptInput,
+  outlineJson: string | null,
+): { system: string; user: string } {
   const system = buildWriterSystemPrompt(input);
   const lengthTarget = resolveLengthTarget(input.length);
 
   let user = `Write the complete blog article about: "${input.topic}"\n\n`;
   user += `Length target: ${lengthTarget} (respect this — do not under-deliver)\n`;
   if (input.targetAudience) user += `Target audience: ${input.targetAudience}\n`;
-  if (input.additionalContext) user += `\nAdditional context from the client (respect any brand/product facts given here):\n${input.additionalContext}\n`;
+  if (input.additionalContext)
+    user += `\nAdditional context from the client (respect any brand/product facts given here):\n${input.additionalContext}\n`;
   if (input.keywords?.length) {
     user += `Target keywords (use naturally, never stuff): ${input.keywords.join(', ')}\n`;
   }
   if (input.outline) {
     user += `\nThe client supplied this outline — follow its structure:\n${input.outline}\n`;
+  }
+
+  if (input.relatedPosts?.length) {
+    user +=
+      `\nAlready published on this site — link to the two or three that genuinely fit:\n` +
+      input.relatedPosts.map((p) => `- ${p.title} → /blog/${p.slug}`).join('\n') +
+      '\n';
   }
 
   if (outlineJson) {
@@ -168,7 +230,10 @@ export function buildDraftPrompt(input: BlogPromptInput, outlineJson: string | n
 }
 
 /** Stage 3 — editor pass. Takes the draft JSON and returns an improved article in the same schema. */
-export function buildPolishPrompt(input: BlogPromptInput, draftJson: string): { system: string; user: string } {
+export function buildPolishPrompt(
+  input: BlogPromptInput,
+  draftJson: string,
+): { system: string; user: string } {
   const system = buildWriterSystemPrompt(input);
 
   let user =
@@ -186,7 +251,8 @@ export function buildPolishPrompt(input: BlogPromptInput, draftJson: string): { 
     '7. Metadata: verify metaTitle ≤ 60 chars, metaDescription 140-160 chars, toc matches the final headings, FAQ answers are standalone.\n\n';
 
   user += `THE DRAFT (JSON):\n${draftJson}\n\n`;
-  user += 'Return the improved article as a single JSON object in the same schema. Return nothing else.';
+  user +=
+    'Return the improved article as a single JSON object in the same schema. Return nothing else.';
 
   return { system, user };
 }

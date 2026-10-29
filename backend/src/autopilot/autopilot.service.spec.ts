@@ -73,6 +73,7 @@ interface Harness {
   postRepo: any;
   postsService: any;
   planner: any;
+  unsplash: any;
 }
 
 function harness(
@@ -136,10 +137,26 @@ function harness(
     findOne: jest.fn().mockResolvedValue({ id: 'ws-1', ownerId: 'user-1' }),
   };
 
+  const unsplash = {
+    searchPhotos: jest.fn().mockResolvedValue([
+      {
+        id: 'photo-1',
+        urls: {
+          regular: 'https://images.example/photo.jpg',
+          full: 'https://images.example/full.jpg',
+        },
+        user: { name: 'Ada', links: { html: 'https://unsplash.example/@ada' } },
+        links: { html: 'https://unsplash.example/photo-1' },
+      },
+    ]),
+    triggerDownload: jest.fn().mockResolvedValue(undefined),
+  };
+
   const service = new AutopilotService(
     configService as any,
     postsService as any,
     planner as any,
+    unsplash as any,
     configRepo as any,
     topicRepo as any,
     postRepo as any,
@@ -148,7 +165,7 @@ function harness(
     workspaceRepo as any,
   );
 
-  return { service, configRepo, topicRepo, postRepo, postsService, planner };
+  return { service, configRepo, topicRepo, postRepo, postsService, planner, unsplash };
 }
 
 describe('autopilot spend limits', () => {
@@ -315,5 +332,38 @@ describe('autopilot publishing', () => {
 
     expect(result.scheduled).toBe(0);
     expect(h.postRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+});
+
+describe('autopilot cover images', () => {
+  it('attaches a cover image searched on the planner keyword', async () => {
+    const h = harness({ topic: makeTopic({ primaryKeyword: 'içerik kümesi' }) });
+
+    await h.service.runDue(new Date('2026-03-10T09:00:00Z'));
+
+    // Searched on primaryKeyword, not the title — the keyword is what the
+    // planner picked for retrieval, and using it costs no model call.
+    expect(h.unsplash.searchPhotos).toHaveBeenCalledWith('içerik kümesi', 1, 1);
+
+    const dto = h.postsService.generate.mock.calls[0][1];
+    expect(dto.coverImageUrl).toBe('https://images.example/photo.jpg');
+    expect(JSON.parse(dto.coverImageCreditJson)).toEqual({
+      name: 'Ada',
+      photographerUrl: 'https://unsplash.example/@ada',
+      photoUrl: 'https://unsplash.example/photo-1',
+    });
+  });
+
+  it('still generates when Unsplash is unavailable', async () => {
+    // searchPhotos throws outright when UNSPLASH_ACCESS_KEY is unset. An
+    // install without that key must keep publishing, just without pictures.
+    const h = harness();
+    h.unsplash.searchPhotos.mockRejectedValue(new Error('Unsplash API key not configured'));
+
+    const result = await h.service.runDue(new Date('2026-03-10T09:00:00Z'));
+
+    expect(result.started).toBe(1);
+    const dto = h.postsService.generate.mock.calls[0][1];
+    expect(dto.coverImageUrl).toBeUndefined();
   });
 });

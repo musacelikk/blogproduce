@@ -1,5 +1,6 @@
 'use client';
 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Bell, Shield } from 'lucide-react';
@@ -57,6 +58,8 @@ export function AdminHeader() {
           <Bell className="h-4 w-4" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-card" />
         </button>
+
+        <ThemeToggle />
 
         <span className="hidden h-6 w-px bg-border sm:block" aria-hidden />
 

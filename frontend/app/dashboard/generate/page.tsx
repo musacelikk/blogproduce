@@ -18,6 +18,8 @@ import { Sparkles, Loader2, Download, Copy, Check, AlertCircle, Briefcase, Users
 import Link from 'next/link';
 import {
   generatePost,
+  getJob,
+  type GenerationStage,
   getPost,
   getWorkspaces,
   createWorkspace,
@@ -155,6 +157,8 @@ function GenerateBlogPageContent() {
   const [copied, setCopied] = useState(false);
   const [postId, setPostId] = useState<string | null>(null);
   const [postStatus, setPostStatus] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [stage, setStage] = useState<GenerationStage | null>(null);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [isPolling, setIsPolling] = useState(false);
   const [targetAudienceTags, setTargetAudienceTags] = useState<string[]>([]);
@@ -285,6 +289,17 @@ function GenerateBlogPageContent() {
 
         setPostStatus(post.status);
 
+        // Which pipeline stage is running. Advisory only — a failure here must
+        // not interrupt the status poll the page actually depends on.
+        if (jobId) {
+          try {
+            const job = await getJob(jobId);
+            setStage(job.stage);
+          } catch {
+            // leave the last known stage in place
+          }
+        }
+
         if (post.status === 'generated' || post.status === 'draft') {
           setIsPolling(false);
           setIsLoading(false);
@@ -327,7 +342,7 @@ function GenerateBlogPageContent() {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(pollInterval);
-  }, [postId, isPolling]);
+  }, [postId, isPolling, jobId]);
 
   const onSubmit = async (data: BlogFormData) => {
     console.log('Form submitted with data:', data);
@@ -354,6 +369,7 @@ function GenerateBlogPageContent() {
     setGeneratedBlog(null);
     setPostId(null);
     setPostStatus(null);
+    setStage(null);
     setIsPolling(false);
 
     try {
@@ -421,6 +437,8 @@ function GenerateBlogPageContent() {
 
       // Set post ID and status, start polling
       setPostId(postId);
+      setJobId(response.jobId || null);
+      setStage(null);
       setPostStatus(response.status || 'queued');
       setIsLoading(false); // Stop loading, start polling
       setIsPolling(true);
@@ -1269,13 +1287,20 @@ function GenerateBlogPageContent() {
             )}
 
             {isPolling && postStatus && (
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-info-muted p-4 text-sm text-info">
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                <span>
-                  {postStatus === 'queued' && 'Post kuyruğa eklendi, işlenmeyi bekliyor...'}
-                  {postStatus === 'generating' && 'AI blog içeriğini üretiyor, lütfen bekleyin...'}
-                  {postStatus === 'generated' && 'Blog başarıyla üretildi!'}
-                </span>
+              <div
+                className="rounded-xl border border-border bg-info-muted p-4 text-sm text-info"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  <span>
+                    {postStatus === 'queued' && 'Post kuyruğa eklendi, işlenmeyi bekliyor...'}
+                    {postStatus === 'generating' && 'AI blog içeriğini üretiyor, lütfen bekleyin...'}
+                    {postStatus === 'generated' && 'Blog başarıyla üretildi!'}
+                  </span>
+                </div>
+                <GenerationStages stage={stage} />
               </div>
             )}
 
@@ -1452,5 +1477,50 @@ export default function GenerateBlogPage() {
     }>
       <GenerateBlogPageContent />
     </Suspense>
+  );
+}
+
+/**
+ * Pipeline progress for a running generation.
+ *
+ * Only the stages the backend actually reports are shown as reached. The editor
+ * pass is skipped on the standard tier, so it is rendered as a step that may or
+ * may not arrive rather than one the user is waiting on — a progress bar that
+ * never completes reads as a hang.
+ */
+function GenerationStages({ stage }: { stage: GenerationStage | null }) {
+  const steps: Array<{ key: GenerationStage; label: string }> = [
+    { key: 'outline', label: 'Konu analizi' },
+    { key: 'draft', label: 'Yazılıyor' },
+    { key: 'polish', label: 'Editör kontrolü' },
+  ];
+
+  if (!stage) return null;
+  const currentIndex = steps.findIndex((s) => s.key === stage);
+
+  return (
+    <ol className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-info/20 pt-3 text-xs">
+      {steps.map((step, i) => {
+        const done = i < currentIndex;
+        const active = i === currentIndex;
+        return (
+          <li key={step.key} className="flex items-center gap-2">
+            {i > 0 && <span aria-hidden className="text-info/40">→</span>}
+            <span
+              className={
+                done
+                  ? 'text-info/70'
+                  : active
+                    ? 'font-semibold text-info'
+                    : 'text-info/40'
+              }
+            >
+              {done ? '✓ ' : ''}
+              {step.label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

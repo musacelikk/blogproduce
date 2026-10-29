@@ -19,7 +19,18 @@ import {
   buildPolishPrompt,
 } from './blog-prompts';
 
+/** The pipeline stages a job can report. Which of them run depends on tier. */
+export type GenerationStage = 'outline' | 'draft' | 'polish';
+
 export interface BlogGenerationRequest extends BlogPromptInput {
+  /**
+   * Called as each stage begins, for progress reporting.
+   *
+   * Fired only for stages that actually run — standard tier skips the editor
+   * pass, so a consumer must not assume a fixed sequence. Never allowed to
+   * affect generation: a throwing or slow callback is swallowed.
+   */
+  onStage?: (stage: GenerationStage) => void | Promise<void>;
   /** Pricing tier ('ucuz'|'orta'|'pahalı'/aliases) or a concrete model id. */
   modelOrTier?: string;
 }
@@ -97,6 +108,7 @@ export class BlogGeneratorService {
     // ── Stage 1: outline (fast model; non-fatal on failure) ─────────────────
     let outlineJson: string | null = null;
     if (multiStage) {
+      await this.reportStage(request, 'outline');
       try {
         const outlineModel = this.llm.isProviderAvailable('openai') ? OUTLINE_MODEL : model;
         const prompt = buildOutlinePrompt(request);
@@ -113,11 +125,14 @@ export class BlogGeneratorService {
         const parsed = this.extractJson(res.content);
         outlineJson = parsed ? JSON.stringify(parsed) : null;
       } catch (error) {
-        this.logger.warn(`Outline stage failed, continuing without brief: ${(error as Error).message}`);
+        this.logger.warn(
+          `Outline stage failed, continuing without brief: ${(error as Error).message}`,
+        );
       }
     }
 
     // ── Stage 2: draft (schema-enforced) ────────────────────────────────────
+    await this.reportStage(request, 'draft');
     const draftPrompt = buildDraftPrompt(request, outlineJson);
     const isAnthropic = this.llm.providerFor(model) === 'anthropic';
     const draftRes = await this.llm.complete({
@@ -137,6 +152,7 @@ export class BlogGeneratorService {
 
     // ── Stage 3: editor pass (pro/premium only; non-fatal on failure) ───────
     if (multiStage && isPremiumish) {
+      await this.reportStage(request, 'polish');
       try {
         const polishPrompt = buildPolishPrompt(request, JSON.stringify(blog));
         const polishRes = await this.llm.complete({
@@ -203,9 +219,10 @@ export class BlogGeneratorService {
 
     if (parsed && typeof parsed.content === 'string' && parsed.content.trim()) {
       return {
-        title: typeof parsed.title === 'string' && parsed.title.trim()
-          ? parsed.title.trim()
-          : this.titleFromMarkdown(parsed.content, request.topic),
+        title:
+          typeof parsed.title === 'string' && parsed.title.trim()
+            ? parsed.title.trim()
+            : this.titleFromMarkdown(parsed.content, request.topic),
         excerpt: typeof parsed.excerpt === 'string' ? parsed.excerpt.trim() : '',
         content: parsed.content.trim(),
         metadata: {
@@ -215,8 +232,11 @@ export class BlogGeneratorService {
             metaTitle: parsed.metadata?.seo?.metaTitle || '',
             metaDescription: parsed.metadata?.seo?.metaDescription || '',
             ogTitle: parsed.metadata?.seo?.ogTitle || parsed.metadata?.seo?.metaTitle || '',
-            ogDescription: parsed.metadata?.seo?.ogDescription || parsed.metadata?.seo?.metaDescription || '',
-            keywords: Array.isArray(parsed.metadata?.seo?.keywords) ? parsed.metadata.seo.keywords : [],
+            ogDescription:
+              parsed.metadata?.seo?.ogDescription || parsed.metadata?.seo?.metaDescription || '',
+            keywords: Array.isArray(parsed.metadata?.seo?.keywords)
+              ? parsed.metadata.seo.keywords
+              : [],
             slug: parsed.metadata?.seo?.slug || '',
           },
         },
@@ -237,7 +257,14 @@ export class BlogGeneratorService {
       metadata: {
         toc: [],
         faq: [],
-        seo: { metaTitle: '', metaDescription: '', ogTitle: '', ogDescription: '', keywords: [], slug: '' },
+        seo: {
+          metaTitle: '',
+          metaDescription: '',
+          ogTitle: '',
+          ogDescription: '',
+          keywords: [],
+          slug: '',
+        },
       },
     };
   }
@@ -245,6 +272,20 @@ export class BlogGeneratorService {
   private titleFromMarkdown(markdown: string, fallbackTopic: string): string {
     const match = markdown.match(/^#\s+(.+)$/m);
     return match?.[1]?.trim() || fallbackTopic;
+  }
+
+  /**
+   * Progress reporting is strictly best-effort: the callback writes to the
+   * database, and a database hiccup must never cost us an article the customer
+   * has already been billed for.
+   */
+  private async reportStage(request: BlogGenerationRequest, stage: GenerationStage): Promise<void> {
+    if (!request.onStage) return;
+    try {
+      await request.onStage(stage);
+    } catch (error) {
+      this.logger.warn(`Stage reporting failed (${stage}): ${(error as Error).message}`);
+    }
   }
 
   /** Tolerant JSON extraction: handles code fences and surrounding prose. */

@@ -6,6 +6,7 @@ import { BILLING_SCHEMA_001 } from './migrations/001-billing-schema';
 import { TRY_AND_BANK_TRANSFER_002 } from './migrations/002-try-and-bank-transfer';
 import { LINK_API_POSTS_003 } from './migrations/003-link-api-posts-to-workspace';
 import { AUTOPILOT_004 } from './migrations/004-autopilot';
+import { GENERATION_JOB_STAGE_005 } from './migrations/005-generation-job-stage';
 
 /** Applied in order on every boot. Append new files here; never reorder. */
 export const ALL_MIGRATIONS = [
@@ -13,6 +14,7 @@ export const ALL_MIGRATIONS = [
   ...TRY_AND_BANK_TRANSFER_002,
   ...LINK_API_POSTS_003,
   ...AUTOPILOT_004,
+  ...GENERATION_JOB_STAGE_005,
 ];
 
 export interface SchemaStatement {

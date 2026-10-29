@@ -1,3 +1,4 @@
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import type { Metadata } from 'next';
 import { Inter_Tight } from 'next/font/google';
 import './globals.css';
@@ -140,8 +141,13 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="tr">
+    // The theme script mutates <html>'s class list before React hydrates, so
+    // the server/client class mismatch here is expected and suppressed.
+    <html lang="tr" suppressHydrationWarning>
       <head>
+        {/* Applies the stored theme before first paint — in React this would
+            flash the light theme and then flip. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="canonical" href={siteUrl} />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/images/logo.png" />

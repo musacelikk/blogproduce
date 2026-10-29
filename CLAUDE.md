@@ -102,6 +102,20 @@ the module layout, and the API itself may run more than one instance.
 
 Two Anthropic-specific constraints are baked into `completeAnthropic()` and easy to reintroduce by accident: **`temperature` is rejected** by Claude 5 models, and **thinking is on by default and shares the `max_tokens` budget** with the response — which is why Anthropic requests get 32K while OpenAI gets 16K. Depth is controlled with `output_config.effort`, not a token budget.
 
+**Internal links are written by the model, not inserted afterwards.** The worker resolves the
+site's recently published posts (`findRelatedPosts`, scoped to `workspaceId`) and passes them as
+`relatedPosts`; `buildWriterSystemPrompt` then asks for two or three contextual links. Resolving it
+in the worker rather than threading it through the SQS message means every generation path — the
+dashboard, the partner API and autopilot — gets links without widening the message contract, and
+in-flight messages from an older deploy keep working. The rule is in the shared writer prompt, so
+the editor pass cannot strip the links back out.
+
+**Stage reporting is advisory.** `BlogGenerationRequest.onStage` fires as each stage begins and the
+worker writes it to `generation_jobs.stage`, which `GET /jobs/:jobId` exposes. Only stages that
+actually run are reported — standard tier skips the editor pass — so a client must not assume a
+fixed sequence, and a progress display must not promise a step that will never arrive. A throwing
+callback is swallowed: progress must never cost an article the customer was billed for.
+
 Prompts live in `blog-prompts.ts` and are the main lever on output quality — the writer persona, the anti-cliché rules, and the editor checklist are all there rather than scattered across services.
 
 ### Autopilot (`backend/src/autopilot/`)
@@ -132,6 +146,12 @@ Three independent spend limits, because cadence alone is not a budget:
 increments `attempts`, so it is retried; only after `MAX_ENQUEUE_ATTEMPTS` is it rejected, so one
 poison topic cannot stall the queue behind it. Burning a topic on a billing error would silently
 cost the customer an article they never received.
+
+Articles get a **cover image** from Unsplash, searched with the topic planner's own
+`primaryKeyword`. That is why it costs nothing: the alternative, the retired `SeoService`'s
+`findCoverImage`, spent a `gpt-4o-mini` call deriving a search phrase autopilot already had. A
+missing `UNSPLASH_ACCESS_KEY` makes `searchPhotos` throw, so the lookup is wrapped — an install
+without that key still publishes, just without pictures.
 
 `auto_publish` does **not** publish inline. It marks the finished post `SCHEDULED`, handing it to
 `publishScheduledPosts` — which already claims each post atomically and fires the `post.published`
@@ -260,6 +280,19 @@ The `PublicApiController` (`/api/v1/public/projects/…`) has **no guard** by de
 Next.js app router with three shells distinguished by `data-*` attributes on the page root (`data-admin-page`, `data-dashboard-page`, `data-login-page`); `globals.css` hides the public navbar/footer based on them. `middleware.ts` additionally maps the `admin.` subdomain onto `/admin/*` routes in production.
 
 `lib/api.ts` is the single API client — it owns token refresh (single-flight, with a one-shot retry on 401). It does **not** unwrap the `{success, data}` envelope: `apiRequest` returns the parsed body as-is, and each wrapper does `response.data || response`, because only some controllers wrap. Follow that per-function pattern rather than unwrapping centrally; a central unwrap would corrupt the responses that are already bare. Design tokens live in `app/globals.css` as **"R G B" channel triplets** (`--primary-rgb: 32 62 236`), with a plain `--primary` derived from each for `var()` consumers. `tailwind.config.ts` maps its colour scale to `rgb(var(--x-rgb) / <alpha-value>)` — that indirection is what makes opacity modifiers (`bg-primary/10`) work, since Tailwind v3 cannot apply an alpha channel to a var holding a literal colour and silently drops the modifier instead. Shared primitives in `components/ui/` (Button, Card, Badge, Table, PageHeader, StatCard, EmptyState) — prefer them over hand-rolled markup, and use token classes (`bg-card`, `text-muted-foreground`) rather than hardcoded colors.
+
+**Dark theme.** `globals.css` carries a `.dark` block that redefines every token as *both* its
+"R G B" triplet and its derived literal. The repetition is deliberate: `--primary: rgb(var(--primary-rgb))`
+in `:root` is substituted using the triplet as seen on the element where `--primary` is computed, so
+redeclaring the literals makes the theme correct wherever the class lands, not only on `<html>`.
+`lib/theme.ts` holds the preference (light/dark/system) and exports `THEME_INIT_SCRIPT`, which
+`app/layout.tsx` injects into `<head>` — resolving the theme in React would paint light and then
+flip. Adding a token means adding it to **both** blocks.
+
+**Marketing visuals are mockups, not screenshots.** `components/sections/mockups/` builds the
+product shots on the homepage and `/solutions` out of design tokens. They replaced four PNGs
+(~4.9MB) that stayed light in dark mode and went stale whenever the UI moved. Keep them
+token-based: a hardcoded colour here is a mockup that will be wrong in one theme.
 
 Autopilot is configured at `/dashboard/autopilot`, which is also the only place a customer can
 create a `Site` — the sites API had no UI before it. The page shows a live monthly cost projection

@@ -52,6 +52,16 @@ export class GenerationJob {
   @Column({ type: 'enum', enum: JobStatus, default: JobStatus.PENDING })
   status: JobStatus;
 
+  /**
+   * Which pipeline stage is running right now, for progress display.
+   *
+   * Varchar, not an enum: the pipeline's shape depends on the tier (standard
+   * skips the editor pass) and on `AI_PIPELINE_MODE`, so the set of values a
+   * job can report is a property of configuration, not of the schema.
+   */
+  @Column({ name: 'stage', type: 'varchar', length: 16, nullable: true })
+  stage: string | null;
+
   @Column({ type: 'jsonb', nullable: true })
   requestData: {
     topic: string;
@@ -87,4 +97,3 @@ export class GenerationJob {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

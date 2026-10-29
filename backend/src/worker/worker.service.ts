@@ -2,7 +2,12 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, Message } from '@aws-sdk/client-sqs';
+import {
+  SQSClient,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+  Message,
+} from '@aws-sdk/client-sqs';
 import { Post, PostStatus } from '../entities/post.entity';
 import { PostRevision, ContentFormat, ContentEditor } from '../entities/post-revision.entity';
 import { PostSeo } from '../entities/post-seo.entity';
@@ -22,7 +27,7 @@ export class WorkerService {
   private publishPostQueueUrl: string;
   private publishPostDlqUrl: string;
   private isProcessing = false;
-  
+
   // Concurrency control
   private readonly maxConcurrency: number;
   private activeJobs = new Set<string>(); // Track active job IDs
@@ -47,8 +52,9 @@ export class WorkerService {
   ) {
     // Get region from config or parse from queue URL
     let region = this.configService.get<string>('AWS_REGION');
-    const generatePostQueueUrl = this.configService.get<string>('SQS_GENERATE_POST_QUEUE_URL') || '';
-    
+    const generatePostQueueUrl =
+      this.configService.get<string>('SQS_GENERATE_POST_QUEUE_URL') || '';
+
     // If region not set, try to parse from queue URL
     if (!region && generatePostQueueUrl) {
       try {
@@ -62,9 +68,9 @@ export class WorkerService {
         // Ignore parse errors
       }
     }
-    
+
     region = region || 'us-east-1';
-    
+
     const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
     const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
 
@@ -84,23 +90,36 @@ export class WorkerService {
           }
         : {}),
     });
-    
+
     this.logger.log(`SQS Client configured with region: ${region}`);
     if (accessKeyId && secretAccessKey) {
-      this.logger.log(`AWS credentials configured (Access Key ID: ${accessKeyId.substring(0, 4)}...)`);
+      this.logger.log(
+        `AWS credentials configured (Access Key ID: ${accessKeyId.substring(0, 4)}...)`,
+      );
     }
 
     this.generatePostQueueUrl = this.configService.get<string>('SQS_GENERATE_POST_QUEUE_URL') || '';
     this.generatePostDlqUrl = this.configService.get<string>('SQS_GENERATE_POST_DLQ_URL') || '';
     this.publishPostQueueUrl = this.configService.get<string>('SQS_PUBLISH_POST_QUEUE_URL') || '';
     this.publishPostDlqUrl = this.configService.get<string>('SQS_PUBLISH_POST_DLQ_URL') || '';
-    
+
     // Concurrency and timeout configuration
-    this.maxConcurrency = parseInt(this.configService.get<string>('WORKER_MAX_CONCURRENCY') || '3', 10);
-    this.jobTimeoutMs = parseInt(this.configService.get<string>('WORKER_JOB_TIMEOUT_MS') || '300000', 10); // 5 minutes default
-    this.maxReceiveCount = parseInt(this.configService.get<string>('WORKER_MAX_RECEIVE_COUNT') || '3', 10);
-    
-    this.logger.log(`Worker configured: maxConcurrency=${this.maxConcurrency}, jobTimeoutMs=${this.jobTimeoutMs}`);
+    this.maxConcurrency = parseInt(
+      this.configService.get<string>('WORKER_MAX_CONCURRENCY') || '3',
+      10,
+    );
+    this.jobTimeoutMs = parseInt(
+      this.configService.get<string>('WORKER_JOB_TIMEOUT_MS') || '300000',
+      10,
+    ); // 5 minutes default
+    this.maxReceiveCount = parseInt(
+      this.configService.get<string>('WORKER_MAX_RECEIVE_COUNT') || '3',
+      10,
+    );
+
+    this.logger.log(
+      `Worker configured: maxConcurrency=${this.maxConcurrency}, jobTimeoutMs=${this.jobTimeoutMs}`,
+    );
 
     // Log configuration
     if (this.generatePostQueueUrl) {
@@ -159,7 +178,9 @@ export class WorkerService {
           for (const message of response.Messages) {
             // Check concurrency limit
             if (this.activeJobs.size >= this.maxConcurrency) {
-              this.logger.warn(`Max concurrency (${this.maxConcurrency}) reached, skipping message`);
+              this.logger.warn(
+                `Max concurrency (${this.maxConcurrency}) reached, skipping message`,
+              );
               // Don't delete message, let it become visible again for retry
               continue;
             }
@@ -179,18 +200,26 @@ export class WorkerService {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        
+
         // Check for specific AWS credential errors
-        if (errorMessage.includes('security token') || errorMessage.includes('InvalidClientTokenId')) {
+        if (
+          errorMessage.includes('security token') ||
+          errorMessage.includes('InvalidClientTokenId')
+        ) {
           this.logger.error('AWS credentials are invalid or expired.');
-          this.logger.error('Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env file');
+          this.logger.error(
+            'Please check your AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env file',
+          );
           this.logger.error('Make sure the credentials have SQS permissions for the queue');
         } else if (errorMessage.includes('region')) {
           this.logger.error('AWS region mismatch. Check AWS_REGION or queue URL region.');
         } else {
-          this.logger.error(`Error polling queue: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+          this.logger.error(
+            `Error polling queue: ${errorMessage}`,
+            error instanceof Error ? error.stack : undefined,
+          );
         }
-        
+
         await this.sleep(5000);
       }
     }
@@ -227,7 +256,9 @@ export class WorkerService {
       // idempotency lock: a concurrent delivery of the same message loses the race.
       const claimed = await this.claimPost(body.postId);
       if (!claimed) {
-        this.logger.warn(`Post ${body.postId} is already being generated, skipping duplicate delivery`);
+        this.logger.warn(
+          `Post ${body.postId} is already being generated, skipping duplicate delivery`,
+        );
         await this.deleteMessage(this.generatePostQueueUrl, receiptHandle);
         return;
       }
@@ -248,12 +279,21 @@ export class WorkerService {
         seoMode: body.seoMode,
         keywords: body.keywords,
         outline: body.outline,
+        relatedPosts: await this.findRelatedPosts(post),
         modelOrTier: tier,
+        onStage: body.jobId
+          ? (stage) => this.recordJobStage(body.jobId as string, stage)
+          : undefined,
       });
 
       // Record usage per pipeline stage (stages may run on different models)
       for (const stage of result.stages) {
-        await this.usageService.recordUsage(post.authorId, stage.model, stage.tokensIn, stage.tokensOut);
+        await this.usageService.recordUsage(
+          post.authorId,
+          stage.model,
+          stage.tokensIn,
+          stage.tokensOut,
+        );
       }
 
       // Anything spent past the monthly allowance comes out of purchased tokens.
@@ -279,7 +319,10 @@ export class WorkerService {
       this.logger.log(`Successfully processed postId: ${body.postId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error processing message: ${errorMessage}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        `Error processing message: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
 
       let body: GeneratePostMessage | null = null;
       try {
@@ -304,7 +347,12 @@ export class WorkerService {
         );
         await this.updatePostStatus(body.postId, PostStatus.QUEUED, finalErrorMessage);
         if (body.jobId) {
-          await this.updateGenerationJob(body.jobId, JobStatus.PENDING, finalErrorMessage, Date.now() - startTime);
+          await this.updateGenerationJob(
+            body.jobId,
+            JobStatus.PENDING,
+            finalErrorMessage,
+            Date.now() - startTime,
+          );
         }
         return;
       }
@@ -314,7 +362,10 @@ export class WorkerService {
         if (retryable && exhausted) {
           this.logger.warn(`Job exceeded max receives (${this.maxReceiveCount}), sending to DLQ`);
           try {
-            await this.sqsService.sendToGeneratePostDlq({ ...body, retryCount: receiveCount }, errorMessage);
+            await this.sqsService.sendToGeneratePostDlq(
+              { ...body, retryCount: receiveCount },
+              errorMessage,
+            );
           } catch (dlqError) {
             this.logger.error(`Failed to send to DLQ: ${dlqError.message}`);
           }
@@ -323,7 +374,12 @@ export class WorkerService {
         await this.updatePostStatus(body.postId, PostStatus.FAILED, finalErrorMessage);
 
         if (body.jobId) {
-          await this.updateGenerationJob(body.jobId, JobStatus.FAILED, finalErrorMessage, Date.now() - startTime);
+          await this.updateGenerationJob(
+            body.jobId,
+            JobStatus.FAILED,
+            finalErrorMessage,
+            Date.now() - startTime,
+          );
         }
       } catch (e) {
         this.logger.error(`Failed to update post status: ${e.message}`);
@@ -337,7 +393,10 @@ export class WorkerService {
    * Map a thrown error to a user-facing message and decide whether retrying can help.
    * Quota/rate-limit/network errors are transient; refusals and bad input are not.
    */
-  private classifyError(error: unknown, errorMessage: string): { message: string; retryable: boolean } {
+  private classifyError(
+    error: unknown,
+    errorMessage: string,
+  ): { message: string; retryable: boolean } {
     if (error instanceof LlmRefusalError) {
       return {
         message:
@@ -346,7 +405,12 @@ export class WorkerService {
       };
     }
 
-    if (error instanceof ForbiddenException || /aylık kullanım limiti|token bakiyeniz|deneme süreniz|aboneliğinizin süresi/i.test(errorMessage)) {
+    if (
+      error instanceof ForbiddenException ||
+      /aylık kullanım limiti|token bakiyeniz|deneme süreniz|aboneliğinizin süresi/i.test(
+        errorMessage,
+      )
+    ) {
       return {
         message: errorMessage,
         retryable: false,
@@ -355,14 +419,16 @@ export class WorkerService {
 
     if (/quota/i.test(errorMessage)) {
       return {
-        message: 'AI sağlayıcısının API kotası aşıldı. Lütfen hesap limitlerini kontrol edin veya daha sonra tekrar deneyin.',
+        message:
+          'AI sağlayıcısının API kotası aşıldı. Lütfen hesap limitlerini kontrol edin veya daha sonra tekrar deneyin.',
         retryable: true,
       };
     }
 
     if (/rate limit/i.test(errorMessage) || errorMessage.includes('429')) {
       return {
-        message: 'AI sağlayıcısında rate limit aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.',
+        message:
+          'AI sağlayıcısında rate limit aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.',
         retryable: true,
       };
     }
@@ -411,6 +477,51 @@ export class WorkerService {
     });
   }
 
+  /**
+   * Published articles on the same site, for the writer to link to.
+   *
+   * Resolved here rather than passed through the SQS message so that every
+   * generation path gets internal links without widening the message contract —
+   * and so in-flight messages from an older deploy keep working.
+   *
+   * Scoped to `workspaceId` because that is the site boundary the dashboard
+   * uses; a post with no workspace (older API rows, see migration 003) simply
+   * gets no links rather than borrowing another tenant's.
+   */
+  private async findRelatedPosts(post: Post): Promise<Array<{ title: string; slug: string }>> {
+    if (!post.workspaceId) return [];
+
+    try {
+      const published = await this.postsRepository.find({
+        where: {
+          workspaceId: post.workspaceId,
+          status: PostStatus.PUBLISHED,
+        },
+        select: ['id', 'title', 'slug'],
+        order: { publishedAt: 'DESC' },
+        take: 8,
+      });
+
+      return published
+        .filter((p) => p.id !== post.id && p.slug && p.title)
+        .map((p) => ({ title: p.title, slug: p.slug }));
+    } catch (err) {
+      // Links are an enhancement; losing them must not cost us the article.
+      this.logger.warn(`İlgili yazılar getirilemedi: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Record which pipeline stage a job is on, for the client's progress display.
+   *
+   * Deliberately a bare UPDATE with no read: it is advisory, fires up to three
+   * times per job, and the generator already swallows any failure here.
+   */
+  private async recordJobStage(jobId: string, stage: string): Promise<void> {
+    await this.generationJobRepository.update(jobId, { stage });
+  }
+
   private async updateGenerationJob(
     jobId: string,
     status: JobStatus,
@@ -427,6 +538,8 @@ export class WorkerService {
       updateData.startedAt = new Date();
     } else if (status === JobStatus.COMPLETED || status === JobStatus.FAILED) {
       updateData.completedAt = new Date();
+      // A terminal job must not keep advertising the stage it died on.
+      updateData.stage = null;
     }
 
     await this.generationJobRepository.update(jobId, updateData);
@@ -530,4 +643,3 @@ export class WorkerService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

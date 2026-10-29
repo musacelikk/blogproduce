@@ -1,5 +1,6 @@
 'use client';
 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, LogOut, Settings, ChevronDown, Check, Zap, Menu, X, Clock, AlertTriangle } from 'lucide-react';
@@ -146,6 +147,7 @@ export function DashboardHeader() {
 
       {/* Right */}
       <div className="flex items-center gap-2">
+        <ThemeToggle />
 
         {/* Trial / expired pill — visible on every dashboard screen */}
         {showTrialPill && (

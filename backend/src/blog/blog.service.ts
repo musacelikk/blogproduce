@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -13,7 +13,11 @@ import { ApiKey } from '../entities/api-key.entity';
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
 import { encodeCursor, decodeCursor } from '../common/utils/cursor.util';
-import { jsonToMarkdown, convertContentFormat, parseFormat } from '../common/utils/content-format.util';
+import {
+  jsonToMarkdown,
+  convertContentFormat,
+  parseFormat,
+} from '../common/utils/content-format.util';
 import { ContentFormat } from '../entities/post-revision.entity';
 import { getPublishedRevision, sortRevisionsDesc } from '../common/utils/revision.util';
 
@@ -44,14 +48,15 @@ export class BlogService {
     }
 
     // Remove markdown headers and get first paragraph
-    const plainText = content
-      .replace(/#{1,6}\s+/g, '') // Remove headers
-      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
-      .replace(/\*([^*]+)\*/g, '$1') // Remove italic
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-      .replace(/`([^`]+)`/g, '$1') // Remove code
-      .split('\n\n')
-      .find(para => para.trim().length > 20) || '';
+    const plainText =
+      content
+        .replace(/#{1,6}\s+/g, '') // Remove headers
+        .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+        .replace(/\*([^*]+)\*/g, '$1') // Remove italic
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+        .replace(/`([^`]+)`/g, '$1') // Remove code
+        .split('\n\n')
+        .find((para) => para.trim().length > 20) || '';
 
     if (plainText.length <= maxLength) {
       return plainText.trim();
@@ -263,7 +268,9 @@ export class BlogService {
     const readingTime = contentMarkdown ? calculateReadingTime(contentMarkdown) : undefined;
 
     // Extract excerpt
-    const excerpt = post.excerpt || (contentMarkdown ? this.generateExcerpt(contentMarkdown, post.title) : undefined);
+    const excerpt =
+      post.excerpt ||
+      (contentMarkdown ? this.generateExcerpt(contentMarkdown, post.title) : undefined);
 
     // Extract TOC, FAQ, and schema — primarily from the revision's canonical JSON
     // (which the AI pipeline populates), falling back to the stored SEO record.
@@ -287,9 +294,10 @@ export class BlogService {
 
     if (post.seo?.schemaJsonld) {
       try {
-        const schema = typeof post.seo.schemaJsonld === 'string'
-          ? JSON.parse(post.seo.schemaJsonld)
-          : post.seo.schemaJsonld;
+        const schema =
+          typeof post.seo.schemaJsonld === 'string'
+            ? JSON.parse(post.seo.schemaJsonld)
+            : post.seo.schemaJsonld;
 
         // The worker stores Article + FAQPage together under @graph
         const nodes: any[] = Array.isArray(schema['@graph']) ? schema['@graph'] : [schema];
@@ -316,9 +324,10 @@ export class BlogService {
     let coverImageCredit: { name: string; photographer_url: string; photo_url: string } | undefined;
     if (post.coverImageCreditJson) {
       try {
-        const credit = typeof post.coverImageCreditJson === 'string'
-          ? JSON.parse(post.coverImageCreditJson)
-          : post.coverImageCreditJson;
+        const credit =
+          typeof post.coverImageCreditJson === 'string'
+            ? JSON.parse(post.coverImageCreditJson)
+            : post.coverImageCreditJson;
         if (credit) {
           coverImageCredit = {
             name: credit.name || '',
@@ -344,24 +353,32 @@ export class BlogService {
       published_at: post.publishedAt,
       created_at: post.createdAt,
       updated_at: post.updatedAt,
-      tags: post.tags?.map((tag) => ({
-        id: tag.id,
-        name: tag.name,
-        slug: tag.slug,
-      })) || [],
+      tags:
+        post.tags?.map((tag) => ({
+          id: tag.id,
+          name: tag.name,
+          slug: tag.slug,
+        })) || [],
       categories: [], // TODO: Add categories when implemented
-      author: post.author ? {
-        id: post.author.id,
-        name: post.author.name,
-        email: post.author.email,
-      } : null,
+      author: post.author
+        ? {
+            id: post.author.id,
+            name: post.author.name,
+            email: post.author.email,
+          }
+        : null,
     };
 
     if (includeContent && rawContent) {
       const requestedFormat = parseFormat(format) || ContentFormat.JSON;
       try {
         formatted.content = convertContentFormat(rawContent, storedFormat, requestedFormat);
-        formatted.contentFormat = requestedFormat === ContentFormat.JSON ? 'json' : requestedFormat === ContentFormat.MD ? 'md' : 'html';
+        formatted.contentFormat =
+          requestedFormat === ContentFormat.JSON
+            ? 'json'
+            : requestedFormat === ContentFormat.MD
+              ? 'md'
+              : 'html';
       } catch {
         formatted.content = rawContent;
         formatted.contentFormat = 'json';
@@ -373,7 +390,7 @@ export class BlogService {
         formatted.content_html = contentHtml;
       }
       formatted.reading_time = readingTime;
-      
+
       if (toc) {
         formatted.toc = toc;
       }
@@ -400,7 +417,9 @@ export class BlogService {
     return formatted;
   }
 
-  async getUserOrganizationAndProject(user: User): Promise<{ organization: Organization; project: Project }> {
+  async getUserOrganizationAndProject(
+    user: User,
+  ): Promise<{ organization: Organization; project: Project }> {
     // Get user's first workspace (or create a default one)
     let workspace = await this.workspaceRepository.findOne({
       where: { ownerId: user.id },
@@ -453,4 +472,3 @@ export class BlogService {
     return { organization, project };
   }
 }
-

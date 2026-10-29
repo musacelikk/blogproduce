@@ -9,6 +9,7 @@ import { Site } from '../entities/site.entity';
 import { User } from '../entities/user.entity';
 import { Workspace } from '../entities/workspace.entity';
 import { PostsService } from '../posts/posts.service';
+import { UnsplashService } from '../unsplash/unsplash.service';
 import { normalizeTier } from '../billing/model-tiers';
 import { TopicPlannerService, REFILL_THRESHOLD } from './topic-planner.service';
 import { UpsertAutopilotConfigDto } from './dto/upsert-autopilot-config.dto';
@@ -29,6 +30,7 @@ export class AutopilotService {
     private readonly configService: ConfigService,
     private readonly postsService: PostsService,
     private readonly planner: TopicPlannerService,
+    private readonly unsplash: UnsplashService,
     @InjectRepository(AutopilotConfig)
     private readonly configRepository: Repository<AutopilotConfig>,
     @InjectRepository(TopicIdea)
@@ -236,6 +238,8 @@ export class AutopilotService {
       return false;
     }
 
+    const cover = await this.findCoverImage(topic);
+
     try {
       const result = await this.postsService.generate(owner, {
         workspaceId: config.workspaceId,
@@ -247,6 +251,7 @@ export class AutopilotService {
         model: config.tier,
         targetAudience: config.targetAudience ?? undefined,
         additionalContext: buildContext(topic, config),
+        ...(cover ? { coverImageUrl: cover.url, coverImageCreditJson: cover.creditJson } : {}),
       });
 
       await this.topicRepository.update(
@@ -337,6 +342,47 @@ export class AutopilotService {
   private intervalFor(config: AutopilotConfig): number {
     const perWeek = Math.max(1, Math.min(config.postsPerWeek || 1, 14));
     return Math.floor(WEEK_MS / perWeek);
+  }
+
+  /**
+   * A cover image for a planned topic, or null.
+   *
+   * Searched with the topic planner's own `primaryKeyword`, which is why this
+   * costs nothing: the alternative, `SeoService.findCoverImage`, spent a
+   * gpt-4o-mini call deriving a search phrase we already have.
+   *
+   * Never fatal. `searchPhotos` throws outright when `UNSPLASH_ACCESS_KEY` is
+   * unset, and an install without that key must still publish articles — just
+   * without pictures.
+   */
+  private async findCoverImage(
+    topic: TopicIdea,
+  ): Promise<{ url: string; creditJson: string } | null> {
+    const query = (topic.primaryKeyword || topic.title || '').trim();
+    if (!query) return null;
+
+    try {
+      const photos = await this.unsplash.searchPhotos(query, 1, 1);
+      const photo = photos?.[0];
+      if (!photo) return null;
+
+      // Unsplash's API guidelines require a download ping on use; it is
+      // fire-and-forget because a failed ping must not cost us the image.
+      this.unsplash.triggerDownload(photo.id).catch(() => undefined);
+
+      return {
+        url: photo.urls.regular || photo.urls.full,
+        // posts.service parses this field, so it is handed over as a string.
+        creditJson: JSON.stringify({
+          name: photo.user.name,
+          photographerUrl: photo.user.links.html,
+          photoUrl: photo.links.html,
+        }),
+      };
+    } catch (err) {
+      this.logger.warn(`Kapak görseli bulunamadı ("${query}"): ${(err as Error).message}`);
+      return null;
+    }
   }
 
   private async note(config: AutopilotConfig, message: string): Promise<void> {

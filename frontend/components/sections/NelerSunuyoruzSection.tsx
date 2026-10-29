@@ -1,6 +1,11 @@
 "use client"
 
-import Image from "next/image"
+import {
+  ContentListMockup,
+  GeneratorMockup,
+  UsageMockup,
+  WorkspacesMockup,
+} from "@/components/sections/mockups"
 import Link from "next/link"
 import { ArrowUpRight, Target, Sparkles, Send } from "lucide-react"
 import { motion, useInView } from "framer-motion"
@@ -38,7 +43,7 @@ const features = [
     category: "AI & SEO Otomasyonu",
     description:
       "Konuyu girin; AI, SEO analizinden görsel üretimine kadar her adımı tamamlasın. RESTful API ile içerikleri doğrudan kendi platformunuza akıtın.",
-    image: "/home.png",
+    Mockup: GeneratorMockup,
     tags: ["SEO Gömülü", "Görsel Üretimi", "API Entegrasyonu", "Multi-Model"],
   },
   {
@@ -47,7 +52,7 @@ const features = [
     category: "Operasyonel Verimlilik",
     description:
       "Tüm içerikleri tek panelden yönetin. Durum takibi, anlık önizleme ve gelişmiş filtreleme ile yayın süreciniz hızlanır.",
-    image: "/blogs.png",
+    Mockup: ContentListMockup,
     tags: ["İçerik Arşivi", "Yayın Takvimi", "Hızlı Düzenleme"],
   },
   {
@@ -56,7 +61,7 @@ const features = [
     category: "Maliyet Kontrolü",
     description:
       "Workspace bazlı tüketimi gerçek zamanlı izleyin. İstek sayısı, token kullanımı ve aylık geçmişle bütçeniz kontrol altında kalır.",
-    image: "/kullanım.png",
+    Mockup: UsageMockup,
     tags: ["Gerçek Zamanlı Veri", "Bütçe Yönetimi", "Detaylı Rapor"],
   },
   {
@@ -65,7 +70,7 @@ const features = [
     category: "Gelişmiş Organizasyon",
     description:
       "Projelerinizi ve müşterilerinizi birbirinden ayırın. Her çalışma alanına özel API anahtarı ve bağımsız içerik listesiyle ölçeklenin.",
-    image: "/workspaces.png",
+    Mockup: WorkspacesMockup,
     tags: ["White-Label Hazır", "Ekip Yönetimi", "API İzolasyonu"],
   },
 ]
@@ -135,14 +140,10 @@ export const NelerSunuyoruzSection = () => {
             <motion.div key={feature.id} variants={cardVariants}>
               <Link href="/solutions" className="group block h-full">
                 <Card variant="interactive" className="h-full overflow-hidden">
-                  <div className="relative aspect-[2/1] overflow-hidden border-b border-border bg-surface-sunken">
-                    <Image
-                      src={feature.image}
-                      alt={feature.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-contain object-center transition-transform duration-500 ease-out-quart group-hover:scale-[1.03]"
-                    />
+                  {/* Token-built mockup rather than a screenshot: themes
+                      correctly and cannot go stale as the product moves. */}
+                  <div className="overflow-hidden border-b border-border bg-surface-sunken p-4">
+                    <feature.Mockup className="transition-transform duration-500 ease-out-quart group-hover:scale-[1.02]" />
                   </div>
                   <div className="p-6">
                     <div className="flex items-start justify-between gap-4">

@@ -14,6 +14,7 @@ import { Workspace } from '../entities/workspace.entity';
 import { PostsModule } from '../posts/posts.module';
 import { AiModule } from '../ai/ai.module';
 import { UsageModule } from '../usage/usage.module';
+import { UnsplashModule } from '../unsplash/unsplash.module';
 
 @Module({
   imports: [
@@ -27,6 +28,8 @@ import { UsageModule } from '../usage/usage.module';
     PostsModule,
     AiModule,
     UsageModule,
+    // Cover images, searched with the planner's primaryKeyword — no model call.
+    UnsplashModule,
   ],
   controllers: [AutopilotController],
   providers: [AutopilotService, TopicPlannerService, AutopilotSchedulerService],

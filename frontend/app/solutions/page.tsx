@@ -7,7 +7,12 @@ import {
   ArrowRight, Shield, BarChart2, Check,
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import {
+  ContentListMockup,
+  GeneratorMockup,
+  UsageMockup,
+  WorkspacesMockup,
+} from '@/components/sections/mockups';
 import { SectionHeading } from '@/components/sections/SectionHeading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +25,7 @@ const showcases = [
     title: 'Bir prompt yaz, profesyonel blog hazır',
     description:
       'Konu, ton, hedef kitle ve uzunluğu belirle; AI dakikalar içinde SEO dostu, özgün blog içeriğini üretsin. Markdown, HTML veya JSON formatında teslim alabilirsin.',
-    image: '/home.png',
+    Mockup: GeneratorMockup,
     bullets: ['GPT-4o & Claude desteği', 'Otomatik SEO optimizasyonu', 'Resimli içerik üretimi', '50+ dil desteği'],
     reverse: false,
   },
@@ -29,7 +34,7 @@ const showcases = [
     title: 'Tüm bloglarını tek panelden yönet',
     description:
       'Taslak, incelemede ve yayınlandı durumlarıyla filtrele. Anlık önizleme, hızlı düzenleme ve tek tıkla yayın. Yüzlerce içeriği kolayca takip et.',
-    image: '/blogs.png',
+    Mockup: ContentListMockup,
     bullets: ['Durum bazlı filtreleme', 'Önizleme & tek tıkla yayın', 'Arama ve sıralama', 'Toplu işlem desteği'],
     reverse: true,
   },
@@ -38,7 +43,7 @@ const showcases = [
     title: 'Token kullanımını gerçek zamanlı izle',
     description:
       'Workspace bazlı tüketim verilerini anlık takip et. Input/output token, istek sayısı ve aylık geçmiş ile bütçeni tam kontrol altında tut.',
-    image: '/kullanım.png',
+    Mockup: UsageMockup,
     bullets: ['Gerçek zamanlı izleme', 'Workspace bazlı raporlar', 'Aylık geçmiş grafiği', 'Bütçe uyarıları'],
     reverse: false,
   },
@@ -47,7 +52,7 @@ const showcases = [
     title: "Projelerini workspace'lerle ayır",
     description:
       'Her müşteri veya proje için bağımsız workspace: ayrı API anahtarı, ayrı blog listesi, ayrı kullanım takibi. Profesyonelce ölçeklen.',
-    image: '/workspaces.png',
+    Mockup: WorkspacesMockup,
     bullets: ['Sınırsız workspace', 'Proje başına API anahtarı', 'Ekip erişim yönetimi', 'White-label hazır yapı'],
     reverse: true,
   },
@@ -139,17 +144,9 @@ function Section({ showcase }: { showcase: typeof showcases[0] }) {
         </ul>
       </motion.div>
 
-      {/* Mockup */}
+      {/* Mockup — token'lardan kurulu, ekran görüntüsü değil. */}
       <motion.div variants={fadeUp}>
-        <div className="overflow-hidden rounded-xl border border-border bg-surface-sunken shadow-elevated">
-          <Image
-            src={showcase.image}
-            alt={showcase.title}
-            width={800}
-            height={500}
-            className="h-auto w-full object-contain"
-          />
-        </div>
+        <showcase.Mockup />
       </motion.div>
     </motion.div>
   );

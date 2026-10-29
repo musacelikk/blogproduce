@@ -59,6 +59,32 @@ const DEFAULTS: AutopilotConfigInput = {
   excludedTopics: '',
 };
 
+/**
+ * Cadence presets, in articles per week — the unit the backend spaces runs by
+ * (7 / postsPerWeek days apart). Offered as presets because "every 3.5 days" is
+ * not how anyone decides how often to publish.
+ */
+const CADENCE_PRESETS = [
+  { postsPerWeek: 14, label: 'Günde 2', perMonth: 60 },
+  { postsPerWeek: 7, label: 'Günde 1', perMonth: 30 },
+  { postsPerWeek: 3, label: 'Haftada 3', perMonth: 13 },
+  { postsPerWeek: 2, label: 'Haftada 2', perMonth: 9 },
+  { postsPerWeek: 1, label: 'Haftada 1', perMonth: 4 },
+] as const;
+
+const PUBLISH_MODES = [
+  {
+    autoPublish: false,
+    label: 'Taslağa al, ben onaylayayım',
+    hint: 'Makale DRAFT olarak bekler. Yayına yalnızca siz onayladığınızda çıkar.',
+  },
+  {
+    autoPublish: true,
+    label: 'Doğrudan yayınla',
+    hint: 'Üretim biter, makale otomatik yayına girer. İnsan kontrolü olmaz.',
+  },
+] as const;
+
 const STATUS_LABELS: Record<TopicIdea['status'], { label: string; variant: 'default' | 'success' | 'warning' }> = {
   planned: { label: 'Sırada', variant: 'default' },
   used: { label: 'Üretildi', variant: 'success' },
@@ -538,31 +564,69 @@ export default function AutopilotPage() {
               onChange={(v) => set('enabled', v)}
             />
             <ToggleRow
-              label="Otomatik yayınla"
-              hint="Kapalıyken makaleler taslak kalır ve sizin onayınızı bekler."
-              checked={!!form.autoPublish}
-              onChange={(v) => set('autoPublish', v)}
-            />
-            <ToggleRow
               label="SEO modu"
               hint="Meta başlık, açıklama ve SSS üretir."
               checked={!!form.seoMode}
               onChange={(v) => set('seoMode', v)}
             />
 
+            {/* Publish mode is a two-way choice, not a toggle: "off" does not
+                describe what happens to the article, and this is the decision
+                with the largest consequence on the page. */}
+            <fieldset className="mt-4 border-t border-border pt-4">
+              <legend className="mb-2 text-xs font-medium text-muted-foreground">
+                Makale bittiğinde
+              </legend>
+              <div className="space-y-2">
+                {PUBLISH_MODES.map((mode) => (
+                  <RadioCard
+                    key={String(mode.autoPublish)}
+                    name="publishMode"
+                    label={mode.label}
+                    hint={mode.hint}
+                    checked={!!form.autoPublish === mode.autoPublish}
+                    onSelect={() => set('autoPublish', mode.autoPublish)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+
             <div className="mt-4 space-y-4 border-t border-border pt-4">
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                  Haftada kaç makale
+              <div>
+                <span className="mb-2 block text-xs font-medium text-muted-foreground">
+                  Üretim temposu
                 </span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={14}
-                  value={form.postsPerWeek ?? 2}
-                  onChange={(e) => set('postsPerWeek', clampInt(e.target.value, 1, 14))}
-                />
-              </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {CADENCE_PRESETS.map((preset) => {
+                    const active = (form.postsPerWeek ?? 2) === preset.postsPerWeek;
+                    return (
+                      <button
+                        key={preset.postsPerWeek}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => set('postsPerWeek', preset.postsPerWeek)}
+                        className={cn(
+                          'rounded-lg border px-3 py-2 text-left text-xs transition-colors duration-fast ease-out-quart',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20',
+                          active
+                            ? 'border-primary bg-accent font-semibold text-accent-foreground'
+                            : 'border-border bg-card text-foreground hover:border-strong',
+                        )}
+                      >
+                        <span className="block">{preset.label}</span>
+                        <span
+                          className={cn(
+                            'mt-0.5 block text-[10px] font-normal',
+                            active ? 'text-accent-foreground/70' : 'text-muted-foreground',
+                          )}
+                        >
+                          ~{preset.perMonth} / ay
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <label className="block">
                 <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
@@ -717,4 +781,48 @@ function pickInput(config: AutopilotConfig): AutopilotConfigInput {
     keywords: config.keywords ?? '',
     excludedTopics: config.excludedTopics ?? '',
   };
+}
+
+function RadioCard({
+  name,
+  label,
+  hint,
+  checked,
+  onSelect,
+}: {
+  name: string;
+  label: string;
+  hint: string;
+  checked: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <label
+      className={cn(
+        'flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition-colors duration-fast ease-out-quart',
+        checked ? 'border-primary bg-accent' : 'border-border bg-card hover:border-strong',
+      )}
+    >
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onSelect}
+        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer border-border text-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+      />
+      <span className="min-w-0">
+        <span
+          className={cn(
+            'block text-sm font-medium',
+            checked ? 'text-accent-foreground' : 'text-foreground',
+          )}
+        >
+          {label}
+        </span>
+        <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+          {hint}
+        </span>
+      </span>
+    </label>
+  );
 }

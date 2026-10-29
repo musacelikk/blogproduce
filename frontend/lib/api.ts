@@ -2229,3 +2229,26 @@ export async function planAutopilotTopics(siteId: string): Promise<{ added: numb
 export async function rejectAutopilotTopic(topicId: string): Promise<void> {
   await apiRequest(`/autopilot/topics/${topicId}/reject`, { method: 'POST' });
 }
+
+// ------------------------------------------------------------------ Jobs API
+
+/** The pipeline stages a job can report. Which of them run depends on the tier. */
+export type GenerationStage = 'outline' | 'draft' | 'polish';
+
+export interface GenerationJobStatus {
+  jobId: string;
+  status: string;
+  /** null before the job starts, once it finishes, and on older deploys. */
+  stage: GenerationStage | null;
+  postId: string | null;
+  error: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  processingTimeMs: number | null;
+}
+
+export async function getJob(jobId: string): Promise<GenerationJobStatus> {
+  const response = await apiRequest(`/jobs/${jobId}`, { method: 'GET' });
+  return response.data || response;
+}
