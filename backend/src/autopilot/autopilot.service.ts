@@ -9,6 +9,7 @@ import { Site } from '../entities/site.entity';
 import { User } from '../entities/user.entity';
 import { Workspace } from '../entities/workspace.entity';
 import { Project } from '../entities/project.entity';
+import { Organization } from '../entities/organization.entity';
 import { PostsService } from '../posts/posts.service';
 import { UnsplashService } from '../unsplash/unsplash.service';
 import { normalizeTier } from '../billing/model-tiers';
@@ -78,33 +79,46 @@ export class AutopilotService {
   // site must belong to the workspace that project is bridged to, or one
   // customer's key could configure another customer's autopilot.
 
-  async getConfigForProject(siteId: string, project: Project): Promise<AutopilotConfig | null> {
-    const site = await this.assertSiteInProject(siteId, project);
+  async getConfigForProject(
+    siteId: string,
+    project: Project,
+    organization: Organization,
+  ): Promise<AutopilotConfig | null> {
+    const site = await this.assertSiteInProject(siteId, project, organization);
     return this.readConfig(site);
   }
 
   async upsertConfigForProject(
     siteId: string,
     project: Project,
+    organization: Organization,
     dto: UpsertAutopilotConfigDto,
   ): Promise<AutopilotConfig> {
-    const site = await this.assertSiteInProject(siteId, project);
+    const site = await this.assertSiteInProject(siteId, project, organization);
     return this.writeConfig(site, dto);
   }
 
-  async listTopicsForProject(siteId: string, project: Project): Promise<TopicIdea[]> {
-    const site = await this.assertSiteInProject(siteId, project);
+  async listTopicsForProject(
+    siteId: string,
+    project: Project,
+    organization: Organization,
+  ): Promise<TopicIdea[]> {
+    const site = await this.assertSiteInProject(siteId, project, organization);
     return this.readTopics(site);
   }
 
-  async planTopicsNowForProject(siteId: string, project: Project): Promise<{ added: number }> {
-    const site = await this.assertSiteInProject(siteId, project);
+  async planTopicsNowForProject(
+    siteId: string,
+    project: Project,
+    organization: Organization,
+  ): Promise<{ added: number }> {
+    const site = await this.assertSiteInProject(siteId, project, organization);
     return this.planFor(site);
   }
 
   /** The sites an API key may drive, so a caller can discover ids to configure. */
-  async listSitesForProject(project: Project): Promise<Site[]> {
-    const workspaceId = await this.resolveWorkspaceId(project);
+  async listSitesForProject(project: Project, organization: Organization): Promise<Site[]> {
+    const workspaceId = await this.resolveWorkspaceId(project, organization);
     if (!workspaceId) return [];
     return this.siteRepository.find({
       where: { workspaceId },
@@ -114,9 +128,10 @@ export class AutopilotService {
 
   async createSiteForProject(
     project: Project,
+    organization: Organization,
     input: { name: string; domain?: string; description?: string },
   ): Promise<Site> {
-    const workspaceId = await this.resolveWorkspaceId(project);
+    const workspaceId = await this.resolveWorkspaceId(project, organization);
     if (!workspaceId) {
       throw new ForbiddenException(
         'Bu API anahtarı bir workspace ile eşleşmiyor. Panelden bir site oluşturun.',
@@ -486,19 +501,42 @@ export class AutopilotService {
    *
    * `project.slug` holds the workspace id by convention (see
    * `BlogService.getUserOrganizationAndProject`), but a slug is a plain string,
-   * so it is shape-checked and then verified against `workspaces` rather than
-   * trusted. A project created outside the convention resolves to null, which
-   * denies rather than guessing.
+   * so three things are checked rather than trusted:
+   *
+   * 1. the slug has the shape of a uuid, before it is ever used as an id;
+   * 2. the project really belongs to the organization the key authenticated as;
+   * 3. **the workspace has the same owner as that organization.**
+   *
+   * (3) is the one that matters. Checking only that the slug names *some*
+   * existing workspace would rest the whole tenancy boundary on an invariant
+   * maintained in three other files — every project today is created with
+   * `slug = workspace.id` for a workspace the caller owns, but nothing in this
+   * module enforces that. The day someone adds a project endpoint that accepts
+   * a caller-supplied slug, this becomes a cross-tenant IDOR with no local sign
+   * of it. Comparing owners binds the workspace to the caller's own tenant
+   * independently of how the slug got there.
+   *
+   * Fails closed: a missing owner on either side resolves to null.
    */
-  private async resolveWorkspaceId(project: Project): Promise<string | null> {
+  private async resolveWorkspaceId(
+    project: Project,
+    organization: Organization,
+  ): Promise<string | null> {
     const slug = project?.slug;
     if (!slug || !UUID_PATTERN.test(slug)) return null;
 
+    // The guard loads both from one key record, so a mismatch means the pair was
+    // assembled somewhere it should not have been.
+    if (!organization?.id || project.organizationId !== organization.id) return null;
+    if (!organization.ownerId) return null;
+
     const workspace = await this.workspaceRepository.findOne({
       where: { id: slug },
-      select: ['id'],
+      select: ['id', 'ownerId'],
     });
-    return workspace?.id ?? null;
+    if (!workspace?.ownerId || workspace.ownerId !== organization.ownerId) return null;
+
+    return workspace.id;
   }
 
   /**
@@ -509,11 +547,15 @@ export class AutopilotService {
    * bridged to. A project that resolves to no workspace is denied outright —
    * there is no "default" site to fall back on.
    */
-  private async assertSiteInProject(siteId: string, project: Project): Promise<Site> {
+  private async assertSiteInProject(
+    siteId: string,
+    project: Project,
+    organization: Organization,
+  ): Promise<Site> {
     const site = await this.siteRepository.findOne({ where: { id: siteId } });
     if (!site) throw new NotFoundException('Site bulunamadı.');
 
-    const workspaceId = await this.resolveWorkspaceId(project);
+    const workspaceId = await this.resolveWorkspaceId(project, organization);
     if (!workspaceId || site.workspaceId !== workspaceId) {
       // Deliberately the same message as the dashboard's denial: whether a site
       // exists under another tenant is not this caller's business.

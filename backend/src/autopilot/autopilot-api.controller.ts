@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { CurrentProject } from '../auth/decorators/project.decorator';
+import { CurrentOrganization } from '../auth/decorators/organization.decorator';
 import { Project } from '../entities/project.entity';
+import { Organization } from '../entities/organization.entity';
 import { AutopilotService } from './autopilot.service';
 import { UpsertAutopilotConfigDto } from './dto/upsert-autopilot-config.dto';
 import { CreateSiteApiDto } from './dto/create-site-api.dto';
@@ -26,14 +28,21 @@ export class AutopilotApiController {
 
   /** Sites this key may drive — the ids every route below needs. */
   @Get('sites')
-  async listSites(@CurrentProject() project: Project) {
-    const sites = await this.autopilot.listSitesForProject(project);
+  async listSites(
+    @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
+  ) {
+    const sites = await this.autopilot.listSitesForProject(project, organization);
     return { success: true, data: sites };
   }
 
   @Post('sites')
-  async createSite(@CurrentProject() project: Project, @Body() dto: CreateSiteApiDto) {
-    const site = await this.autopilot.createSiteForProject(project, dto);
+  async createSite(
+    @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
+    @Body() dto: CreateSiteApiDto,
+  ) {
+    const site = await this.autopilot.createSiteForProject(project, organization, dto);
     return { success: true, data: site };
   }
 
@@ -42,8 +51,9 @@ export class AutopilotApiController {
   async getConfig(
     @Param('siteId', ParseUUIDPipe) siteId: string,
     @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
   ) {
-    const config = await this.autopilot.getConfigForProject(siteId, project);
+    const config = await this.autopilot.getConfigForProject(siteId, project, organization);
     return { success: true, data: config };
   }
 
@@ -55,9 +65,10 @@ export class AutopilotApiController {
   async upsertConfig(
     @Param('siteId', ParseUUIDPipe) siteId: string,
     @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
     @Body() dto: UpsertAutopilotConfigDto,
   ) {
-    const config = await this.autopilot.upsertConfigForProject(siteId, project, dto);
+    const config = await this.autopilot.upsertConfigForProject(siteId, project, organization, dto);
     return { success: true, data: config };
   }
 
@@ -65,8 +76,9 @@ export class AutopilotApiController {
   async listTopics(
     @Param('siteId', ParseUUIDPipe) siteId: string,
     @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
   ) {
-    const topics = await this.autopilot.listTopicsForProject(siteId, project);
+    const topics = await this.autopilot.listTopicsForProject(siteId, project, organization);
     return { success: true, data: topics };
   }
 
@@ -75,8 +87,9 @@ export class AutopilotApiController {
   async planTopics(
     @Param('siteId', ParseUUIDPipe) siteId: string,
     @CurrentProject() project: Project,
+    @CurrentOrganization() organization: Organization,
   ) {
-    const result = await this.autopilot.planTopicsNowForProject(siteId, project);
+    const result = await this.autopilot.planTopicsNowForProject(siteId, project, organization);
     return { success: true, data: result };
   }
 }

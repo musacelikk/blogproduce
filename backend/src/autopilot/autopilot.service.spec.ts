@@ -380,8 +380,30 @@ describe('autopilot cover images', () => {
 const WS_A = '11111111-1111-4111-8111-111111111111';
 const WS_B = '22222222-2222-4222-8222-222222222222';
 
-function apiHarness(opts: { siteWorkspaceId?: string; knownWorkspaces?: string[] } = {}) {
-  const known = new Set(opts.knownWorkspaces ?? [WS_A, WS_B]);
+const ORG_ID = 'org-1';
+const OWNER = 'owner-1';
+
+/** The organization an API key authenticated as. */
+function org(overrides: Partial<{ id: string; ownerId: string }> = {}) {
+  return { id: ORG_ID, ownerId: OWNER, ...overrides } as any;
+}
+
+/** The project that key is scoped to. `slug` carries the workspace id. */
+function proj(slug: string, organizationId = ORG_ID) {
+  return { slug, organizationId } as any;
+}
+
+function apiHarness(
+  opts: {
+    siteWorkspaceId?: string;
+    /** workspace id -> owning user. A workspace absent here does not exist. */
+    workspaceOwners?: Record<string, string | null>;
+  } = {},
+) {
+  const owners: Record<string, string | null> = opts.workspaceOwners ?? {
+    [WS_A]: OWNER,
+    [WS_B]: OWNER,
+  };
 
   const siteRepo = {
     findOne: jest.fn().mockResolvedValue({
@@ -394,9 +416,10 @@ function apiHarness(opts: { siteWorkspaceId?: string; knownWorkspaces?: string[]
     save: jest.fn((v: any) => Promise.resolve({ id: 'site-new', ...v })),
   };
   const workspaceRepo = {
-    // Stands in for the `workspaces` lookup: only real ids resolve.
+    // Stands in for the `workspaces` lookup: only ids present in `owners` exist,
+    // and each carries whichever user owns it.
     findOne: jest.fn(({ where }: any) =>
-      Promise.resolve(known.has(where.id) ? { id: where.id, ownerId: 'owner-1' } : null),
+      Promise.resolve(where.id in owners ? { id: where.id, ownerId: owners[where.id] } : null),
     ),
   };
   const configRepo = {
@@ -427,16 +450,14 @@ describe('partner-API autopilot authorization', () => {
   it('allows a key whose project bridges to the site’s workspace', async () => {
     const h = apiHarness({ siteWorkspaceId: WS_A });
 
-    await expect(
-      h.service.getConfigForProject('site-1', { slug: WS_A } as any),
-    ).resolves.toBeNull();
+    await expect(h.service.getConfigForProject('site-1', proj(WS_A), org())).resolves.toBeNull();
   });
 
   it('refuses a site that belongs to another tenant', async () => {
     // The whole point: key for workspace B, site in workspace A.
     const h = apiHarness({ siteWorkspaceId: WS_A });
 
-    await expect(h.service.getConfigForProject('site-1', { slug: WS_B } as any)).rejects.toThrow(
+    await expect(h.service.getConfigForProject('site-1', proj(WS_B), org())).rejects.toThrow(
       ForbiddenException,
     );
   });
@@ -445,7 +466,7 @@ describe('partner-API autopilot authorization', () => {
     const h = apiHarness({ siteWorkspaceId: WS_A });
 
     await expect(
-      h.service.upsertConfigForProject('site-1', { slug: WS_B } as any, { enabled: true }),
+      h.service.upsertConfigForProject('site-1', proj(WS_B), org(), { enabled: true }),
     ).rejects.toThrow(ForbiddenException);
     expect(h.configRepo.save).not.toHaveBeenCalled();
   });
@@ -454,7 +475,7 @@ describe('partner-API autopilot authorization', () => {
     const h = apiHarness({ siteWorkspaceId: WS_A });
 
     await expect(
-      h.service.getConfigForProject('site-1', { slug: 'not-a-uuid' } as any),
+      h.service.getConfigForProject('site-1', proj('not-a-uuid'), org()),
     ).rejects.toThrow(ForbiddenException);
     // Shape-checked before it ever reaches the database.
     expect(h.workspaceRepo.findOne).not.toHaveBeenCalled();
@@ -463,9 +484,9 @@ describe('partner-API autopilot authorization', () => {
   it('refuses a slug that matches no workspace', async () => {
     // A project created outside the naming convention must deny, not fall back
     // to some "default" site.
-    const h = apiHarness({ siteWorkspaceId: WS_A, knownWorkspaces: [] });
+    const h = apiHarness({ siteWorkspaceId: WS_A, workspaceOwners: {} });
 
-    await expect(h.service.getConfigForProject('site-1', { slug: WS_A } as any)).rejects.toThrow(
+    await expect(h.service.getConfigForProject('site-1', proj(WS_A), org())).rejects.toThrow(
       ForbiddenException,
     );
   });
@@ -473,7 +494,7 @@ describe('partner-API autopilot authorization', () => {
   it('bills a key-created config to the workspace owner, not the key', async () => {
     const h = apiHarness({ siteWorkspaceId: WS_A });
 
-    await h.service.upsertConfigForProject('site-1', { slug: WS_A } as any, { enabled: true });
+    await h.service.upsertConfigForProject('site-1', proj(WS_A), org(), { enabled: true });
 
     expect(h.configRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'owner-1', workspaceId: WS_A }),
@@ -483,7 +504,7 @@ describe('partner-API autopilot authorization', () => {
   it('lists only the calling project’s sites', async () => {
     const h = apiHarness();
 
-    await h.service.listSitesForProject({ slug: WS_A } as any);
+    await h.service.listSitesForProject(proj(WS_A), org());
 
     expect(h.siteRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({ where: { workspaceId: WS_A } }),
@@ -491,18 +512,93 @@ describe('partner-API autopilot authorization', () => {
   });
 
   it('returns no sites for a project that bridges to nothing', async () => {
-    const h = apiHarness({ knownWorkspaces: [] });
+    const h = apiHarness({ workspaceOwners: {} });
 
-    await expect(h.service.listSitesForProject({ slug: WS_A } as any)).resolves.toEqual([]);
+    await expect(h.service.listSitesForProject(proj(WS_A), org())).resolves.toEqual([]);
     expect(h.siteRepo.find).not.toHaveBeenCalled();
   });
 
   it('refuses to create a site for a project that bridges to nothing', async () => {
-    const h = apiHarness({ knownWorkspaces: [] });
+    const h = apiHarness({ workspaceOwners: {} });
 
     await expect(
-      h.service.createSiteForProject({ slug: WS_A } as any, { name: 'Yeni' }),
+      h.service.createSiteForProject(proj(WS_A), org(), { name: 'Yeni' }),
     ).rejects.toThrow(ForbiddenException);
     expect(h.siteRepo.save).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Tenancy is bound to the key's owner, not to the slug.
+ *
+ * Checking only that `project.slug` names *some* existing workspace would rest
+ * the whole boundary on an invariant maintained in three other files. Today
+ * every project is created with `slug = workspace.id` for a workspace the caller
+ * owns, so the weaker check happened to be safe — but nothing in this module
+ * enforced it, and a future project endpoint accepting a caller-supplied slug
+ * would turn that into a silent cross-tenant read. These pin the stronger rule.
+ */
+describe('partner-API tenancy is owner-bound', () => {
+  const OTHER_OWNER = 'owner-2';
+
+  it('refuses a workspace owned by someone else, even though the slug is real', async () => {
+    // The exact IDOR: a valid uuid naming a workspace that exists — but belongs
+    // to another customer.
+    const h = apiHarness({
+      siteWorkspaceId: WS_B,
+      workspaceOwners: { [WS_B]: OTHER_OWNER },
+    });
+
+    await expect(h.service.getConfigForProject('site-1', proj(WS_B), org())).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('refuses to write to a workspace owned by someone else', async () => {
+    const h = apiHarness({
+      siteWorkspaceId: WS_B,
+      workspaceOwners: { [WS_B]: OTHER_OWNER },
+    });
+
+    await expect(
+      h.service.upsertConfigForProject('site-1', proj(WS_B), org(), { enabled: true }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(h.configRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('lists nothing when the workspace belongs to another owner', async () => {
+    const h = apiHarness({ workspaceOwners: { [WS_A]: OTHER_OWNER } });
+
+    await expect(h.service.listSitesForProject(proj(WS_A), org())).resolves.toEqual([]);
+    expect(h.siteRepo.find).not.toHaveBeenCalled();
+  });
+
+  it('refuses a project that does not belong to the authenticated organization', async () => {
+    // The guard loads both from one key record, so a mismatch means the pair was
+    // assembled somewhere it should not have been.
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(
+      h.service.getConfigForProject('site-1', proj(WS_A, 'org-other'), org()),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('fails closed when the organization carries no owner', async () => {
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(
+      h.service.getConfigForProject('site-1', proj(WS_A), org({ ownerId: undefined as any })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('fails closed when the workspace carries no owner', async () => {
+    const h = apiHarness({
+      siteWorkspaceId: WS_A,
+      workspaceOwners: { [WS_A]: null },
+    });
+
+    await expect(h.service.getConfigForProject('site-1', proj(WS_A), org())).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

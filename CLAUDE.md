@@ -162,8 +162,13 @@ eligible, so a post still `QUEUED`/`GENERATING`, or one that `FAILED`, is never 
 the signed-in user against the site's workspace owner. `AutopilotApiController` (`/api/v1/sites/*`,
 `ApiKeyGuard`) has no user at all — only an organization + project — so it authorizes through
 `assertSiteInProject`: the site must live in the workspace the calling project is bridged to via
-`project.slug`. That slug is attacker-influenced input, so it is shape-checked as a uuid and then
-verified against `workspaces`; a project resolving to no workspace is **denied**, never defaulted.
+`project.slug`. That slug is attacker-influenced input, so `resolveWorkspaceId` checks three things
+rather than trusting it — the slug has uuid shape, the project belongs to the authenticated
+organization, and **the workspace has the same owner as that organization**. The last one is what
+makes the boundary local: verifying only that the slug names *some* existing workspace would rest
+tenancy on an invariant maintained in three other files, and a future project endpoint accepting a
+caller-supplied slug would silently turn that into a cross-tenant read. It fails closed — a missing
+owner on either side, or a project resolving to no workspace, is **denied**, never defaulted.
 This is the boundary that keeps one customer's key out of another's configuration — don't add an
 autopilot route that skips it. Both controllers share the same service cores (`readConfig`,
 `writeConfig`, `readTopics`, `planFor`), which take an already-authorized `Site`.
