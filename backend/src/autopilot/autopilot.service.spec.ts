@@ -367,3 +367,142 @@ describe('autopilot cover images', () => {
     expect(dto.coverImageUrl).toBeUndefined();
   });
 });
+
+/**
+ * Partner-API authorization.
+ *
+ * An API key carries an organization + project, never a user, so the dashboard's
+ * "do you own this workspace" check does not apply. The bridge is convention —
+ * `project.slug` holds the workspace id — and a slug is attacker-influenced
+ * input, so these assert that it is verified rather than trusted. A hole here
+ * lets one customer's key configure another's autopilot.
+ */
+const WS_A = '11111111-1111-4111-8111-111111111111';
+const WS_B = '22222222-2222-4222-8222-222222222222';
+
+function apiHarness(opts: { siteWorkspaceId?: string; knownWorkspaces?: string[] } = {}) {
+  const known = new Set(opts.knownWorkspaces ?? [WS_A, WS_B]);
+
+  const siteRepo = {
+    findOne: jest.fn().mockResolvedValue({
+      id: 'site-1',
+      workspaceId: opts.siteWorkspaceId ?? WS_A,
+      name: 'Site',
+    }),
+    find: jest.fn().mockResolvedValue([]),
+    create: jest.fn((v: any) => v),
+    save: jest.fn((v: any) => Promise.resolve({ id: 'site-new', ...v })),
+  };
+  const workspaceRepo = {
+    // Stands in for the `workspaces` lookup: only real ids resolve.
+    findOne: jest.fn(({ where }: any) =>
+      Promise.resolve(known.has(where.id) ? { id: where.id, ownerId: 'owner-1' } : null),
+    ),
+  };
+  const configRepo = {
+    findOne: jest.fn().mockResolvedValue(null),
+    create: jest.fn((v: any) => v),
+    save: jest.fn((v: any) => Promise.resolve({ id: 'cfg-new', ...v })),
+    find: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+  };
+
+  const service = new AutopilotService(
+    { get: jest.fn() } as any,
+    { generate: jest.fn() } as any,
+    { plannedCount: jest.fn(), planBatch: jest.fn().mockResolvedValue(5) } as any,
+    { searchPhotos: jest.fn(), triggerDownload: jest.fn() } as any,
+    configRepo as any,
+    { findOne: jest.fn(), find: jest.fn().mockResolvedValue([]), update: jest.fn() } as any,
+    { createQueryBuilder: jest.fn() } as any,
+    siteRepo as any,
+    { findOne: jest.fn() } as any,
+    workspaceRepo as any,
+  );
+
+  return { service, siteRepo, workspaceRepo, configRepo };
+}
+
+describe('partner-API autopilot authorization', () => {
+  it('allows a key whose project bridges to the site’s workspace', async () => {
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(
+      h.service.getConfigForProject('site-1', { slug: WS_A } as any),
+    ).resolves.toBeNull();
+  });
+
+  it('refuses a site that belongs to another tenant', async () => {
+    // The whole point: key for workspace B, site in workspace A.
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(h.service.getConfigForProject('site-1', { slug: WS_B } as any)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('refuses to write another tenant’s configuration', async () => {
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(
+      h.service.upsertConfigForProject('site-1', { slug: WS_B } as any, { enabled: true }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(h.configRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('refuses a slug that is not a uuid instead of querying with it', async () => {
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await expect(
+      h.service.getConfigForProject('site-1', { slug: 'not-a-uuid' } as any),
+    ).rejects.toThrow(ForbiddenException);
+    // Shape-checked before it ever reaches the database.
+    expect(h.workspaceRepo.findOne).not.toHaveBeenCalled();
+  });
+
+  it('refuses a slug that matches no workspace', async () => {
+    // A project created outside the naming convention must deny, not fall back
+    // to some "default" site.
+    const h = apiHarness({ siteWorkspaceId: WS_A, knownWorkspaces: [] });
+
+    await expect(h.service.getConfigForProject('site-1', { slug: WS_A } as any)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('bills a key-created config to the workspace owner, not the key', async () => {
+    const h = apiHarness({ siteWorkspaceId: WS_A });
+
+    await h.service.upsertConfigForProject('site-1', { slug: WS_A } as any, { enabled: true });
+
+    expect(h.configRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'owner-1', workspaceId: WS_A }),
+    );
+  });
+
+  it('lists only the calling project’s sites', async () => {
+    const h = apiHarness();
+
+    await h.service.listSitesForProject({ slug: WS_A } as any);
+
+    expect(h.siteRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: WS_A } }),
+    );
+  });
+
+  it('returns no sites for a project that bridges to nothing', async () => {
+    const h = apiHarness({ knownWorkspaces: [] });
+
+    await expect(h.service.listSitesForProject({ slug: WS_A } as any)).resolves.toEqual([]);
+    expect(h.siteRepo.find).not.toHaveBeenCalled();
+  });
+
+  it('refuses to create a site for a project that bridges to nothing', async () => {
+    const h = apiHarness({ knownWorkspaces: [] });
+
+    await expect(
+      h.service.createSiteForProject({ slug: WS_A } as any, { name: 'Yeni' }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(h.siteRepo.save).not.toHaveBeenCalled();
+  });
+});

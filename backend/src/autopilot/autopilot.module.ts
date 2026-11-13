@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AutopilotService } from './autopilot.service';
 import { AutopilotController } from './autopilot.controller';
+import { AutopilotApiController } from './autopilot-api.controller';
 import { AutopilotSchedulerService } from './autopilot.scheduler';
 import { TopicPlannerService } from './topic-planner.service';
 import { AutopilotConfig } from '../entities/autopilot-config.entity';
@@ -11,14 +12,16 @@ import { Post } from '../entities/post.entity';
 import { Site } from '../entities/site.entity';
 import { User } from '../entities/user.entity';
 import { Workspace } from '../entities/workspace.entity';
+import { Project } from '../entities/project.entity';
 import { PostsModule } from '../posts/posts.module';
 import { AiModule } from '../ai/ai.module';
 import { UsageModule } from '../usage/usage.module';
 import { UnsplashModule } from '../unsplash/unsplash.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AutopilotConfig, TopicIdea, Post, Site, User, Workspace]),
+    TypeOrmModule.forFeature([AutopilotConfig, TopicIdea, Post, Site, User, Workspace, Project]),
     // Registered here as well as in PostsModule: autopilot's crons are its own,
     // and should not stop firing if that import ever moves.
     ScheduleModule.forRoot(),
@@ -30,8 +33,10 @@ import { UnsplashModule } from '../unsplash/unsplash.module';
     UsageModule,
     // Cover images, searched with the planner's primaryKeyword — no model call.
     UnsplashModule,
+    // ApiKeyGuard for the partner-API controller.
+    AuthModule,
   ],
-  controllers: [AutopilotController],
+  controllers: [AutopilotController, AutopilotApiController],
   providers: [AutopilotService, TopicPlannerService, AutopilotSchedulerService],
   exports: [AutopilotService],
 })

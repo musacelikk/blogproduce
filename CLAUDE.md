@@ -158,8 +158,24 @@ without that key still publishes, just without pictures.
 webhook. A second publish path would have to reimplement both guarantees. Only a `DRAFT` post is
 eligible, so a post still `QUEUED`/`GENERATING`, or one that `FAILED`, is never published.
 
+**Two controllers, two principals.** `AutopilotController` (`/autopilot/*`, `JwtAuthGuard`) checks
+the signed-in user against the site's workspace owner. `AutopilotApiController` (`/api/v1/sites/*`,
+`ApiKeyGuard`) has no user at all — only an organization + project — so it authorizes through
+`assertSiteInProject`: the site must live in the workspace the calling project is bridged to via
+`project.slug`. That slug is attacker-influenced input, so it is shape-checked as a uuid and then
+verified against `workspaces`; a project resolving to no workspace is **denied**, never defaulted.
+This is the boundary that keeps one customer's key out of another's configuration — don't add an
+autopilot route that skips it. Both controllers share the same service cores (`readConfig`,
+`writeConfig`, `readTopics`, `planFor`), which take an already-authorized `Site`.
+
+A config written through an API key is billed to the **workspace owner**, not to whoever holds the
+key: the key is issued by that owner and spends their plan.
+
 Tests in `autopilot.service.spec.ts` assert the spend guarantees — the monthly cap, the month
-rollover, the conditional-UPDATE claim, and that a billing failure does not consume a topic.
+rollover, the conditional-UPDATE claim, and that a billing failure does not consume a topic — plus
+the tenancy boundary above (cross-tenant reads and writes, a non-uuid slug, and a slug matching no
+workspace all have to be refused). `autopilot-api.controller.spec.ts` pins the published route
+paths by reflection, since a typo there only shows up as a customer's integration 404ing.
 
 ### Billing (`backend/src/billing/`)
 

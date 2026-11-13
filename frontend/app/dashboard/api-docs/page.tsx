@@ -15,6 +15,7 @@ import {
   Rocket,
   ShieldCheck,
   Workflow,
+  Bot,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { CodeBlock, CodeTabs, Endpoint, ParamTable, Callout } from './_components/CodeBlock';
@@ -30,6 +31,7 @@ const NAV = [
   { id: 'generate', label: 'Generate Content', icon: Workflow },
   { id: 'jobs', label: 'Job Status', icon: Gauge },
   { id: 'posts', label: 'Posts', icon: ListOrdered },
+  { id: 'autopilot', label: 'Autopilot', icon: Bot },
   { id: 'published', label: 'Published Content', icon: Globe },
   { id: 'public-api', label: 'Public API (No Auth)', icon: Plug },
   { id: 'formats', label: 'Content Formats', icon: FileJson },
@@ -122,6 +124,7 @@ export default function ApiDocsPage() {
           <GenerateSection />
           <JobsSection />
           <PostsSection />
+          <AutopilotSection />
           <PublishedSection />
           <PublicApiSection />
           <FormatsSection />
@@ -672,6 +675,95 @@ function PostsSection() {
 #   }
 # }`}
         />
+      </div>
+    </section>
+  );
+}
+
+function AutopilotSection() {
+  return (
+    <section id="autopilot" className="scroll-mt-24">
+      <SectionTitle
+        title="Autopilot"
+        subtitle="Let a site pick its own topics and publish on a schedule — no dashboard visit required."
+      />
+      <div className="space-y-3">
+        <Endpoint method="GET" path="/api/v1/sites" />
+        <Endpoint method="POST" path="/api/v1/sites" />
+        <Endpoint method="GET" path="/api/v1/sites/{siteId}/autopilot" />
+        <Endpoint method="PUT" path="/api/v1/sites/{siteId}/autopilot" />
+        <Endpoint method="GET" path="/api/v1/sites/{siteId}/autopilot/topics" />
+        <Endpoint method="POST" path="/api/v1/sites/{siteId}/autopilot/topics/plan" />
+      </div>
+
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+        Your API key is scoped to one workspace, so <code>GET /api/v1/sites</code> returns only the
+        sites it may drive. A <code>siteId</code> from another workspace is refused.
+      </p>
+
+      <div className="mt-4">
+        <CodeBlock
+          title="Turn a site into a daily blog"
+          language="js"
+          code={`// 1) Find (or create) the site autopilot will write for
+let { data: sites } = await api('/api/v1/sites');
+if (sites.length === 0) {
+  const created = await api('/api/v1/sites', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Acme Store', domain: 'acme.com' }),
+  });
+  sites = [created];
+}
+const siteId = sites[0].id;
+
+// 2) Configure it. Every field is optional — this is a partial update, so you
+//    can flip 'enabled' later without resending the rest.
+await api('/api/v1/sites/' + siteId + '/autopilot', {
+  method: 'PUT',
+  body: JSON.stringify({
+    enabled: true,
+    postsPerWeek: 7,          // 7 = one a day, 14 = twice a day
+    maxPostsPerMonth: 30,     // hard ceiling, independent of the cadence
+    tier: 'standard',         // 'standard' | 'pro' | 'premium'
+    autoPublish: true,        // false leaves each article as a draft for review
+    language: 'tr',
+    niche: "KOBİ'ler için e-ticaret yazılımı",
+    targetAudience: 'teknik olmayan mağaza sahipleri',
+    keywords: 'e-ticaret seo, ürün açıklaması, kargo entegrasyonu',
+    excludedTopics: 'kripto, rakip markalar',
+  }),
+});
+
+// 3) Optional: fill the topic queue now instead of waiting for the first run
+const { added } = await api('/api/v1/sites/' + siteId + '/autopilot/topics/plan', {
+  method: 'POST',
+});
+console.log(added + ' topics planned');
+
+// 4) Inspect what it intends to write
+const { data: topics } = await api('/api/v1/sites/' + siteId + '/autopilot/topics');
+for (const t of topics) console.log(t.status, '-', t.title);
+
+// From here autopilot runs on its own: it writes one article per cadence slot,
+// attaches a cover image, and — with autoPublish — publishes it and fires your
+// post.published webhook. Read the result from /api/v1/published as usual.`}
+        />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-border bg-surface-raised p-4">
+        <p className="text-sm font-medium text-foreground-strong">Spend is bounded three ways</p>
+        <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-muted-foreground">
+          <li>
+            <code>postsPerWeek</code> spaces the runs (7 / value = days between them).
+          </li>
+          <li>
+            <code>maxPostsPerMonth</code> is a hard monthly ceiling that the cadence cannot exceed.
+          </li>
+          <li>
+            Generation still passes your plan&apos;s own quota check, so autopilot can never spend
+            past the allowance and token balance you already have.
+          </li>
+        </ul>
       </div>
     </section>
   );

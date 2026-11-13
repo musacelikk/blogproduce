@@ -8,6 +8,7 @@ import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
 import { Site } from '../entities/site.entity';
 import { User } from '../entities/user.entity';
 import { Workspace } from '../entities/workspace.entity';
+import { Project } from '../entities/project.entity';
 import { PostsService } from '../posts/posts.service';
 import { UnsplashService } from '../unsplash/unsplash.service';
 import { normalizeTier } from '../billing/model-tiers';
@@ -15,6 +16,9 @@ import { TopicPlannerService, REFILL_THRESHOLD } from './topic-planner.service';
 import { UpsertAutopilotConfigDto } from './dto/upsert-autopilot-config.dto';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Shape check before a slug is used as a workspace id. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A topic that cannot be enqueued this many times is set aside, not retried forever. */
 const MAX_ENQUEUE_ATTEMPTS = 3;
@@ -52,9 +56,12 @@ export class AutopilotService {
 
   // ------------------------------------------------------------------ config
 
+  // ---------------------------------------------------------------- dashboard
+  // JWT principal: the signed-in user must own the site's workspace.
+
   async getConfig(siteId: string, user: User): Promise<AutopilotConfig | null> {
-    await this.assertSiteOwner(siteId, user);
-    return this.configRepository.findOne({ where: { siteId } });
+    const site = await this.assertSiteOwner(siteId, user);
+    return this.readConfig(site);
   }
 
   async upsertConfig(
@@ -63,13 +70,89 @@ export class AutopilotService {
     dto: UpsertAutopilotConfigDto,
   ): Promise<AutopilotConfig> {
     const site = await this.assertSiteOwner(siteId, user);
+    return this.writeConfig(site, dto);
+  }
+
+  // -------------------------------------------------------------- partner API
+  // API-key principal: there is no user, only an organization + project. The
+  // site must belong to the workspace that project is bridged to, or one
+  // customer's key could configure another customer's autopilot.
+
+  async getConfigForProject(siteId: string, project: Project): Promise<AutopilotConfig | null> {
+    const site = await this.assertSiteInProject(siteId, project);
+    return this.readConfig(site);
+  }
+
+  async upsertConfigForProject(
+    siteId: string,
+    project: Project,
+    dto: UpsertAutopilotConfigDto,
+  ): Promise<AutopilotConfig> {
+    const site = await this.assertSiteInProject(siteId, project);
+    return this.writeConfig(site, dto);
+  }
+
+  async listTopicsForProject(siteId: string, project: Project): Promise<TopicIdea[]> {
+    const site = await this.assertSiteInProject(siteId, project);
+    return this.readTopics(site);
+  }
+
+  async planTopicsNowForProject(siteId: string, project: Project): Promise<{ added: number }> {
+    const site = await this.assertSiteInProject(siteId, project);
+    return this.planFor(site);
+  }
+
+  /** The sites an API key may drive, so a caller can discover ids to configure. */
+  async listSitesForProject(project: Project): Promise<Site[]> {
+    const workspaceId = await this.resolveWorkspaceId(project);
+    if (!workspaceId) return [];
+    return this.siteRepository.find({
+      where: { workspaceId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async createSiteForProject(
+    project: Project,
+    input: { name: string; domain?: string; description?: string },
+  ): Promise<Site> {
+    const workspaceId = await this.resolveWorkspaceId(project);
+    if (!workspaceId) {
+      throw new ForbiddenException(
+        'Bu API anahtarı bir workspace ile eşleşmiyor. Panelden bir site oluşturun.',
+      );
+    }
+    const site = this.siteRepository.create({
+      name: input.name,
+      domain: input.domain,
+      description: input.description,
+      workspaceId,
+    });
+    return this.siteRepository.save(site);
+  }
+
+  // ------------------------------------------------------------------- shared
+
+  private async readConfig(site: Site): Promise<AutopilotConfig | null> {
+    return this.configRepository.findOne({ where: { siteId: site.id } });
+  }
+
+  private async writeConfig(site: Site, dto: UpsertAutopilotConfigDto): Promise<AutopilotConfig> {
+    const siteId = site.id;
 
     let config = await this.configRepository.findOne({ where: { siteId } });
     if (!config) {
+      // Billing always follows the workspace owner, whichever principal is
+      // writing — an API key is issued by that owner and spends their plan.
+      const workspace = await this.workspaceRepository.findOne({
+        where: { id: site.workspaceId },
+      });
+      if (!workspace) throw new NotFoundException('Workspace bulunamadı.');
+
       config = this.configRepository.create({
         siteId,
         workspaceId: site.workspaceId,
-        userId: user.id,
+        userId: workspace.ownerId,
       });
     }
 
@@ -100,8 +183,18 @@ export class AutopilotService {
   }
 
   async listTopics(siteId: string, user: User): Promise<TopicIdea[]> {
-    await this.assertSiteOwner(siteId, user);
-    const config = await this.configRepository.findOne({ where: { siteId } });
+    const site = await this.assertSiteOwner(siteId, user);
+    return this.readTopics(site);
+  }
+
+  /** Plan topics now rather than waiting for a run to notice the queue is low. */
+  async planTopicsNow(siteId: string, user: User): Promise<{ added: number }> {
+    const site = await this.assertSiteOwner(siteId, user);
+    return this.planFor(site);
+  }
+
+  private async readTopics(site: Site): Promise<TopicIdea[]> {
+    const config = await this.configRepository.findOne({ where: { siteId: site.id } });
     if (!config) return [];
 
     return this.topicRepository.find({
@@ -111,10 +204,8 @@ export class AutopilotService {
     });
   }
 
-  /** Plan topics now rather than waiting for a run to notice the queue is low. */
-  async planTopicsNow(siteId: string, user: User): Promise<{ added: number }> {
-    await this.assertSiteOwner(siteId, user);
-    const config = await this.configRepository.findOne({ where: { siteId } });
+  private async planFor(site: Site): Promise<{ added: number }> {
+    const config = await this.configRepository.findOne({ where: { siteId: site.id } });
     if (!config) throw new NotFoundException('Otopilot ayarı bulunamadı.');
 
     const added = await this.planner.planBatch(config);
@@ -388,6 +479,47 @@ export class AutopilotService {
   private async note(config: AutopilotConfig, message: string): Promise<void> {
     this.logger.warn(`Otopilot (config ${config.id}): ${message}`);
     await this.configRepository.update({ id: config.id }, { lastError: message });
+  }
+
+  /**
+   * The workspace an API key's project is bridged to.
+   *
+   * `project.slug` holds the workspace id by convention (see
+   * `BlogService.getUserOrganizationAndProject`), but a slug is a plain string,
+   * so it is shape-checked and then verified against `workspaces` rather than
+   * trusted. A project created outside the convention resolves to null, which
+   * denies rather than guessing.
+   */
+  private async resolveWorkspaceId(project: Project): Promise<string | null> {
+    const slug = project?.slug;
+    if (!slug || !UUID_PATTERN.test(slug)) return null;
+
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: slug },
+      select: ['id'],
+    });
+    return workspace?.id ?? null;
+  }
+
+  /**
+   * Authorizes an API-key caller for a site.
+   *
+   * This is the boundary that keeps one customer's key out of another's
+   * autopilot: the site must live in the workspace the calling project is
+   * bridged to. A project that resolves to no workspace is denied outright —
+   * there is no "default" site to fall back on.
+   */
+  private async assertSiteInProject(siteId: string, project: Project): Promise<Site> {
+    const site = await this.siteRepository.findOne({ where: { id: siteId } });
+    if (!site) throw new NotFoundException('Site bulunamadı.');
+
+    const workspaceId = await this.resolveWorkspaceId(project);
+    if (!workspaceId || site.workspaceId !== workspaceId) {
+      // Deliberately the same message as the dashboard's denial: whether a site
+      // exists under another tenant is not this caller's business.
+      throw new ForbiddenException('Bu siteye erişiminiz yok.');
+    }
+    return site;
   }
 
   private async assertSiteOwner(siteId: string, user: User): Promise<Site> {
