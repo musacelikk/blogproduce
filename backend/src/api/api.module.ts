@@ -17,6 +17,7 @@ import { PostsModule } from '../posts/posts.module';
 import { QueueModule } from '../queue/queue.module';
 import { AuthModule } from '../auth/auth.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     AuthModule,
     // One hardened webhook delivery path, not two.
     WebhooksModule,
+    // HtmlSanitizerService — the partner API serves content_html too.
+    CommonModule,
   ],
   controllers: [ApiController, PublicApiController],
   providers: [ApiService],

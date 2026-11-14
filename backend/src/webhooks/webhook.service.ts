@@ -4,11 +4,16 @@ import { Repository } from 'typeorm';
 import { Webhook, WebhookEvent } from '../entities/webhook.entity';
 import * as crypto from 'crypto';
 import * as https from 'https';
-import * as http from 'http';
 import {
   isPrivateHost,
   privateSafeLookup,
 } from '../common/validators/is-public-https-url.validator';
+
+/**
+ * Wall-clock bound on one delivery, independent of socket activity.
+ * Overridable so tests need not wait ten seconds for the deadline to fire.
+ */
+const DELIVERY_DEADLINE_MS = Number(process.env.WEBHOOK_DELIVERY_DEADLINE_MS) || 10_000;
 
 @Injectable()
 export class WebhookService {
@@ -102,12 +107,21 @@ export class WebhookService {
     };
 
     return new Promise((resolve, reject) => {
-      const req = client.request(options, (res) => {
-        let responseData = '';
+      // The promise must settle exactly once: the inactivity timeout, the
+      // absolute deadline and a socket error can all fire for the same request.
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(deadline);
+        fn();
+      };
 
-        res.on('data', (chunk) => {
-          responseData += chunk;
-        });
+      const req = client.request(options, (res) => {
+        // Drain without buffering. The status code is the only thing used here,
+        // and the body is a remote endpoint's to choose — accumulating it into
+        // a string was unbounded growth in exchange for nothing.
+        res.resume();
 
         res.on('end', () => {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
@@ -119,7 +133,7 @@ export class WebhookService {
             });
 
             this.logger.log(`Webhook ${webhook.id} delivered successfully for event ${event}`);
-            resolve();
+            finish(resolve);
           } else {
             // Failure
             webhook.failureCount = (webhook.failureCount || 0) + 1;
@@ -130,7 +144,7 @@ export class WebhookService {
             this.logger.warn(
               `Webhook ${webhook.id} failed with status ${res.statusCode} for event ${event}`,
             );
-            reject(new Error(`Webhook failed with status ${res.statusCode}`));
+            finish(() => reject(new Error(`Webhook failed with status ${res.statusCode}`)));
           }
         });
       });
@@ -142,7 +156,7 @@ export class WebhookService {
         });
 
         this.logger.error(`Webhook ${webhook.id} request failed: ${error.message}`);
-        reject(error);
+        finish(() => reject(error));
       });
 
       req.on('timeout', () => {
@@ -153,8 +167,22 @@ export class WebhookService {
         });
 
         this.logger.error(`Webhook ${webhook.id} request timed out`);
-        reject(new Error('Webhook request timed out'));
+        finish(() => reject(new Error('Webhook request timed out')));
       });
+
+      // `options.timeout` is a socket *inactivity* timeout, so an endpoint that
+      // dribbles a byte every nine seconds holds the request open forever. This
+      // is the wall-clock bound the docs actually promise.
+      const deadline = setTimeout(() => {
+        req.destroy();
+        webhook.failureCount = (webhook.failureCount || 0) + 1;
+        this.webhookRepository.save(webhook).catch((err) => {
+          this.logger.error(`Failed to update webhook ${webhook.id}: ${err.message}`);
+        });
+
+        this.logger.error(`Webhook ${webhook.id} exceeded the ${DELIVERY_DEADLINE_MS}ms deadline`);
+        finish(() => reject(new Error('Webhook request exceeded its deadline')));
+      }, DELIVERY_DEADLINE_MS);
 
       req.write(body);
       req.end();

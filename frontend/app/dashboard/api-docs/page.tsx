@@ -830,6 +830,11 @@ function WebhooksSection() {
           re-serialise it to check, key order and whitespace will differ and every delivery will
           look forged. Read the raw body first, verify, then parse.
         </p>
+        <p className="mt-2 text-sm leading-relaxed text-warning/90">
+          Then check <code>timestamp</code> — the one <em>inside</em> the body, which is covered by
+          the signature and so cannot be edited. A valid signature alone does not make a delivery
+          fresh: without this, a captured request stays replayable indefinitely.
+        </p>
       </div>
 
       <div className="mt-4 space-y-4">
@@ -856,7 +861,14 @@ export async function POST(req: Request) {
 
   if (!ok) return new Response('invalid signature', { status: 401 });
 
-  const { event, data } = JSON.parse(raw);
+  const { event, data, timestamp } = JSON.parse(raw);
+
+  // The timestamp is inside the signed body, so it cannot be edited without
+  // breaking the signature — which makes it worth checking. Without this, a
+  // captured delivery stays replayable forever.
+  if (Math.abs(Date.now() - Date.parse(timestamp)) > 5 * 60 * 1000) {
+    return new Response('stale delivery', { status: 401 });
+  }
 
   if (event === 'post.published') {
     // Your blog pages are probably ISR — drop the cached copies so the new
@@ -896,7 +908,13 @@ app.post(
       return res.status(401).send('invalid signature');
     }
 
-    const { event, data } = JSON.parse(req.body.toString('utf8'));
+    const { event, data, timestamp } = JSON.parse(req.body.toString('utf8'));
+
+    // Signed inside the body, so checking it is meaningful — it closes replay.
+    if (Math.abs(Date.now() - Date.parse(timestamp)) > 5 * 60 * 1000) {
+      return res.status(401).send('stale delivery');
+    }
+
     console.log(event, data.slug);
 
     res.send('ok');
@@ -921,6 +939,13 @@ app.post(
       }
 
       $payload = json_decode($raw, true);
+
+      // Signed inside the body, so this is tamper-proof and closes replay.
+      $age = abs(time() - strtotime($payload['timestamp'] ?? '0'));
+      if ($age > 300) {
+        return new WP_Error('stale', 'Stale delivery', ['status' => 401]);
+      }
+
       if (($payload['event'] ?? '') !== 'post.published') {
         return ['ok' => true];
       }
@@ -936,7 +961,9 @@ app.post(
       wp_insert_post([
         'post_title'   => $post['title'],
         'post_name'    => $post['slug'],
-        'post_content' => $post['content_html'], // already sanitised server-side
+        // Sanitised server-side already; wp_kses_post again because this is
+        // about to be published on your site under your name.
+        'post_content' => wp_kses_post($post['content_html']),
         'post_excerpt' => $post['excerpt'],
         'post_status'  => 'publish',
       ]);

@@ -286,6 +286,13 @@ covers the case.
    layer 1 instead — they have no DNS step to rebind. The two halves are disjoint; neither may be
    dropped, and `webhook-delivery-guard.spec.ts` fails if the literal half is.
 
+`sendWebhook` drains the response (`res.resume()`) rather than buffering it — the body is a
+remote endpoint's to choose and nothing reads it — and carries an absolute `DELIVERY_DEADLINE_MS`
+alongside the socket option. `options.timeout` is an *inactivity* timeout, so an endpoint dribbling
+a byte every nine seconds would otherwise hold a request open forever; with the old unbounded
+buffer that was remote-controlled memory growth. Override the deadline with
+`WEBHOOK_DELIVERY_DEADLINE_MS`.
+
 **There is exactly one delivery implementation**, `WebhookService.sendWebhook`. `ApiService` used to
 carry a second one built on `fetch`, and the two drifted: only one re-validated the URL, and only
 one pinned the resolved address. `ApiService.triggerWebhook` is now a thin delegation that keeps the
@@ -300,7 +307,10 @@ The wire contract customers integrate against — `{ event, timestamp, data }` p
 `X-Webhook-Timestamp` — is documented with working receivers for Next.js, Express and WordPress in
 the dashboard's API reference. Changing the payload shape or the header names breaks every
 customer's verification silently, since a mismatched signature is indistinguishable from a forged
-request. The examples there are syntax-checked, not eyeballed.
+request. `timestamp` sits **inside** the signed body on purpose: a receiver can check freshness
+without trusting an editable header, and every documented receiver does — a valid signature alone
+leaves a captured delivery replayable forever. The examples there are syntax-checked, not
+eyeballed.
 
 ### Multi-tenancy: Workspace vs Organization/Project
 
@@ -320,7 +330,7 @@ to populate both, or it reintroduces exactly this class of bug.
 
 ### Content storage and formats
 
-Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. `content_html` is always sanitized through `HtmlSanitizerService` before leaving the backend.
+Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. `content_html` is sanitized through `HtmlSanitizerService` before leaving the backend — on **both** read surfaces. `blog.service` always did; `api.service` (`/api/v1/published`, `/api/v1/posts`) did not, and handed `convertContentFormat` output straight out while the docs pointed WordPress receivers at it. Articles are model-written from customer-supplied topics, so the markup is not ours to trust. Any new endpoint returning HTML sanitizes too.
 
 `getPublishedRevision()` (`common/utils/revision.util.ts`) picks which revision is live — don't reach for `revisions[0]`.
 

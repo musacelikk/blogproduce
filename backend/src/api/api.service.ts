@@ -1,3 +1,4 @@
+import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 import { WebhookService } from '../webhooks/webhook.service';
 import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
 import {
@@ -53,6 +54,7 @@ export class ApiService {
     @InjectRepository(Webhook)
     private webhooksRepository: Repository<Webhook>,
     private readonly webhookService: WebhookService,
+    private readonly htmlSanitizer: HtmlSanitizerService,
     @InjectRepository(GenerationJob)
     private generationJobsRepository: Repository<GenerationJob>,
     @InjectRepository(UsageEvent)
@@ -688,7 +690,10 @@ export class ApiService {
       let contentHtml: string | null = null;
       if (content != null && content !== '') {
         try {
-          contentHtml = convertContentFormat(content, contentFormat, ContentFormat.HTML);
+          contentHtml = this.htmlSanitizer.sanitize(
+            convertContentFormat(content, contentFormat, ContentFormat.HTML),
+            true,
+          );
         } catch {
           contentHtml = null;
         }
@@ -916,7 +921,10 @@ export class ApiService {
       let contentHtml: string | null = null;
       if (content != null && content !== '') {
         try {
-          contentHtml = convertContentFormat(content, contentFormat, ContentFormat.HTML);
+          contentHtml = this.htmlSanitizer.sanitize(
+            convertContentFormat(content, contentFormat, ContentFormat.HTML),
+            true,
+          );
         } catch {
           contentHtml = null;
         }
@@ -1084,7 +1092,10 @@ export class ApiService {
       let contentHtml: string | null = null;
       if (content != null && content !== '') {
         try {
-          contentHtml = convertContentFormat(content, contentFormat, ContentFormat.HTML);
+          contentHtml = this.htmlSanitizer.sanitize(
+            convertContentFormat(content, contentFormat, ContentFormat.HTML),
+            true,
+          );
         } catch {
           contentHtml = null;
         }
