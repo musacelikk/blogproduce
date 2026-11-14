@@ -90,5 +90,5 @@ export class UpsertAutopilotConfigDto {
   @IsString()
   @IsOptional()
   @MaxLength(600, { message: 'Tanıtım metni en fazla 600 karakter olabilir' })
-  promotion?: string;
+  promotion?: string | null;
 }

@@ -193,7 +193,7 @@ export class AutopilotService {
     if (dto.targetAudience !== undefined) config.targetAudience = dto.targetAudience;
     if (dto.keywords !== undefined) config.keywords = dto.keywords;
     if (dto.excludedTopics !== undefined) config.excludedTopics = dto.excludedTopics;
-    if (dto.promotion !== undefined) config.promotion = dto.promotion.trim() || null;
+    if (dto.promotion !== undefined) config.promotion = dto.promotion?.trim() || null;
 
     return this.configRepository.save(config);
   }
