@@ -342,10 +342,14 @@ last release that does not declare `engines.node >= 22.12`. 2.18 happens to run 
 relying on that means a patch release can take production out at boot. Raising the Node major is
 the alternative; it is a deployment decision, not a security one.
 
-`stripHtml` decodes entities after stripping. `sanitize-html` escapes what it keeps, so stripping
-alone turns `Kahve & çay` into `Kahve &amp; çay`, and a consumer rendering that field shows the
-entity literally. Escaped output would be right for a field documented as HTML; `title` and
-`excerpt` are documented as text.
+`stripHtml`'s step order is load-bearing: **decode to a fixed point, then strip, then undo only
+the stripper's own escaping, then drop any remaining angle bracket.** Decoding *after* stripping
+made the method produce markup — `&lt;script&gt;` passed the strip as inert text and left as a
+working tag. Decoding first means multiply-encoded payloads (`&amp;lt;script&amp;gt;`) are
+unwrapped before anything judges them; the final unescape exists so `Kahve & çay` is not returned
+as `Kahve &amp; çay`, and is safe because every tag is already gone by then. Dropping `<`/`>` costs
+a literal bracket in prose like `Fiyat < 100 TL`, which is the right trade for a short text field
+whose contract is that it cannot be markup. `html-sanitizer.spec.ts` pins all of it.
 
 `content_html` is sanitized through `HtmlSanitizerService` before leaving the backend — on **both** read surfaces. `blog.service` always did; `api.service` (`/api/v1/published`, `/api/v1/posts`) did not, and handed `convertContentFormat` output straight out while the docs pointed WordPress receivers at it. Articles are model-written from customer-supplied topics, so the markup is not ours to trust. Any new endpoint returning HTML sanitizes too. `excerpt` goes out through `stripHtml` on the same paths: the schema calls for plain text but nothing enforced it, and receivers put that field straight into a page.
 

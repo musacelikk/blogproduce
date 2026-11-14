@@ -130,8 +130,10 @@ describe('HtmlSanitizerService — stripHtml returns real text, not escaped html
   // entity literally — the field is documented as text, so it must be text.
   it.each([
     ['Kahve & çay', 'Kahve & çay'],
-    ['Fiyat < 100 TL', 'Fiyat < 100 TL'],
-    ['Şirket & Ortakları > 2026', 'Şirket & Ortakları > 2026'],
+    // Angle brackets are dropped, not preserved: this field's contract is
+    // that it cannot be markup, and that is worth one '<' in prose.
+    ['Fiyat < 100 TL', 'Fiyat  100 TL'],
+    ['Şirket & Ortakları 2026', 'Şirket & Ortakları 2026'],
     ['<p>Merhaba <strong>dünya</strong></p>', 'Merhaba dünya'],
   ])('%s -> %s', (input, expected) => {
     expect(s.stripHtml(input)).toBe(expected);
@@ -139,5 +141,41 @@ describe('HtmlSanitizerService — stripHtml returns real text, not escaped html
 
   it('still drops script contents while decoding', () => {
     expect(s.stripHtml('<script>gizli</script>Kahve & çay')).toBe('Kahve & çay');
+  });
+});
+
+describe('HtmlSanitizerService — stripHtml cannot manufacture markup', () => {
+  const s = new HtmlSanitizerService();
+
+  /**
+   * Decoding *after* stripping briefly made this method produce the very thing
+   * it removes: `&lt;script&gt;` survived the strip as inert text and came out
+   * as a working tag. Every vector here returned live markup from that version.
+   */
+  it.each([
+    ['escaped script', '&lt;script&gt;alert(1)&lt;/script&gt;'],
+    ['double-escaped script', '&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;'],
+    ['numeric entities', '&#60;img src=x onerror=alert(1)&#62;'],
+    ['hex entities', '&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;'],
+    ['escaped img handler', '&lt;img src=x onerror=alert(1)&gt;'],
+    ['escaped svg', '&lt;svg onload=alert(1)&gt;'],
+    ['raw script', '<script>alert(1)</script>'],
+  ])('yields no markup for %s', (_label, input) => {
+    const out = s.stripHtml(input);
+
+    expect(out).not.toMatch(/[<>]/);
+    expect(out).not.toMatch(/on\w+\s*=/i);
+  });
+
+  it('terminates on deeply nested encoding rather than looping', () => {
+    let payload = '<script>x</script>';
+    for (let i = 0; i < 12; i++) {
+      payload = payload.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    const out = s.stripHtml(payload);
+
+    // Decoding is bounded, so something may remain — but never a bracket.
+    expect(out).not.toMatch(/[<>]/);
   });
 });

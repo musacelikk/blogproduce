@@ -74,6 +74,9 @@ const ALLOWED_ATTRIBUTES: Record<string, string[]> = {
  */
 const ALLOWED_SCHEMES = ['http', 'https', 'mailto'];
 
+/** Entity decoding is not guaranteed to converge on hostile input. */
+const MAX_DECODE_PASSES = 4;
+
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ALLOWED_TAGS,
   allowedAttributes: ALLOWED_ATTRIBUTES,
@@ -120,19 +123,39 @@ export class HtmlSanitizerService {
   /**
    * Strip all HTML and return genuinely plain text.
    *
-   * The decode step is not cosmetic. `sanitize-html` escapes what it keeps, so
-   * stripping alone turns "Kahve & çay" into "Kahve &amp; çay" — and a
-   * consumer putting that in a page (the documented WordPress receiver puts
-   * `excerpt` into `post_excerpt`) renders the entity literally. Escaped output
-   * would be correct for a field documented as HTML; this one is documented as
-   * text, so it has to actually be text.
+   * Order matters, and getting it wrong is how this method briefly *produced*
+   * markup. Decoding after stripping means `&lt;script&gt;` survives the strip
+   * as inert text and then becomes `<script>` on the way out — the sanitizer
+   * manufacturing the very thing it exists to remove.
+   *
+   * So: decode to a fixed point first, so multiply-encoded markup
+   * (`&amp;lt;script&amp;gt;`) is unwrapped before anything judges it; then
+   * strip; then undo only the escaping the stripper itself added, so "Kahve &
+   * çay" does not come back as "Kahve &amp; çay"; then drop any angle bracket
+   * still standing.
+   *
+   * That last step costs a literal `<` in text like "Fiyat < 100 TL". Worth it:
+   * this is a short text field whose whole contract is that it cannot be
+   * markup, and a consumer may well drop it into a page.
    */
   stripHtml(html: string): string {
     if (!html || typeof html !== 'string') {
       return html || '';
     }
 
-    return decodeHTML(sanitizeHtml(html, TEXT_ONLY_OPTIONS));
+    // Bounded: entity decoding is not guaranteed to converge on hostile input.
+    let decoded = html;
+    for (let i = 0; i < MAX_DECODE_PASSES; i++) {
+      const next = decodeHTML(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    }
+
+    const stripped = sanitizeHtml(decoded, TEXT_ONLY_OPTIONS);
+
+    // Safe to decode: every tag is already gone, so what is escaped here are
+    // literal characters, not markup.
+    return decodeHTML(stripped).replace(/[<>]/g, '');
   }
 
   /**
