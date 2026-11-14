@@ -75,6 +75,7 @@ export class TopicPlannerService {
       siteDescription: site?.description ?? null,
       niche: config.niche,
       targetAudience: config.targetAudience,
+      promotion: config.promotion,
       keywords: splitList(config.keywords),
       excludedTopics: splitList(config.excludedTopics),
       existingTitles,

@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { AutopilotService } from './autopilot.service';
+import { AutopilotService, buildContext } from './autopilot.service';
 import { AutopilotConfig } from '../entities/autopilot-config.entity';
 import { TopicIdea, TopicIdeaStatus } from '../entities/topic-idea.entity';
 
@@ -43,6 +43,7 @@ function makeConfig(overrides: Partial<AutopilotConfig> = {}): AutopilotConfig {
     targetAudience: null,
     keywords: null,
     excludedTopics: null,
+    promotion: null,
     lastRunAt: null,
     topicsPlannedAt: null,
     lastError: null,
@@ -599,6 +600,38 @@ describe('partner-API tenancy is owner-bound', () => {
 
     await expect(h.service.getConfigForProject('site-1', proj(WS_A), org())).rejects.toThrow(
       ForbiddenException,
+    );
+  });
+});
+
+describe('buildContext', () => {
+  it('carries the angle, keyword and niche when no promotion is set', () => {
+    const ctx = buildContext(makeTopic(), makeConfig({ niche: 'oto servis' }));
+    expect(ctx).toBe('Bir açı Hedef anahtar kelime: test. Sitenin alanı: oto servis.');
+    expect(ctx).not.toContain('Tanıtılacak ürün');
+  });
+
+  it('appends the promotion brief and asks for a CTA', () => {
+    const ctx = buildContext(
+      makeTopic(),
+      makeConfig({ promotion: 'OtoGarajim — otogarajim.com, ücretsiz deneyin.' }),
+    )!;
+    expect(ctx.startsWith('Bir açı')).toBe(true);
+    expect(ctx).toContain('Tanıtılacak ürün: OtoGarajim — otogarajim.com, ücretsiz deneyin.');
+    expect(ctx).toContain('sonuç bölümünü');
+  });
+
+  it('truncates the angle, never the promotion, to stay within 1000 characters', () => {
+    const promotion = 'P'.repeat(600);
+    const ctx = buildContext(makeTopic({ angle: 'A'.repeat(2000) }), makeConfig({ promotion }))!;
+    expect(ctx.length).toBeLessThanOrEqual(1000);
+    expect(ctx).toContain(promotion);
+    expect(ctx).toContain('reklam metnine dönüşmesin.');
+  });
+
+  it('ignores a whitespace-only promotion', () => {
+    expect(buildContext(makeTopic(), makeConfig({ promotion: '   ' }))).not.toContain(
+      'Tanıtılacak',
     );
   });
 });

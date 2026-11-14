@@ -1,3 +1,4 @@
+import { buildTopicPlanPrompt } from './autopilot-prompts';
 import { TopicPlannerService } from './topic-planner.service';
 import { AutopilotConfig } from '../entities/autopilot-config.entity';
 import { calculateCostUsd } from '../billing/model-tiers';
@@ -171,5 +172,22 @@ describe('topic deduplication', () => {
     });
 
     await expect(h.service.planBatch(makeConfig(), 25)).resolves.toBe(0);
+  });
+});
+
+describe('topic plan prompt — promotion', () => {
+  it('tells the planner which product the articles promote', () => {
+    const { user } = buildTopicPlanPrompt({
+      siteName: 'OtoGarajim',
+      promotion: 'Oto servis yönetim yazılımı',
+      count: 5,
+    });
+    expect(user).toContain('Product the articles exist to promote: Oto servis yönetim yazılımı');
+    expect(user).toContain('never an advert');
+  });
+
+  it('says nothing about promotion when none is configured', () => {
+    const { user } = buildTopicPlanPrompt({ siteName: 'X', count: 5 });
+    expect(user).not.toContain('promote');
   });
 });

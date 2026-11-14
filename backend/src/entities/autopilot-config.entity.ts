@@ -123,6 +123,14 @@ export class AutopilotConfig {
   @Column({ name: 'excluded_topics', type: 'text', nullable: true })
   excludedTopics: string | null;
 
+  /**
+   * The site's own product and call to action. When set, the planner favours
+   * topics whose reader has the problem the product solves, and every article
+   * is asked to recommend it in context and close with the CTA.
+   */
+  @Column({ type: 'text', nullable: true })
+  promotion: string | null;
+
   // ------------------------------------------------------------ bookkeeping
 
   /**

@@ -7,6 +7,8 @@ export interface TopicPlanInput {
   siteDescription?: string | null;
   niche?: string | null;
   targetAudience?: string | null;
+  /** The site's own product / call to action the articles exist to promote. */
+  promotion?: string | null;
   /** Seed keywords to build coverage around. */
   keywords?: string[];
   /** Topics to stay away from. */
@@ -48,6 +50,12 @@ export function buildTopicPlanPrompt(input: TopicPlanInput): { system: string; u
   if (input.siteDescription) lines.push(`What the site does: ${input.siteDescription}`);
   if (input.niche) lines.push(`Niche / sector: ${input.niche}`);
   if (input.targetAudience) lines.push(`Target audience: ${input.targetAudience}`);
+  if (input.promotion) {
+    lines.push(`Product the articles exist to promote: ${input.promotion}`);
+    lines.push(
+      'Prefer topics whose reader has a problem this product solves, so each article can recommend it naturally. Mix in decision-stage topics (comparisons, "how to choose", cost of not switching) — those convert. Every topic must still be a genuinely useful article, never an advert.',
+    );
+  }
 
   if (input.keywords?.length) {
     lines.push(`Build coverage around these seed keywords: ${input.keywords.join(', ')}`);

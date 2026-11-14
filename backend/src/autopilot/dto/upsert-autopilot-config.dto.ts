@@ -82,4 +82,13 @@ export class UpsertAutopilotConfigDto {
   @IsOptional()
   @MaxLength(1000, { message: 'Hariç tutulan konular en fazla 1000 karakter olabilir' })
   excludedTopics?: string;
+
+  /**
+   * Capped well under the writer's 1000-character context so the planner's
+   * angle for each article still fits beside it.
+   */
+  @IsString()
+  @IsOptional()
+  @MaxLength(600, { message: 'Tanıtım metni en fazla 600 karakter olabilir' })
+  promotion?: string;
 }

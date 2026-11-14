@@ -2147,6 +2147,7 @@ export interface AutopilotConfig {
   targetAudience: string | null;
   keywords: string | null;
   excludedTopics: string | null;
+  promotion: string | null;
   lastRunAt: string | null;
   topicsPlannedAt: string | null;
   lastError: string | null;
@@ -2168,6 +2169,7 @@ export type AutopilotConfigInput = Partial<
     | 'targetAudience'
     | 'keywords'
     | 'excludedTopics'
+    | 'promotion'
   >
 >;
 

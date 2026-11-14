@@ -193,6 +193,7 @@ export class AutopilotService {
     if (dto.targetAudience !== undefined) config.targetAudience = dto.targetAudience;
     if (dto.keywords !== undefined) config.keywords = dto.keywords;
     if (dto.excludedTopics !== undefined) config.excludedTopics = dto.excludedTopics;
+    if (dto.promotion !== undefined) config.promotion = dto.promotion.trim() || null;
 
     return this.configRepository.save(config);
   }
@@ -582,13 +583,33 @@ function monthAnchor(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Carries the planner's angle through to the writer so the article matches the plan. */
-function buildContext(topic: TopicIdea, config: AutopilotConfig): string | undefined {
+/** posts.service caps additionalContext at this many characters. */
+const MAX_CONTEXT = 1000;
+
+/**
+ * Carries the planner's angle through to the writer so the article matches the
+ * plan, plus the site's promotion brief when one is configured.
+ *
+ * The promotion goes last and is never the part that gets truncated: a long
+ * angle is cut instead, because an article that silently drops the product it
+ * was written to promote has failed at its one commercial job.
+ */
+export function buildContext(topic: TopicIdea, config: AutopilotConfig): string | undefined {
   const parts: string[] = [];
   if (topic.angle) parts.push(topic.angle);
   if (topic.primaryKeyword) parts.push(`Hedef anahtar kelime: ${topic.primaryKeyword}.`);
   if (config.niche) parts.push(`Sitenin alanı: ${config.niche}.`);
-  const context = parts.join(' ').trim();
-  // posts.service caps additionalContext at 1000 characters.
-  return context ? context.slice(0, 1000) : undefined;
+  const base = parts.join(' ').trim();
+
+  const promotion = config.promotion?.trim();
+  if (!promotion) return base ? base.slice(0, MAX_CONTEXT) : undefined;
+
+  const promo =
+    `Tanıtılacak ürün: ${promotion} ` +
+    'Bu ürünü yazıda okurun sorununu çözdüğü doğal bir yerde bir-iki kez öner ve ' +
+    'sonuç bölümünü bu ürüne yönlendiren kısa bir çağrıyla bitir. Yazı yine de ' +
+    'kendi başına faydalı bir rehber olsun; reklam metnine dönüşmesin.';
+  const room = MAX_CONTEXT - promo.length - 1;
+  const head = room > 0 ? base.slice(0, room).trim() : '';
+  return (head ? `${head} ${promo}` : promo).slice(0, MAX_CONTEXT);
 }

@@ -57,6 +57,7 @@ const DEFAULTS: AutopilotConfigInput = {
   targetAudience: '',
   keywords: '',
   excludedTopics: '',
+  promotion: '',
 };
 
 /**
@@ -473,6 +474,21 @@ export default function AutopilotPage() {
                       onChange={(e) => set('excludedTopics', e.target.value)}
                     />
                   </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                      Tanıtılacak ürün ve çağrı
+                      <span className="ml-1 font-normal text-muted-foreground/70">
+                        (her yazıda doğal şekilde önerilir)
+                      </span>
+                    </span>
+                    <Textarea
+                      rows={3}
+                      maxLength={600}
+                      placeholder="Ürününüz ne işe yarar, okura neden önerilmeli, nereye yönlendirilsin? Örn: site.com — 14 gün ücretsiz deneyin."
+                      value={form.promotion ?? ''}
+                      onChange={(e) => set('promotion', e.target.value)}
+                    />
+                  </label>
                 </div>
               </Card>
 
@@ -780,6 +796,7 @@ function pickInput(config: AutopilotConfig): AutopilotConfigInput {
     targetAudience: config.targetAudience ?? '',
     keywords: config.keywords ?? '',
     excludedTopics: config.excludedTopics ?? '',
+    promotion: config.promotion ?? '',
   };
 }
 
