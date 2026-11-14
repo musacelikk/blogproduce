@@ -167,15 +167,34 @@ describe('HtmlSanitizerService — stripHtml cannot manufacture markup', () => {
     expect(out).not.toMatch(/on\w+\s*=/i);
   });
 
-  it('terminates on deeply nested encoding rather than looping', () => {
+  it('discards a value built to outrun the decode budget', () => {
     let payload = '<script>x</script>';
     for (let i = 0; i < 12; i++) {
       payload = payload.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    const out = s.stripHtml(payload);
+    // Returning the half-decoded string would emit entity syntax from a
+    // plain-text contract, and a consumer decoding once more would hold the
+    // markup back. Nothing here is worth keeping.
+    expect(s.stripHtml(payload)).toBe('');
+  });
 
-    // Decoding is bounded, so something may remain — but never a bracket.
-    expect(out).not.toMatch(/[<>]/);
+  it('leaves no entity syntax in anything it does return', () => {
+    const inputs = [
+      'Kahve &amp; çay',
+      '&lt;b&gt;kalın&lt;/b&gt;',
+      '&#60;img src=x&#62;',
+      'düz metin',
+      '<p>paragraf</p>',
+    ];
+
+    for (const input of inputs) {
+      expect(s.stripHtml(input)).not.toMatch(/&#?\w+;/);
+    }
+  });
+
+  it('still accepts content that needs a decode pass', () => {
+    // The budget must be generous enough for real text: this takes one pass.
+    expect(s.stripHtml('Kahve &amp; çay')).toBe('Kahve & çay');
   });
 });

@@ -145,10 +145,24 @@ export class HtmlSanitizerService {
 
     // Bounded: entity decoding is not guaranteed to converge on hostile input.
     let decoded = html;
+    let converged = false;
     for (let i = 0; i < MAX_DECODE_PASSES; i++) {
       const next = decodeHTML(decoded);
-      if (next === decoded) break;
+      if (next === decoded) {
+        converged = true;
+        break;
+      }
       decoded = next;
+    }
+
+    // Still unwrapping after four passes means the value was built to outrun
+    // this loop. Real content converges in nought or one — "Kahve &amp; çay"
+    // takes one. Returning the partially-decoded string would emit entity
+    // syntax from a method whose contract is plain text, and leave a consumer
+    // that decodes once more holding markup we thought we had removed. There
+    // is nothing worth salvaging, so salvage nothing.
+    if (!converged) {
+      return '';
     }
 
     const stripped = sanitizeHtml(decoded, TEXT_ONLY_OPTIONS);

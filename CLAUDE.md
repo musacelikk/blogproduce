@@ -349,7 +349,7 @@ working tag. Decoding first means multiply-encoded payloads (`&amp;lt;script&amp
 unwrapped before anything judges them; the final unescape exists so `Kahve & çay` is not returned
 as `Kahve &amp; çay`, and is safe because every tag is already gone by then. Dropping `<`/`>` costs
 a literal bracket in prose like `Fiyat < 100 TL`, which is the right trade for a short text field
-whose contract is that it cannot be markup. `html-sanitizer.spec.ts` pins all of it.
+whose contract is that it cannot be markup. The decode loop is bounded at four passes and **fails closed**: real text converges in nought or one (`Kahve &amp; çay` takes one), so a value still unwrapping after four was built to outrun the loop, and returning it half-decoded would emit entity syntax from a plain-text contract — and hand a consumer that decodes once more the markup we thought we had removed. `html-sanitizer.spec.ts` pins all of it.
 
 `content_html` is sanitized through `HtmlSanitizerService` before leaving the backend — on **both** read surfaces. `blog.service` always did; `api.service` (`/api/v1/published`, `/api/v1/posts`) did not, and handed `convertContentFormat` output straight out while the docs pointed WordPress receivers at it. Articles are model-written from customer-supplied topics, so the markup is not ours to trust. Any new endpoint returning HTML sanitizes too. `excerpt` goes out through `stripHtml` on the same paths: the schema calls for plain text but nothing enforced it, and receivers put that field straight into a page.
 
