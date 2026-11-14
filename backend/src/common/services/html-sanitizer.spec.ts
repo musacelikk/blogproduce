@@ -121,3 +121,23 @@ describe('HtmlSanitizerService — isDangerous', () => {
     expect(s.isDangerous(undefined as any)).toBe(false);
   });
 });
+
+describe('HtmlSanitizerService — stripHtml returns real text, not escaped html', () => {
+  const s = new HtmlSanitizerService();
+
+  // sanitize-html escapes what it keeps, so stripping alone turns "Kahve & çay"
+  // into "Kahve &amp; çay". A consumer putting that in a page renders the
+  // entity literally — the field is documented as text, so it must be text.
+  it.each([
+    ['Kahve & çay', 'Kahve & çay'],
+    ['Fiyat < 100 TL', 'Fiyat < 100 TL'],
+    ['Şirket & Ortakları > 2026', 'Şirket & Ortakları > 2026'],
+    ['<p>Merhaba <strong>dünya</strong></p>', 'Merhaba dünya'],
+  ])('%s -> %s', (input, expected) => {
+    expect(s.stripHtml(input)).toBe(expected);
+  });
+
+  it('still drops script contents while decoding', () => {
+    expect(s.stripHtml('<script>gizli</script>Kahve & çay')).toBe('Kahve & çay');
+  });
+});

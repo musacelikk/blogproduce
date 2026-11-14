@@ -510,9 +510,9 @@ export class ApiService {
       return {
         posts: resultPosts.map((post) => ({
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           status: post.status,
           language: post.language,
           coverImageUrl: post.coverImageUrl,
@@ -575,9 +575,9 @@ export class ApiService {
       return {
         posts: resultPosts.map((post) => ({
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           language: post.language,
           coverImageUrl: post.coverImageUrl,
           publishedAt: post.publishedAt,
@@ -638,9 +638,9 @@ export class ApiService {
       if (!latestRevision || !latestRevision.content) {
         return {
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -700,9 +700,9 @@ export class ApiService {
 
       return {
         id: post.id,
-        title: post.title,
+        title: this.plainText(post.title),
         slug: post.slug,
-        excerpt: this.plainExcerpt(post.excerpt),
+        excerpt: this.plainText(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -828,9 +828,9 @@ export class ApiService {
 
       return posts.map((post) => ({
         id: post.id,
-        title: post.title,
+        title: this.plainText(post.title),
         slug: post.slug,
-        excerpt: this.plainExcerpt(post.excerpt),
+        excerpt: this.plainText(post.excerpt),
         status: post.status,
         language: post.language,
         coverImageUrl: post.coverImageUrl,
@@ -867,9 +867,9 @@ export class ApiService {
       if (!latestRevision || !latestRevision.content) {
         return {
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -931,9 +931,9 @@ export class ApiService {
 
       return {
         id: post.id,
-        title: post.title,
+        title: this.plainText(post.title),
         slug: post.slug,
-        excerpt: this.plainExcerpt(post.excerpt),
+        excerpt: this.plainText(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -996,9 +996,9 @@ export class ApiService {
       return {
         posts: resultPosts.map((post) => ({
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           language: post.language,
           coverImageUrl: post.coverImageUrl,
           publishedAt: post.publishedAt,
@@ -1041,9 +1041,9 @@ export class ApiService {
       if (!latestRevision || !latestRevision.content) {
         return {
           id: post.id,
-          title: post.title,
+          title: this.plainText(post.title),
           slug: post.slug,
-          excerpt: this.plainExcerpt(post.excerpt),
+          excerpt: this.plainText(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -1102,9 +1102,9 @@ export class ApiService {
 
       return {
         id: post.id,
-        title: post.title,
+        title: this.plainText(post.title),
         slug: post.slug,
-        excerpt: this.plainExcerpt(post.excerpt),
+        excerpt: this.plainText(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -1144,18 +1144,18 @@ export class ApiService {
   }
 
   /**
-   * Excerpts leave as plain text.
+   * Text fields leave as text.
    *
-   * The content schema calls for "plain-text summary, no markdown", but nothing
-   * enforced it — the field is model-written and went out raw while
-   * `content_html` beside it was sanitized. A receiver that drops it into a
-   * page (the documented WordPress one puts it in `post_excerpt`) would render
-   * whatever the model produced.
+   * `title` and `excerpt` are model-written and were emitted raw while
+   * `content_html` beside them was sanitized — and a receiver puts them
+   * straight into a page (the documented WordPress one maps them to
+   * `post_title` and `post_excerpt`). The schema already calls for plain text
+   * here; this is what enforces it.
    *
-   * Null and undefined pass through unchanged; turning a missing excerpt into
-   * an empty string would be a silent API change.
+   * Null and undefined pass through unchanged: turning a missing field into an
+   * empty string would be a silent API change.
    */
-  private plainExcerpt(value: string | null | undefined): string | null | undefined {
+  private plainText(value: string | null | undefined): string | null | undefined {
     if (value === null || value === undefined) return value;
     return this.htmlSanitizer.stripHtml(value);
   }

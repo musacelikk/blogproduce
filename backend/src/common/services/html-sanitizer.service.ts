@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import sanitizeHtml from 'sanitize-html';
+import { decodeHTML } from 'entities';
 
 /**
  * HTML sanitization for model-written content before it leaves the backend.
@@ -116,9 +117,22 @@ export class HtmlSanitizerService {
     return sanitizeHtml(html, allowHtml ? OPTIONS : TEXT_ONLY_OPTIONS);
   }
 
-  /** Strip all HTML and return plain text. */
+  /**
+   * Strip all HTML and return genuinely plain text.
+   *
+   * The decode step is not cosmetic. `sanitize-html` escapes what it keeps, so
+   * stripping alone turns "Kahve & çay" into "Kahve &amp; çay" — and a
+   * consumer putting that in a page (the documented WordPress receiver puts
+   * `excerpt` into `post_excerpt`) renders the entity literally. Escaped output
+   * would be correct for a field documented as HTML; this one is documented as
+   * text, so it has to actually be text.
+   */
   stripHtml(html: string): string {
-    return this.sanitize(html, false);
+    if (!html || typeof html !== 'string') {
+      return html || '';
+    }
+
+    return decodeHTML(sanitizeHtml(html, TEXT_ONLY_OPTIONS));
   }
 
   /**
