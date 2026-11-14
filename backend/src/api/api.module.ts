@@ -16,6 +16,7 @@ import { IdempotencyKey } from '../entities/idempotency-key.entity';
 import { PostsModule } from '../posts/posts.module';
 import { QueueModule } from '../queue/queue.module';
 import { AuthModule } from '../auth/auth.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -35,6 +36,8 @@ import { AuthModule } from '../auth/auth.module';
     PostsModule,
     QueueModule,
     AuthModule,
+    // One hardened webhook delivery path, not two.
+    WebhooksModule,
   ],
   controllers: [ApiController, PublicApiController],
   providers: [ApiService],

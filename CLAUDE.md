@@ -280,17 +280,20 @@ covers the case.
    nothing and a webhook could be registered publicly then repointed at cloud metadata. Update now
    has a real `UpdateWebhookDto` class **and** the service-layer assert.
 3. **`privateSafeLookup`** — passed as the `lookup` option to `https.request` in
-   `webhooks/webhook.service.ts`. This is the only layer that sees DNS rebinding, and because the
-   address it returns is the one the socket connects to, there is no time-of-check/time-of-use gap.
+   `webhooks/webhook.service.ts`. For **hostnames** this closes DNS rebinding with no
+   time-of-check/time-of-use gap: the address it returns is the one the socket connects to. Node
+   skips `lookup` entirely for IP-literal hosts (measured, not assumed), so literals are covered by
+   layer 1 instead — they have no DNS step to rebind. The two halves are disjoint; neither may be
+   dropped, and `webhook-delivery-guard.spec.ts` fails if the literal half is.
 
-There are **two delivery paths** and both need the re-check: `WebhookService.triggerWebhook` (used
-by `posts.service`, and so by autopilot) and the private `ApiService.triggerWebhook`. The latter
-used `fetch` with no validation at all; it now re-checks protocol and host, sets
-`redirect: 'manual'` — fetch follows redirects by default, so a public URL answering 302 to
-`http://169.254.169.254/` would bypass the host check — and carries a timeout.
+**There is exactly one delivery implementation**, `WebhookService.sendWebhook`. `ApiService` used to
+carry a second one built on `fetch`, and the two drifted: only one re-validated the URL, and only
+one pinned the resolved address. `ApiService.triggerWebhook` is now a thin delegation that keeps the
+old error-swallowing semantics — a customer's broken endpoint must not fail the generation they paid
+for. **Don't add a third.** Two delivery paths means two places to get SSRF right.
 
-Adding a new outbound-URL feature means all three layers plus a delivery-time re-check, not just
-the decorator.
+Adding a new outbound-URL feature means all three layers, not just the decorator — and it goes
+through `WebhookService`.
 
 ### Multi-tenancy: Workspace vs Organization/Project
 

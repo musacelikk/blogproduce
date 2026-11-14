@@ -1,3 +1,4 @@
+import { WebhookService } from '../webhooks/webhook.service';
 import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
 import {
   Injectable,
@@ -51,6 +52,7 @@ export class ApiService {
     private projectsRepository: Repository<Project>,
     @InjectRepository(Webhook)
     private webhooksRepository: Repository<Webhook>,
+    private readonly webhookService: WebhookService,
     @InjectRepository(GenerationJob)
     private generationJobsRepository: Repository<GenerationJob>,
     @InjectRepository(UsageEvent)
@@ -1131,6 +1133,18 @@ export class ApiService {
     }
   }
 
+  /**
+   * Webhook delivery, delegated.
+   *
+   * This used to be a second implementation that called `fetch` directly, and
+   * it drifted: `WebhookService` re-validated the URL and pinned the resolved
+   * address at connect time, this one did neither. Two delivery paths meant two
+   * places to get SSRF right, and only one of them was.
+   *
+   * Failures stay swallowed — a customer's broken endpoint must not fail the
+   * generation they paid for. `WebhookService` already settles each delivery
+   * individually; this guards the repository read around them.
+   */
   private async triggerWebhook(
     organizationId: string,
     projectId: string,
@@ -1138,85 +1152,7 @@ export class ApiService {
     data: any,
   ) {
     try {
-      const webhooks = await this.webhooksRepository.find({
-        where: {
-          organizationId,
-          projectId,
-          active: true,
-        },
-      });
-
-      for (const webhook of webhooks) {
-        // Check if webhook subscribes to this event
-        if (!webhook.events || !webhook.events.includes(event)) {
-          continue;
-        }
-
-        try {
-          // Re-validate at delivery time. The stored URL is user-supplied and
-          // this path had no check at all: a row written before the validator
-          // existed, or repointed since, would be fetched as-is.
-          let target: URL;
-          try {
-            target = new URL(webhook.url);
-          } catch {
-            this.logger.warn(`Skipping webhook ${webhook.id}: unparseable URL`);
-            continue;
-          }
-          if (target.protocol !== 'https:' || isPrivateHost(target.hostname)) {
-            this.logger.warn(
-              `Refusing to deliver webhook ${webhook.id} to non-public URL: ${target.origin}`,
-            );
-            continue;
-          }
-
-          const payload = {
-            event,
-            data,
-            timestamp: new Date().toISOString(),
-          };
-
-          // Create signature if secret exists
-          const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'X-Webhook-Event': event,
-          };
-
-          if (webhook.secret) {
-            const signature = crypto
-              .createHmac('sha256', webhook.secret)
-              .update(JSON.stringify(payload))
-              .digest('hex');
-            headers['X-Webhook-Signature'] = signature;
-          }
-
-          // `redirect: 'manual'` matters as much as the host check above: fetch
-          // follows redirects by default, so a public URL answering 302 to
-          // http://169.254.169.254/ would walk straight past it.
-          const response = await fetch(webhook.url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload),
-            redirect: 'manual',
-            signal: AbortSignal.timeout(10_000),
-          });
-
-          if (response.ok) {
-            webhook.lastTriggeredAt = new Date();
-            webhook.failureCount = 0;
-            await this.webhooksRepository.save(webhook);
-            this.logger.log(`Webhook triggered successfully: ${webhook.url}`);
-          } else {
-            webhook.failureCount += 1;
-            await this.webhooksRepository.save(webhook);
-            this.logger.warn(`Webhook failed: ${webhook.url} - Status: ${response.status}`);
-          }
-        } catch (error) {
-          webhook.failureCount += 1;
-          await this.webhooksRepository.save(webhook);
-          this.logger.error(`Error triggering webhook: ${webhook.url}`, error);
-        }
-      }
+      await this.webhookService.triggerWebhook(organizationId, projectId, event, data);
     } catch (error) {
       this.logger.error('Error in triggerWebhook', error);
     }

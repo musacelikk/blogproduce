@@ -173,9 +173,16 @@ function isPrivateAddress(address: string, family: number): boolean {
 /**
  * A `dns.lookup` replacement for outbound requests.
  *
- * Pass as the `lookup` option to `http(s).request` and DNS rebinding closes
- * with no time-of-check/time-of-use gap: the address this returns is the one
- * the socket connects to, so there is no second resolution to race.
+ * Pass as the `lookup` option to `http(s).request`. For **hostnames** this
+ * closes DNS rebinding with no time-of-check/time-of-use gap: the address it
+ * returns is the one the socket connects to, so there is no second resolution
+ * to race.
+ *
+ * It does **not** see IP-literal hosts — Node skips `lookup` entirely and
+ * connects straight to the literal (verified, not assumed). That is not a hole:
+ * a literal has no DNS step to rebind, and `isPrivateHost` already rejects
+ * every private literal, including the alternate spellings, before delivery.
+ * The two cover disjoint halves of the problem, so neither may be dropped.
  */
 function privateSafeLookup(
   hostname: string,
