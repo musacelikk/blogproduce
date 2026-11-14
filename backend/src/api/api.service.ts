@@ -1,3 +1,4 @@
+import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
 import {
   Injectable,
   NotFoundException,
@@ -22,7 +23,11 @@ import { PublishApiDto } from './dto/publish-api.dto';
 import { UpdatePostApiDto } from './dto/update-post-api.dto';
 import { SqsService } from '../queue/sqs.service';
 import { PostsService } from '../posts/posts.service';
-import { convertContentFormat, parseFormat, markdownToJson } from '../common/utils/content-format.util';
+import {
+  convertContentFormat,
+  parseFormat,
+  markdownToJson,
+} from '../common/utils/content-format.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import { getPublishedRevision } from '../common/utils/revision.util';
 import { decodeCursor, encodeCursor } from '../common/utils/cursor.util';
@@ -130,7 +135,9 @@ export class ApiService {
           });
         } catch {
           // Lost the race against a concurrent identical request.
-          throw new ConflictException('A request with this Idempotency-Key is already in progress.');
+          throw new ConflictException(
+            'A request with this Idempotency-Key is already in progress.',
+          );
         }
       }
 
@@ -144,7 +151,8 @@ export class ApiService {
       });
 
       // Parse cover image credit JSON if provided
-      let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
+      let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null =
+        null;
       if (dto.coverImageCreditJson) {
         try {
           coverImageCreditJson = JSON.parse(dto.coverImageCreditJson);
@@ -176,7 +184,7 @@ export class ApiService {
       }
 
       const post = this.postsRepository.create(postData);
-      const savedPost = await this.postsRepository.save(post) as unknown as Post;
+      const savedPost = (await this.postsRepository.save(post)) as unknown as Post;
 
       // Create generation job record
       const job = this.generationJobsRepository.create({
@@ -205,7 +213,7 @@ export class ApiService {
 
       // Send message to SQS
       const languageValue = dto.language || PostLanguage.TR;
-      
+
       await this.sqsService.sendGeneratePostMessage({
         jobId: savedJob.id, // Include jobId for idempotency
         postId: savedPost.id,
@@ -225,9 +233,15 @@ export class ApiService {
       });
 
       // Record usage event
-      await this.recordUsageEvent(organization.id, project.id, savedPost.id, UsageEventType.POST_GENERATED, {
-        model: dto.model || 'gpt-4.1-mini',
-      });
+      await this.recordUsageEvent(
+        organization.id,
+        project.id,
+        savedPost.id,
+        UsageEventType.POST_GENERATED,
+        {
+          model: dto.model || 'gpt-4.1-mini',
+        },
+      );
 
       // Trigger webhook for POST_GENERATED event
       await this.triggerWebhook(organization.id, project.id, WebhookEvent.POST_GENERATED, {
@@ -298,7 +312,9 @@ export class ApiService {
 
       if (job.status === JobStatus.PROCESSING) {
         // Calculate progress if available
-        response.progress = job.processingTimeMs ? Math.min(100, (job.processingTimeMs / 60000) * 100) : null;
+        response.progress = job.processingTimeMs
+          ? Math.min(100, (job.processingTimeMs / 60000) * 100)
+          : null;
       }
 
       if (job.error) {
@@ -334,14 +350,17 @@ export class ApiService {
     }
 
     await this.postsService.hardDelete(post);
-    this.logger.log(
-      `API deleted post ${postId} (org ${organization.id}, project ${project.id})`,
-    );
+    this.logger.log(`API deleted post ${postId} (org ${organization.id}, project ${project.id})`);
 
     return { id: postId, deleted: true };
   }
 
-  async updatePost(organization: Organization, project: Project, postId: string, dto: UpdatePostApiDto) {
+  async updatePost(
+    organization: Organization,
+    project: Project,
+    postId: string,
+    dto: UpdatePostApiDto,
+  ) {
     try {
       const post = await this.postsRepository.findOne({
         where: {
@@ -751,7 +770,12 @@ export class ApiService {
       const savedPost = await this.postsRepository.save(post);
 
       // Record usage event
-      await this.recordUsageEvent(organization.id, project.id, savedPost.id, UsageEventType.POST_PUBLISHED);
+      await this.recordUsageEvent(
+        organization.id,
+        project.id,
+        savedPost.id,
+        UsageEventType.POST_PUBLISHED,
+      );
 
       // Trigger webhook for POST_PUBLISHED event
       await this.triggerWebhook(organization.id, project.id, WebhookEvent.POST_PUBLISHED, {
@@ -774,7 +798,12 @@ export class ApiService {
     }
   }
 
-  async listPosts(organization: Organization, project: Project, status?: PostStatus, limit: number = 50) {
+  async listPosts(
+    organization: Organization,
+    project: Project,
+    status?: PostStatus,
+    limit: number = 50,
+  ) {
     try {
       const queryBuilder = this.postsRepository
         .createQueryBuilder('post')
@@ -976,7 +1005,12 @@ export class ApiService {
     }
   }
 
-  async getPublishedPost(organization: Organization, project: Project, slug: string, format?: string) {
+  async getPublishedPost(
+    organization: Organization,
+    project: Project,
+    slug: string,
+    format?: string,
+  ) {
     try {
       const post = await this.postsRepository.findOne({
         where: {
@@ -1097,7 +1131,12 @@ export class ApiService {
     }
   }
 
-  private async triggerWebhook(organizationId: string, projectId: string, event: WebhookEvent, data: any) {
+  private async triggerWebhook(
+    organizationId: string,
+    projectId: string,
+    event: WebhookEvent,
+    data: any,
+  ) {
     try {
       const webhooks = await this.webhooksRepository.find({
         where: {
@@ -1114,6 +1153,23 @@ export class ApiService {
         }
 
         try {
+          // Re-validate at delivery time. The stored URL is user-supplied and
+          // this path had no check at all: a row written before the validator
+          // existed, or repointed since, would be fetched as-is.
+          let target: URL;
+          try {
+            target = new URL(webhook.url);
+          } catch {
+            this.logger.warn(`Skipping webhook ${webhook.id}: unparseable URL`);
+            continue;
+          }
+          if (target.protocol !== 'https:' || isPrivateHost(target.hostname)) {
+            this.logger.warn(
+              `Refusing to deliver webhook ${webhook.id} to non-public URL: ${target.origin}`,
+            );
+            continue;
+          }
+
           const payload = {
             event,
             data,
@@ -1121,7 +1177,7 @@ export class ApiService {
           };
 
           // Create signature if secret exists
-          let headers: Record<string, string> = {
+          const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'X-Webhook-Event': event,
           };
@@ -1134,11 +1190,15 @@ export class ApiService {
             headers['X-Webhook-Signature'] = signature;
           }
 
-          // Send webhook (using fetch - you might want to use axios or httpService)
+          // `redirect: 'manual'` matters as much as the host check above: fetch
+          // follows redirects by default, so a public URL answering 302 to
+          // http://169.254.169.254/ would walk straight past it.
           const response = await fetch(webhook.url, {
             method: 'POST',
             headers,
             body: JSON.stringify(payload),
+            redirect: 'manual',
+            signal: AbortSignal.timeout(10_000),
           });
 
           if (response.ok) {

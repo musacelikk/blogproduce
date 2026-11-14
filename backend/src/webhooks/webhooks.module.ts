@@ -9,4 +9,3 @@ import { Webhook } from '../entities/webhook.entity';
   exports: [WebhookService],
 })
 export class WebhooksModule {}
-

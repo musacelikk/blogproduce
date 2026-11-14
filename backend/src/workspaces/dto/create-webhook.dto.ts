@@ -17,4 +17,3 @@ export class CreateWebhookDto {
   @IsOptional()
   secret?: string;
 }
-

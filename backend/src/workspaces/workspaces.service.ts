@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { assertPublicHttpsUrl } from '../common/validators/is-public-https-url.validator';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Workspace } from '../entities/workspace.entity';
@@ -11,6 +17,7 @@ import { Project } from '../entities/project.entity';
 import { PlanDefinition } from '../entities/plan-definition.entity';
 import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
+import { UpdateWebhookDto } from './dto/update-webhook.dto';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
@@ -47,7 +54,7 @@ export class WorkspacesService {
 
     // Kullanıcının aktif planını kontrol et
     let userPlan: PlanDefinition | null = null;
-    
+
     // Önce aktif subscription'ı kontrol et
     const activeSubscription = await this.subscriptionRepository.findOne({
       where: {
@@ -69,7 +76,7 @@ export class WorkspacesService {
 
     // Plan limitini kontrol et
     let maxWorkspaces: number | 'unlimited' = 1; // Varsayılan: 1 workspace (ücretsiz plan)
-    
+
     if (userPlan) {
       maxWorkspaces = userPlan.features.maxWorkspaces;
     }
@@ -104,7 +111,7 @@ export class WorkspacesService {
         ownerId: user.id,
       });
       const savedWorkspace = await this.workspacesRepository.save(defaultWorkspace);
-      
+
       // Relation'ları yüklemek için tekrar sorgula
       return this.workspacesRepository.find({
         where: { id: savedWorkspace.id },
@@ -136,16 +143,14 @@ export class WorkspacesService {
 
   async remove(id: string, user: User, force: boolean = false) {
     const workspace = await this.findOne(id, user);
-    
+
     // Check if workspace has posts
     const postCount = await this.postsRepository.count({
       where: { workspaceId: id },
     });
 
     if (postCount > 0 && !force) {
-      throw new BadRequestException(
-        `Bu workspace'te ${postCount} blog bulunmaktadır.`
-      );
+      throw new BadRequestException(`Bu workspace'te ${postCount} blog bulunmaktadır.`);
     }
 
     // If force is true, delete all posts first
@@ -216,11 +221,11 @@ export class WorkspacesService {
 
     // Hash the API key for storage
     const keyHash = ApiKey.hashKey(apiKey);
-    
+
     // Generate client secret
     const clientSecret = ApiKey.generateClientSecret();
     const clientSecretHash = ApiKey.hashKey(clientSecret);
-    
+
     const keyRecord = this.apiKeyRepository.create({
       keyHash: keyHash,
       clientId: ApiKey.generateClientId(),
@@ -232,8 +237,8 @@ export class WorkspacesService {
       active: true,
     });
 
-    const savedKey = await this.apiKeyRepository.save(keyRecord) as unknown as ApiKey;
-    
+    const savedKey = (await this.apiKeyRepository.save(keyRecord)) as unknown as ApiKey;
+
     return {
       id: savedKey.id,
       apiKey: apiKey, // Return plaintext key only on creation
@@ -255,7 +260,7 @@ export class WorkspacesService {
 
     // Find keys by organizationId and projectId
     const keys = await this.apiKeyRepository.find({
-      where: { 
+      where: {
         organizationId: organization.id,
         projectId: project.id,
       },
@@ -284,7 +289,7 @@ export class WorkspacesService {
 
     // Find key by organizationId and projectId
     const apiKey = await this.apiKeyRepository.findOne({
-      where: { 
+      where: {
         id: apiKeyId,
         organizationId: organization.id,
         projectId: project.id,
@@ -311,7 +316,7 @@ export class WorkspacesService {
 
     // Verify the API key belongs to this organization/project
     const apiKey = await this.apiKeyRepository.findOne({
-      where: { 
+      where: {
         id: apiKeyId,
         organizationId: organization.id,
         projectId: project.id,
@@ -327,6 +332,10 @@ export class WorkspacesService {
   }
 
   async createWebhook(workspaceId: string, user: User, dto: CreateWebhookDto) {
+    // Same rule as the update path; both go through one helper so they cannot
+    // drift apart.
+    assertPublicHttpsUrl(dto.url, 'url');
+
     const workspace = await this.findOne(workspaceId, user);
     // Deliveries are looked up by the real organization/project ids (the same ones the
     // API key binds to), so the webhook must be stored against those — not workspace.id.
@@ -342,8 +351,8 @@ export class WorkspacesService {
       active: true,
     });
 
-    const savedWebhook = await this.webhooksRepository.save(webhook) as unknown as Webhook;
-    
+    const savedWebhook = (await this.webhooksRepository.save(webhook)) as unknown as Webhook;
+
     return {
       id: savedWebhook.id,
       url: savedWebhook.url,
@@ -355,7 +364,7 @@ export class WorkspacesService {
 
   async listWebhooks(workspaceId: string, user: User) {
     const workspace = await this.findOne(workspaceId, user);
-    
+
     // Legacy: Find webhooks by workspaceId (backward compatibility)
     const webhooks = await this.webhooksRepository.find({
       where: { workspaceId: workspace.id },
@@ -373,9 +382,9 @@ export class WorkspacesService {
     }));
   }
 
-  async updateWebhook(workspaceId: string, user: User, webhookId: string, dto: Partial<CreateWebhookDto>) {
+  async updateWebhook(workspaceId: string, user: User, webhookId: string, dto: UpdateWebhookDto) {
     const workspace = await this.findOne(workspaceId, user);
-    
+
     // Legacy: Find webhook by workspaceId (backward compatibility)
     const webhook = await this.webhooksRepository.findOne({
       where: { id: webhookId, workspaceId: workspace.id },
@@ -385,7 +394,12 @@ export class WorkspacesService {
       throw new NotFoundException('Webhook not found');
     }
 
-    if (dto.url) webhook.url = dto.url;
+    // Enforced here as well as on the DTO: this is the last point before the
+    // value is persisted, and a future caller may not come through that DTO.
+    if (dto.url) {
+      assertPublicHttpsUrl(dto.url, 'url');
+      webhook.url = dto.url;
+    }
     if (dto.events) webhook.events = dto.events;
     if (dto.secret !== undefined) webhook.secret = dto.secret;
 
@@ -401,7 +415,7 @@ export class WorkspacesService {
 
   async deleteWebhook(workspaceId: string, user: User, webhookId: string) {
     const workspace = await this.findOne(workspaceId, user);
-    
+
     // Legacy: Find webhook by workspaceId (backward compatibility)
     const webhook = await this.webhooksRepository.findOne({
       where: { id: webhookId, workspaceId: workspace.id },

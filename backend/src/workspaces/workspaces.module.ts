@@ -14,7 +14,16 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Workspace, Post, ApiKey, Webhook, Organization, Project, PlanDefinition, Subscription]),
+    TypeOrmModule.forFeature([
+      Workspace,
+      Post,
+      ApiKey,
+      Webhook,
+      Organization,
+      Project,
+      PlanDefinition,
+      Subscription,
+    ]),
     forwardRef(() => AuthModule), // Import AuthModule to get ApiKeyRotationService
   ],
   controllers: [WorkspacesController],

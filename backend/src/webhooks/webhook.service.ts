@@ -5,7 +5,10 @@ import { Webhook, WebhookEvent } from '../entities/webhook.entity';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import * as http from 'http';
-import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
+import {
+  isPrivateHost,
+  privateSafeLookup,
+} from '../common/validators/is-public-https-url.validator';
 
 @Injectable()
 export class WebhookService {
@@ -34,19 +37,17 @@ export class WebhookService {
       },
     });
 
-    const relevantWebhooks = webhooks.filter((webhook) =>
-      webhook.events.includes(event),
-    );
+    const relevantWebhooks = webhooks.filter((webhook) => webhook.events.includes(event));
 
     if (relevantWebhooks.length === 0) {
-      this.logger.debug(`No webhooks found for event ${event} in organization ${organizationId}, project ${projectId}`);
+      this.logger.debug(
+        `No webhooks found for event ${event} in organization ${organizationId}, project ${projectId}`,
+      );
       return;
     }
 
     // Send webhook to each relevant webhook
-    const promises = relevantWebhooks.map((webhook) =>
-      this.sendWebhook(webhook, event, payload),
-    );
+    const promises = relevantWebhooks.map((webhook) => this.sendWebhook(webhook, event, payload));
 
     await Promise.allSettled(promises);
   }
@@ -73,7 +74,9 @@ export class WebhookService {
     // Re-validate at delivery time: a hostname that was public at registration can be
     // re-pointed at an internal address later (DNS rebinding).
     if (url.protocol !== 'https:' || isPrivateHost(url.hostname)) {
-      this.logger.warn(`Refusing to deliver webhook ${webhook.id} to non-public URL: ${url.origin}`);
+      this.logger.warn(
+        `Refusing to deliver webhook ${webhook.id} to non-public URL: ${url.origin}`,
+      );
       throw new Error('Webhook URL is not a public https endpoint');
     }
 
@@ -92,6 +95,10 @@ export class WebhookService {
         'X-Webhook-Timestamp': new Date().toISOString(),
       },
       timeout: 10000, // 10 seconds
+      // Closes DNS rebinding with no time-of-check/time-of-use gap: the address
+      // this returns is the one the socket connects to, so the public answer
+      // checked above cannot be swapped for a private one afterwards.
+      lookup: privateSafeLookup,
     };
 
     return new Promise((resolve, reject) => {
@@ -165,4 +172,3 @@ export class WebhookService {
     return crypto.createHmac('sha256', secret).update(payload).digest('hex');
   }
 }
-

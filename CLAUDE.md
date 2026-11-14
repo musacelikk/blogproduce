@@ -262,6 +262,36 @@ Two deployment traps this code works around, both of which look like "uploads ar
   `next.config.js` renders as a 400, not a broken URL. S3 and CloudFront wildcards are listed;
   a custom asset domain needs `NEXT_PUBLIC_ASSET_HOST`.
 
+### Outbound URLs and SSRF (`common/validators/is-public-https-url.validator.ts`)
+
+Webhook URLs are customer-supplied and we connect to them from inside our own network, so they are
+guarded in **three layers**. None is sufficient alone; don't drop one because another looks like it
+covers the case.
+
+1. **`isPrivateHost`** — the string check. It must understand every spelling of an address the
+   *resolver* understands, not just the canonical one. `net.isIP()` rejects `2130706433`,
+   `0177.0.0.1` and `0x7f.0.0.1`, but glibc resolves all three to 127.0.0.1 — a check built on
+   `isIP` alone concludes "not an IP, therefore a public hostname" and hands the request straight
+   through. `parseIpv4Loose` implements the `inet_aton` forms instead, and the function **fails
+   closed**.
+2. **`assertPublicHttpsUrl`** — called in the service before persisting, on create *and* update.
+   The DTO decorators only cover bodies that declare them: `updateWebhook` was typed
+   `Partial<CreateWebhookDto>`, which erases to `Object` at runtime, so class-validator validated
+   nothing and a webhook could be registered publicly then repointed at cloud metadata. Update now
+   has a real `UpdateWebhookDto` class **and** the service-layer assert.
+3. **`privateSafeLookup`** — passed as the `lookup` option to `https.request` in
+   `webhooks/webhook.service.ts`. This is the only layer that sees DNS rebinding, and because the
+   address it returns is the one the socket connects to, there is no time-of-check/time-of-use gap.
+
+There are **two delivery paths** and both need the re-check: `WebhookService.triggerWebhook` (used
+by `posts.service`, and so by autopilot) and the private `ApiService.triggerWebhook`. The latter
+used `fetch` with no validation at all; it now re-checks protocol and host, sets
+`redirect: 'manual'` — fetch follows redirects by default, so a public URL answering 302 to
+`http://169.254.169.254/` would bypass the host check — and carries a timeout.
+
+Adding a new outbound-URL feature means all three layers plus a delivery-time re-check, not just
+the decorator.
+
 ### Multi-tenancy: Workspace vs Organization/Project
 
 This is the codebase's biggest trap. There are **two parallel tenancy models**:
