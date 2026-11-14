@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Workflow,
   Bot,
+  Webhook,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { CodeBlock, CodeTabs, Endpoint, ParamTable, Callout } from './_components/CodeBlock';
@@ -32,6 +33,7 @@ const NAV = [
   { id: 'jobs', label: 'Job Status', icon: Gauge },
   { id: 'posts', label: 'Posts', icon: ListOrdered },
   { id: 'autopilot', label: 'Autopilot', icon: Bot },
+  { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'published', label: 'Published Content', icon: Globe },
   { id: 'public-api', label: 'Public API (No Auth)', icon: Plug },
   { id: 'formats', label: 'Content Formats', icon: FileJson },
@@ -125,6 +127,7 @@ export default function ApiDocsPage() {
           <JobsSection />
           <PostsSection />
           <AutopilotSection />
+          <WebhooksSection />
           <PublishedSection />
           <PublicApiSection />
           <FormatsSection />
@@ -763,6 +766,198 @@ for (const t of topics) console.log(t.status, '-', t.title);
             Generation still passes your plan&apos;s own quota check, so autopilot can never spend
             past the allowance and token balance you already have.
           </li>
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function WebhooksSection() {
+  return (
+    <section id="webhooks" className="scroll-mt-24">
+      <SectionTitle
+        title="Webhooks"
+        subtitle="Get pushed every published article instead of polling — the usual way to wire autopilot into a site."
+      />
+
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Register an endpoint per workspace, pick the events, and we POST JSON to it. Every delivery
+        carries these headers:
+      </p>
+      <div className="mt-3 overflow-hidden rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-border">
+            <tr>
+              <td className="px-3 py-2 font-mono text-xs text-foreground">X-Webhook-Event</td>
+              <td className="px-3 py-2 text-muted-foreground">
+                <code>post.published</code>, <code>post.generated</code>, <code>post.updated</code>
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 font-mono text-xs text-foreground">X-Webhook-Signature</td>
+              <td className="px-3 py-2 text-muted-foreground">
+                HMAC-SHA256 of the raw body, hex. Empty when the webhook has no secret.
+              </td>
+            </tr>
+            <tr>
+              <td className="px-3 py-2 font-mono text-xs text-foreground">X-Webhook-Timestamp</td>
+              <td className="px-3 py-2 text-muted-foreground">ISO-8601 send time.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-4">
+        <CodeBlock
+          title="Body"
+          language="json"
+          code={`{
+  "event": "post.published",
+  "timestamp": "2026-03-10T09:00:00.000Z",
+  "data": {
+    "postId": "0f0b...",
+    "slug": "seo-uyumlu-urun-aciklamasi-rehberi",
+    "title": "SEO uyumlu ürün açıklaması rehberi"
+  }
+}`}
+        />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-warning/30 bg-warning-muted p-4">
+        <p className="text-sm font-medium text-warning">Verify against the raw body</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-warning/90">
+          The signature covers the exact bytes we sent. If your framework parses the JSON and you
+          re-serialise it to check, key order and whitespace will differ and every delivery will
+          look forged. Read the raw body first, verify, then parse.
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        <CodeBlock
+          title="Next.js — app/api/webhooks/blogproduce/route.ts"
+          language="ts"
+          code={`import crypto from 'crypto';
+import { revalidatePath } from 'next/cache';
+
+export async function POST(req: Request) {
+  // Raw body, before any parsing — this is what the signature covers.
+  const raw = await req.text();
+  const signature = req.headers.get('x-webhook-signature') ?? '';
+
+  const expected = crypto
+    .createHmac('sha256', process.env.BLOGPRODUCE_WEBHOOK_SECRET!)
+    .update(raw)
+    .digest('hex');
+
+  // timingSafeEqual throws on a length mismatch, so compare lengths first.
+  const ok =
+    signature.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+
+  if (!ok) return new Response('invalid signature', { status: 401 });
+
+  const { event, data } = JSON.parse(raw);
+
+  if (event === 'post.published') {
+    // Your blog pages are probably ISR — drop the cached copies so the new
+    // article appears without waiting for the revalidate window.
+    revalidatePath('/blog');
+    revalidatePath('/blog/' + data.slug);
+  }
+
+  // Answer fast. We time out at 10s and count a non-2xx as a failure.
+  return new Response('ok');
+}`}
+        />
+
+        <CodeBlock
+          title="Express"
+          language="js"
+          code={`const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+
+// express.raw, not express.json: the parsed object is not what was signed.
+app.post(
+  '/webhooks/blogproduce',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.get('X-Webhook-Signature') || '';
+    const expected = crypto
+      .createHmac('sha256', process.env.BLOGPRODUCE_WEBHOOK_SECRET)
+      .update(req.body) // a Buffer — the exact bytes we sent
+      .digest('hex');
+
+    if (
+      signature.length !== expected.length ||
+      !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+    ) {
+      return res.status(401).send('invalid signature');
+    }
+
+    const { event, data } = JSON.parse(req.body.toString('utf8'));
+    console.log(event, data.slug);
+
+    res.send('ok');
+  },
+);`}
+        />
+
+        <CodeBlock
+          title="WordPress — in a plugin or functions.php"
+          language="php"
+          code={`add_action('rest_api_init', function () {
+  register_rest_route('blogproduce/v1', '/webhook', [
+    'methods'  => 'POST',
+    'permission_callback' => '__return_true', // the signature is the auth
+    'callback' => function (WP_REST_Request $request) {
+      $raw = $request->get_body(); // raw bytes, not the parsed params
+      $signature = $request->get_header('x-webhook-signature') ?: '';
+      $expected = hash_hmac('sha256', $raw, BLOGPRODUCE_WEBHOOK_SECRET);
+
+      if (!hash_equals($expected, $signature)) {
+        return new WP_Error('bad_signature', 'Invalid signature', ['status' => 401]);
+      }
+
+      $payload = json_decode($raw, true);
+      if (($payload['event'] ?? '') !== 'post.published') {
+        return ['ok' => true];
+      }
+
+      // Pull the finished article and insert it.
+      $slug = $payload['data']['slug'];
+      $res = wp_remote_get(
+        '${API_BASE_URL}/api/v1/published/' . rawurlencode($slug) . '?format=html',
+        ['headers' => ['Authorization' => 'Bearer ' . BLOGPRODUCE_API_KEY]]
+      );
+      $post = json_decode(wp_remote_retrieve_body($res), true)['data'];
+
+      wp_insert_post([
+        'post_title'   => $post['title'],
+        'post_name'    => $post['slug'],
+        'post_content' => $post['content_html'], // already sanitised server-side
+        'post_excerpt' => $post['excerpt'],
+        'post_status'  => 'publish',
+      ]);
+
+      return ['ok' => true];
+    },
+  ]);
+});`}
+        />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-border bg-surface-raised p-4">
+        <p className="text-sm font-medium text-foreground-strong">Delivery behaviour</p>
+        <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-muted-foreground">
+          <li>Your endpoint must be <strong>https</strong> and resolve to a public address —
+            loopback, private ranges and cloud metadata are refused at registration and again at
+            send time.</li>
+          <li>We time out after 10 seconds and do not follow redirects. Answer 2xx quickly and do
+            the slow work afterwards.</li>
+          <li>A non-2xx increments the webhook&apos;s failure count; deliveries are independent, so
+            one bad endpoint does not hold up the others.</li>
         </ul>
       </div>
     </section>

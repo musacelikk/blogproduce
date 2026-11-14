@@ -295,6 +295,13 @@ for. **Don't add a third.** Two delivery paths means two places to get SSRF righ
 Adding a new outbound-URL feature means all three layers, not just the decorator — and it goes
 through `WebhookService`.
 
+The wire contract customers integrate against — `{ event, timestamp, data }` plus
+`X-Webhook-Event` / `X-Webhook-Signature` (HMAC-SHA256 of the **raw body**, hex) /
+`X-Webhook-Timestamp` — is documented with working receivers for Next.js, Express and WordPress in
+the dashboard's API reference. Changing the payload shape or the header names breaks every
+customer's verification silently, since a mismatched signature is indistinguishable from a forged
+request. The examples there are syntax-checked, not eyeballed.
+
 ### Multi-tenancy: Workspace vs Organization/Project
 
 This is the codebase's biggest trap. There are **two parallel tenancy models**:
