@@ -35,15 +35,19 @@ export class MetricsService {
    * Get all metrics
    */
   async getMetrics(organizationId?: string, projectId?: string): Promise<Metrics> {
-    const [generateSuccessRate, avgGenerationTime, avgTokensPerJob, queueDepth, dlqCount] = await Promise.all([
-      this.calculateSuccessRate(organizationId, projectId),
-      this.calculateAvgGenerationTime(organizationId, projectId),
-      this.calculateAvgTokensPerJob(organizationId, projectId),
-      this.getQueueDepth(),
-      this.getDlqCount(),
-    ]);
+    const [generateSuccessRate, avgGenerationTime, avgTokensPerJob, queueDepth, dlqCount] =
+      await Promise.all([
+        this.calculateSuccessRate(organizationId, projectId),
+        this.calculateAvgGenerationTime(organizationId, projectId),
+        this.calculateAvgTokensPerJob(organizationId, projectId),
+        this.getQueueDepth(),
+        this.getDlqCount(),
+      ]);
 
-    const [totalJobs, successfulJobs, failedJobs] = await this.getJobCounts(organizationId, projectId);
+    const [totalJobs, successfulJobs, failedJobs] = await this.getJobCounts(
+      organizationId,
+      projectId,
+    );
 
     return {
       generateSuccessRate,
@@ -91,7 +95,10 @@ export class MetricsService {
   /**
    * Calculate average generation time (last 24 hours)
    */
-  private async calculateAvgGenerationTime(organizationId?: string, projectId?: string): Promise<number> {
+  private async calculateAvgGenerationTime(
+    organizationId?: string,
+    projectId?: string,
+  ): Promise<number> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const where: any = {
@@ -124,7 +131,7 @@ export class MetricsService {
       if (post.revisions && post.revisions.length > 0) {
         const firstRevision = post.revisions[0];
         const lastRevision = post.revisions[post.revisions.length - 1];
-        
+
         if (firstRevision.createdAt && lastRevision.createdAt) {
           const timeDiff = lastRevision.createdAt.getTime() - firstRevision.createdAt.getTime();
           totalTime += timeDiff;
@@ -139,7 +146,10 @@ export class MetricsService {
   /**
    * Calculate average tokens per job (last 24 hours)
    */
-  private async calculateAvgTokensPerJob(organizationId?: string, projectId?: string): Promise<number> {
+  private async calculateAvgTokensPerJob(
+    organizationId?: string,
+    projectId?: string,
+  ): Promise<number> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const where: any = {
@@ -176,10 +186,7 @@ export class MetricsService {
     try {
       // Count posts in QUEUED or GENERATING status
       const count = await this.postRepository.count({
-        where: [
-          { status: PostStatus.QUEUED },
-          { status: PostStatus.GENERATING },
-        ],
+        where: [{ status: PostStatus.QUEUED }, { status: PostStatus.GENERATING }],
       });
       return count;
     } catch (error) {
@@ -211,7 +218,10 @@ export class MetricsService {
   /**
    * Get job counts
    */
-  private async getJobCounts(organizationId?: string, projectId?: string): Promise<[number, number, number]> {
+  private async getJobCounts(
+    organizationId?: string,
+    projectId?: string,
+  ): Promise<[number, number, number]> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const where: any = {
@@ -234,4 +244,3 @@ export class MetricsService {
     return [total, successful, failed];
   }
 }
-

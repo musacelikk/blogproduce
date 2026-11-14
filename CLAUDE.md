@@ -330,7 +330,17 @@ to populate both, or it reintroduces exactly this class of bug.
 
 ### Content storage and formats
 
-Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. `content_html` is sanitized through `HtmlSanitizerService` before leaving the backend — on **both** read surfaces. `blog.service` always did; `api.service` (`/api/v1/published`, `/api/v1/posts`) did not, and handed `convertContentFormat` output straight out while the docs pointed WordPress receivers at it. Articles are model-written from customer-supplied topics, so the markup is not ours to trust. Any new endpoint returning HTML sanitizes too.
+Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. **`HtmlSanitizerService` is parser-based (`sanitize-html`), and must stay that way.** It used to be
+a chain of regex replacements, and its event-handler rule required quoted values — so
+`<img src=x onerror=alert(1)>`, the backtick form, a newline before the attribute name and the
+uppercase spelling all passed through untouched, while the declared attribute allowlist was never
+consulted. The one test that existed used the quoted form, the single case the regex handled.
+`html-sanitizer.spec.ts` now carries twenty vectors that all failed against it; a future change to
+how HTML is cleaned has to pass every one. `htmlparser2` is pinned to `^9` via `overrides` because
+v10+ is ESM-only — the same trap `marked` carries, and it would surface as the backend failing to
+boot.
+
+`content_html` is sanitized through `HtmlSanitizerService` before leaving the backend — on **both** read surfaces. `blog.service` always did; `api.service` (`/api/v1/published`, `/api/v1/posts`) did not, and handed `convertContentFormat` output straight out while the docs pointed WordPress receivers at it. Articles are model-written from customer-supplied topics, so the markup is not ours to trust. Any new endpoint returning HTML sanitizes too. `excerpt` goes out through `stripHtml` on the same paths: the schema calls for plain text but nothing enforced it, and receivers put that field straight into a page.
 
 `getPublishedRevision()` (`common/utils/revision.util.ts`) picks which revision is live — don't reach for `revisions[0]`.
 

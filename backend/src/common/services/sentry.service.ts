@@ -133,7 +133,16 @@ export class SentryService implements OnModuleInit {
       return data;
     }
 
-    const sensitiveFields = ['password', 'token', 'apiKey', 'secret', 'authorization', 'topic', 'content', 'prompt'];
+    const sensitiveFields = [
+      'password',
+      'token',
+      'apiKey',
+      'secret',
+      'authorization',
+      'topic',
+      'content',
+      'prompt',
+    ];
     const sanitized = { ...data };
 
     for (const field of sensitiveFields) {
@@ -145,4 +154,3 @@ export class SentryService implements OnModuleInit {
     return sanitized;
   }
 }
-

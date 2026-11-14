@@ -1,6 +1,5 @@
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
 import { WebhookService } from '../webhooks/webhook.service';
-import { isPrivateHost } from '../common/validators/is-public-https-url.validator';
 import {
   Injectable,
   NotFoundException,
@@ -513,7 +512,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           status: post.status,
           language: post.language,
           coverImageUrl: post.coverImageUrl,
@@ -578,7 +577,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           language: post.language,
           coverImageUrl: post.coverImageUrl,
           publishedAt: post.publishedAt,
@@ -641,7 +640,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -703,7 +702,7 @@ export class ApiService {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt,
+        excerpt: this.plainExcerpt(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -831,7 +830,7 @@ export class ApiService {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt,
+        excerpt: this.plainExcerpt(post.excerpt),
         status: post.status,
         language: post.language,
         coverImageUrl: post.coverImageUrl,
@@ -870,7 +869,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -934,7 +933,7 @@ export class ApiService {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt,
+        excerpt: this.plainExcerpt(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -999,7 +998,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           language: post.language,
           coverImageUrl: post.coverImageUrl,
           publishedAt: post.publishedAt,
@@ -1044,7 +1043,7 @@ export class ApiService {
           id: post.id,
           title: post.title,
           slug: post.slug,
-          excerpt: post.excerpt,
+          excerpt: this.plainExcerpt(post.excerpt),
           content: null,
           contentFormat: format || 'json',
           content_html: null,
@@ -1105,7 +1104,7 @@ export class ApiService {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt,
+        excerpt: this.plainExcerpt(post.excerpt),
         content,
         contentFormat,
         content_html: contentHtml,
@@ -1142,6 +1141,23 @@ export class ApiService {
     } catch (error) {
       this.logger.error('Error recording usage event', error);
     }
+  }
+
+  /**
+   * Excerpts leave as plain text.
+   *
+   * The content schema calls for "plain-text summary, no markdown", but nothing
+   * enforced it — the field is model-written and went out raw while
+   * `content_html` beside it was sanitized. A receiver that drops it into a
+   * page (the documented WordPress one puts it in `post_excerpt`) would render
+   * whatever the model produced.
+   *
+   * Null and undefined pass through unchanged; turning a missing excerpt into
+   * an empty string would be a silent API change.
+   */
+  private plainExcerpt(value: string | null | undefined): string | null | undefined {
+    if (value === null || value === undefined) return value;
+    return this.htmlSanitizer.stripHtml(value);
   }
 
   /**

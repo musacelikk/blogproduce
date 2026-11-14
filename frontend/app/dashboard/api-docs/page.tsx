@@ -958,13 +958,14 @@ app.post(
       );
       $post = json_decode(wp_remote_retrieve_body($res), true)['data'];
 
+      // Sanitised server-side already — sanitised again here because this is
+      // about to be published on your site under your name, and every field
+      // deserves it, not just the body.
       wp_insert_post([
-        'post_title'   => $post['title'],
-        'post_name'    => $post['slug'],
-        // Sanitised server-side already; wp_kses_post again because this is
-        // about to be published on your site under your name.
+        'post_title'   => sanitize_text_field($post['title']),
+        'post_name'    => sanitize_title($post['slug']),
         'post_content' => wp_kses_post($post['content_html']),
-        'post_excerpt' => $post['excerpt'],
+        'post_excerpt' => sanitize_text_field($post['excerpt'] ?? ''),
         'post_status'  => 'publish',
       ]);
 
