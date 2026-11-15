@@ -1,6 +1,7 @@
 import { BankingScaleHero } from '@/components/sections/BankingScaleHero';
 import { NelerSunuyoruzSection } from '@/components/sections/NelerSunuyoruzSection';
 import { FeatureHighlightsSection } from '@/components/sections/FeatureHighlightsSection';
+import { AutopilotSection } from '@/components/sections/AutopilotSection';
 import { PartnersCarousel } from '@/components/sections/PartnersCarousel';
 import { TestimonialSection } from '@/components/sections/TestimonialSection';
 import { HomepageBlogs } from '@/components/sections/HomepageBlogs';
@@ -46,6 +47,7 @@ export default async function Page() {
     <>
       <BankingScaleHero />
       <NelerSunuyoruzSection />
+      <AutopilotSection />
       <FeatureHighlightsSection />
       <PartnersCarousel />
       <TestimonialSection />
