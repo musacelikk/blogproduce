@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThanOrEqual } from 'typeorm';
 import { Post, PostStatus, PostLanguage } from '../entities/post.entity';
@@ -18,8 +24,18 @@ import { BillingService } from '../billing/billing.service';
 import { WebhookEvent } from '../entities/webhook.entity';
 import { markdownToHtml, calculateReadingTime } from '../common/utils/markdown-to-html.util';
 import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
-import { getLatestRevision, getPublishedRevision, sortRevisionsDesc } from '../common/utils/revision.util';
+import {
+  getLatestRevision,
+  getPublishedRevision,
+  sortRevisionsDesc,
+} from '../common/utils/revision.util';
 import { HtmlSanitizerService } from '../common/services/html-sanitizer.service';
+
+/**
+ * Scheduled posts published per cron tick. The cron runs every minute, so this
+ * bounds one tick's memory without bounding throughput.
+ */
+const SCHEDULED_PUBLISH_BATCH = 25;
 
 @Injectable()
 export class PostsService {
@@ -61,15 +77,21 @@ export class PostsService {
     }
 
     // Extract tags from DTO (they will be handled separately)
-    const { tags: tagNames, coverImageCreditJson: coverImageCreditJsonStr, ...postData } = createPostDto;
+    const {
+      tags: tagNames,
+      coverImageCreditJson: coverImageCreditJsonStr,
+      ...postData
+    } = createPostDto;
 
     // Parse cover image credit JSON if provided
-    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
+    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null =
+      null;
     if (coverImageCreditJsonStr) {
       try {
-        coverImageCreditJson = typeof coverImageCreditJsonStr === 'string' 
-          ? JSON.parse(coverImageCreditJsonStr) 
-          : coverImageCreditJsonStr;
+        coverImageCreditJson =
+          typeof coverImageCreditJsonStr === 'string'
+            ? JSON.parse(coverImageCreditJsonStr)
+            : coverImageCreditJsonStr;
       } catch (e) {
         // Invalid JSON, ignore
       }
@@ -86,7 +108,7 @@ export class PostsService {
     if (createPostDto.status === PostStatus.PUBLISHED) {
       // Gizlenmiş blog'lar yayınlanamaz (create sırasında olmaz ama kontrol ekleyelim)
       if (post.hiddenByAdmin) {
-        throw new ForbiddenException('Admin tarafından gizlenmiş blog\'lar yayınlanamaz.');
+        throw new ForbiddenException("Admin tarafından gizlenmiş blog'lar yayınlanamaz.");
       }
       post.publishedAt = new Date();
     }
@@ -179,7 +201,7 @@ export class PostsService {
     }
 
     let posts: Post[];
-    
+
     if (postIds && postIds.length > 0) {
       // Belirli post ID'leri ile getir (homepage posts - published olmasa bile)
       posts = await this.postsRepository.find({
@@ -189,10 +211,10 @@ export class PostsService {
         },
         relations: ['author', 'tags'],
       });
-      
+
       // Sırayı koru (homepage posts sırasına göre); id tip uyumu için String kullan
       posts = postIds
-        .map(id => posts.find(p => String(p.id) === String(id)))
+        .map((id) => posts.find((p) => String(p.id) === String(id)))
         .filter(Boolean) as Post[];
     } else if (slug) {
       // Slug ile tek post getir
@@ -210,7 +232,7 @@ export class PostsService {
         take: limit,
       });
     }
-    
+
     // Return only necessary fields for public display
     return posts.map((post) => {
       // Get latest revision content if slug query (single post)
@@ -221,122 +243,122 @@ export class PostsService {
       if (slug && post.revisions && post.revisions.length > 0) {
         const activeRevision = getPublishedRevision(post);
         if (activeRevision) {
-        const raw = activeRevision.content || '';
+          const raw = activeRevision.content || '';
 
-        if (activeRevision.contentFormat === ContentFormat.JSON && raw) {
-          // Canonical JSON → markdown (desteklenen eski/yeni şemaları birleştir)
-          let markdown = '';
-          try {
-            const parsed: any = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object') {
-              const parts: string[] = [];
+          if (activeRevision.contentFormat === ContentFormat.JSON && raw) {
+            // Canonical JSON → markdown (desteklenen eski/yeni şemaları birleştir)
+            let markdown = '';
+            try {
+              const parsed: any = JSON.parse(raw);
+              if (parsed && typeof parsed === 'object') {
+                const parts: string[] = [];
 
-              if (typeof parsed.title === 'string' && parsed.title.trim()) {
-                parts.push(`# ${parsed.title.trim()}`);
+                if (typeof parsed.title === 'string' && parsed.title.trim()) {
+                  parts.push(`# ${parsed.title.trim()}`);
+                }
+
+                if (typeof parsed.intro === 'string' && parsed.intro.trim()) {
+                  parts.push(parsed.intro.trim());
+                }
+
+                if (typeof parsed.body === 'string' && parsed.body.trim()) {
+                  parts.push(parsed.body.trim());
+                }
+
+                if (typeof parsed.content === 'string' && parsed.content.trim()) {
+                  parts.push(parsed.content.trim());
+                }
+
+                if (Array.isArray(parsed.sections)) {
+                  parsed.sections.forEach((section: any) => {
+                    if (!section || typeof section !== 'object') return;
+                    const heading = (section.title || section.heading) as string | undefined;
+                    const sectionBlocks: string[] = [];
+
+                    if (heading && typeof heading === 'string') {
+                      sectionBlocks.push(`## ${heading.trim()}`);
+                    }
+
+                    if (typeof section.content === 'string' && section.content.trim()) {
+                      sectionBlocks.push(section.content.trim());
+                    } else if (Array.isArray(section.content)) {
+                      section.content.forEach((c: any) => {
+                        if (typeof c === 'string' && c.trim()) {
+                          sectionBlocks.push(c.trim());
+                        }
+                      });
+                    }
+
+                    if (typeof section.body === 'string' && section.body.trim()) {
+                      sectionBlocks.push(section.body.trim());
+                    }
+
+                    if (Array.isArray(section.paragraphs)) {
+                      section.paragraphs.forEach((para: any) => {
+                        if (typeof para === 'string' && para.trim()) {
+                          sectionBlocks.push(para.trim());
+                        }
+                      });
+                    }
+
+                    // Yeni canonical şema: subsections[]
+                    if (Array.isArray(section.subsections)) {
+                      sectionBlocks.push(''); // boş satır ayırıcı
+                      sectionBlocks.push(''); // görsel nefes payı
+                      sectionBlocks.push(''); // ekstra ayrım
+                      section.subsections.forEach((sub: any) => {
+                        if (!sub || typeof sub !== 'object') return;
+                        const subHeading = (sub.title || sub.heading) as string | undefined;
+                        if (subHeading && typeof subHeading === 'string') {
+                          sectionBlocks.push(`### ${subHeading.trim()}`);
+                        }
+                        if (typeof sub.content === 'string' && sub.content.trim()) {
+                          sectionBlocks.push(sub.content.trim());
+                        }
+                        if (Array.isArray(sub.paragraphs)) {
+                          sub.paragraphs.forEach((para: any) => {
+                            if (typeof para === 'string' && para.trim()) {
+                              sectionBlocks.push(para.trim());
+                            }
+                          });
+                        }
+                      });
+                    }
+
+                    if (sectionBlocks.length) {
+                      parts.push(sectionBlocks.join('\n\n'));
+                    }
+                  });
+                }
+
+                markdown = parts.join('\n\n').trim();
               }
-
-              if (typeof parsed.intro === 'string' && parsed.intro.trim()) {
-                parts.push(parsed.intro.trim());
-              }
-
-              if (typeof parsed.body === 'string' && parsed.body.trim()) {
-                parts.push(parsed.body.trim());
-              }
-
-              if (typeof parsed.content === 'string' && parsed.content.trim()) {
-                parts.push(parsed.content.trim());
-              }
-
-              if (Array.isArray(parsed.sections)) {
-                parsed.sections.forEach((section: any) => {
-                  if (!section || typeof section !== 'object') return;
-                  const heading = (section.title || section.heading) as string | undefined;
-                  const sectionBlocks: string[] = [];
-
-                  if (heading && typeof heading === 'string') {
-                    sectionBlocks.push(`## ${heading.trim()}`);
-                  }
-
-                  if (typeof section.content === 'string' && section.content.trim()) {
-                    sectionBlocks.push(section.content.trim());
-                  } else if (Array.isArray(section.content)) {
-                    section.content.forEach((c: any) => {
-                      if (typeof c === 'string' && c.trim()) {
-                        sectionBlocks.push(c.trim());
-                      }
-                    });
-                  }
-
-                  if (typeof section.body === 'string' && section.body.trim()) {
-                    sectionBlocks.push(section.body.trim());
-                  }
-
-                  if (Array.isArray(section.paragraphs)) {
-                    section.paragraphs.forEach((para: any) => {
-                      if (typeof para === 'string' && para.trim()) {
-                        sectionBlocks.push(para.trim());
-                      }
-                    });
-                  }
-
-                  // Yeni canonical şema: subsections[]
-                  if (Array.isArray(section.subsections)) {
-                    sectionBlocks.push(''); // boş satır ayırıcı
-                    sectionBlocks.push(''); // görsel nefes payı
-                    sectionBlocks.push(''); // ekstra ayrım
-                    section.subsections.forEach((sub: any) => {
-                      if (!sub || typeof sub !== 'object') return;
-                      const subHeading = (sub.title || sub.heading) as string | undefined;
-                      if (subHeading && typeof subHeading === 'string') {
-                        sectionBlocks.push(`### ${subHeading.trim()}`);
-                      }
-                      if (typeof sub.content === 'string' && sub.content.trim()) {
-                        sectionBlocks.push(sub.content.trim());
-                      }
-                      if (Array.isArray(sub.paragraphs)) {
-                        sub.paragraphs.forEach((para: any) => {
-                          if (typeof para === 'string' && para.trim()) {
-                            sectionBlocks.push(para.trim());
-                          }
-                        });
-                      }
-                    });
-                  }
-
-                  if (sectionBlocks.length) {
-                    parts.push(sectionBlocks.join('\n\n'));
-                  }
-                });
-              }
-
-              markdown = parts.join('\n\n').trim();
+            } catch {
+              // JSON parse hatasında raw JSON'u content olarak gönderme
             }
-          } catch {
-            // JSON parse hatasında raw JSON'u content olarak gönderme
+
+            contentMarkdown = markdown && markdown.trim() ? markdown : undefined;
+          } else if (activeRevision.contentFormat === ContentFormat.MD) {
+            contentMarkdown = raw;
+          } else if (activeRevision.contentFormat === ContentFormat.HTML) {
+            // HTML olarak saklanmışsa direkt HTML kullan, markdown'ı sadeleştirmek isteğe bağlı
+            contentHtml = this.htmlSanitizer.sanitize(raw, true);
+            contentMarkdown = undefined;
+          } else {
+            // Bilinmeyen formatlar için ham içeriği markdown gibi işle
+            contentMarkdown = raw;
           }
 
-          contentMarkdown = markdown && markdown.trim() ? markdown : undefined;
-        } else if (activeRevision.contentFormat === ContentFormat.MD) {
-          contentMarkdown = raw;
-        } else if (activeRevision.contentFormat === ContentFormat.HTML) {
-          // HTML olarak saklanmışsa direkt HTML kullan, markdown'ı sadeleştirmek isteğe bağlı
-          contentHtml = this.htmlSanitizer.sanitize(raw, true);
-          contentMarkdown = undefined;
-        } else {
-          // Bilinmeyen formatlar için ham içeriği markdown gibi işle
-          contentMarkdown = raw;
-        }
+          if (contentMarkdown) {
+            // Sanitize markdown if it contains HTML
+            if (this.htmlSanitizer.isDangerous(contentMarkdown)) {
+              contentMarkdown = this.htmlSanitizer.sanitize(contentMarkdown, true);
+            }
 
-        if (contentMarkdown) {
-          // Sanitize markdown if it contains HTML
-          if (this.htmlSanitizer.isDangerous(contentMarkdown)) {
-            contentMarkdown = this.htmlSanitizer.sanitize(contentMarkdown, true);
+            // Convert to HTML and sanitize
+            contentHtml = this.htmlSanitizer.sanitize(markdownToHtml(contentMarkdown), true);
+            readingTime = calculateReadingTime(contentMarkdown);
           }
-
-          // Convert to HTML and sanitize
-          contentHtml = this.htmlSanitizer.sanitize(markdownToHtml(contentMarkdown), true);
-          readingTime = calculateReadingTime(contentMarkdown);
-        }
         }
       }
 
@@ -355,11 +377,12 @@ export class PostsService {
               email: post.author.email,
             }
           : null,
-        tags: post.tags?.map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          slug: tag.slug,
-        })) || [],
+        tags:
+          post.tags?.map((tag) => ({
+            id: tag.id,
+            name: tag.name,
+            slug: tag.slug,
+          })) || [],
       };
 
       // Add content fields if single post (slug query) — markdown veya HTML varsa dön
@@ -442,7 +465,8 @@ export class PostsService {
     });
 
     // Parse cover image credit JSON if provided
-    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
+    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null =
+      null;
     if (generatePostDto.coverImageCreditJson) {
       try {
         coverImageCreditJson = JSON.parse(generatePostDto.coverImageCreditJson);
@@ -530,12 +554,12 @@ export class PostsService {
     const savedJob = await this.generationJobRepository.save(job);
 
     // Send message to SQS with jobId
-    const languageValue = generatePostDto.language 
-      ? (typeof generatePostDto.language === 'string' 
-          ? generatePostDto.language 
-          : (generatePostDto.language as PostLanguage))
+    const languageValue = generatePostDto.language
+      ? typeof generatePostDto.language === 'string'
+        ? generatePostDto.language
+        : (generatePostDto.language as PostLanguage)
       : PostLanguage.TR;
-    
+
     await this.sqsService.sendGeneratePostMessage({
       jobId: savedJob.id, // Include jobId for idempotency
       postId: savedPost.id,
@@ -598,17 +622,23 @@ export class PostsService {
     if (!this.ownsPost(post, user)) {
       throw new ForbiddenException('Access denied');
     }
-    
+
     // Extract tags from DTO if present
-    const { tags: tagNames, coverImageCreditJson: coverImageCreditJsonStr, ...updateData } = updatePostDto as any;
+    const {
+      tags: tagNames,
+      coverImageCreditJson: coverImageCreditJsonStr,
+      ...updateData
+    } = updatePostDto as any;
 
     // Parse cover image credit JSON if provided
-    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null = null;
+    let coverImageCreditJson: { name: string; photographerUrl: string; photoUrl: string } | null =
+      null;
     if (coverImageCreditJsonStr) {
       try {
-        coverImageCreditJson = typeof coverImageCreditJsonStr === 'string' 
-          ? JSON.parse(coverImageCreditJsonStr) 
-          : coverImageCreditJsonStr;
+        coverImageCreditJson =
+          typeof coverImageCreditJsonStr === 'string'
+            ? JSON.parse(coverImageCreditJsonStr)
+            : coverImageCreditJsonStr;
       } catch (e) {
         // Invalid JSON, ignore
       }
@@ -617,7 +647,9 @@ export class PostsService {
     if (updatePostDto.status === PostStatus.PUBLISHED && post.status !== PostStatus.PUBLISHED) {
       // Gizlenmiş blog'lar yayınlanamaz
       if (post.hiddenByAdmin) {
-        throw new ForbiddenException('Admin tarafından gizlenmiş blog\'lar yayınlanamaz. Lütfen admin ile iletişime geçin.');
+        throw new ForbiddenException(
+          "Admin tarafından gizlenmiş blog'lar yayınlanamaz. Lütfen admin ile iletişime geçin.",
+        );
       }
       post.publishedAt = new Date();
     }
@@ -628,7 +660,7 @@ export class PostsService {
 
     // Update post fields (excluding tags)
     Object.assign(post, updateData);
-    
+
     // Set cover image credit JSON if provided
     if (coverImageCreditJson !== null) {
       post.coverImageCreditJson = coverImageCreditJson;
@@ -646,7 +678,8 @@ export class PostsService {
 
       // Check if content actually changed
       const latestRevision = allRevisions[0];
-      const contentChanged = !latestRevision || latestRevision.content !== (updatePostDto as any).content;
+      const contentChanged =
+        !latestRevision || latestRevision.content !== (updatePostDto as any).content;
 
       if (contentChanged) {
         const newVersion = latestRevision ? latestRevision.version + 1 : 1;
@@ -794,9 +827,7 @@ export class PostsService {
       // resolve the registered UsageEvent entity and demand *property* names
       // (postId, not post_id) — which threw EntityPropertyNotFoundError at
       // runtime. Plain SQL has no such double meaning.
-      await manager.query('UPDATE usage_events SET post_id = NULL WHERE post_id = $1', [
-        post.id,
-      ]);
+      await manager.query('UPDATE usage_events SET post_id = NULL WHERE post_id = $1', [post.id]);
 
       await manager.remove(Post, post);
     });
@@ -821,7 +852,12 @@ export class PostsService {
       throw new ForbiddenException('Access denied');
     }
 
-    const publishableStatuses = [PostStatus.DRAFT, PostStatus.GENERATED, PostStatus.SCHEDULED, PostStatus.PUBLISHED];
+    const publishableStatuses = [
+      PostStatus.DRAFT,
+      PostStatus.GENERATED,
+      PostStatus.SCHEDULED,
+      PostStatus.PUBLISHED,
+    ];
     if (!publishableStatuses.includes(post.status)) {
       throw new ForbiddenException(`Cannot publish post with status: ${post.status}`);
     }
@@ -993,12 +1029,26 @@ export class PostsService {
   async publishScheduledPosts(): Promise<void> {
     const now = new Date();
 
+    // Columns only, and a bounded batch.
+    //
+    // This loaded every due post with `relations: ['revisions']`, and a
+    // revision row carries the whole article. A backlog of scheduled posts
+    // therefore pulled every version of every one of them into memory at once
+    // — all of it reachable, so GC could not help — and the process died with
+    // a ~250MB live set before publishing anything. None of the four relations
+    // were ever read: the loop below uses plain columns, and the webhook takes
+    // `organizationId`/`projectId`, not the loaded entities.
+    //
+    // The cron runs every minute, so a backlog drains at 25/minute rather than
+    // trying (and failing) to do it in one tick.
     const duePosts = await this.postsRepository.find({
       where: {
         status: PostStatus.SCHEDULED,
         scheduledAt: LessThanOrEqual(now),
       },
-      relations: ['organization', 'project', 'workspace', 'revisions'],
+      select: ['id', 'title', 'slug', 'organizationId', 'projectId', 'publishedRevisionId'],
+      order: { scheduledAt: 'ASC' },
+      take: SCHEDULED_PUBLISH_BATCH,
     });
 
     if (duePosts.length === 0) return;
@@ -1007,8 +1057,11 @@ export class PostsService {
 
     for (const post of duePosts) {
       try {
+        // `resolvePublishedRevisionId` fetches whole revision rows when the
+        // relation is absent, which is what we just stopped doing. One id is
+        // all this needs.
         const publishedRevisionId =
-          post.publishedRevisionId ?? (await this.resolvePublishedRevisionId(post)) ?? null;
+          post.publishedRevisionId ?? (await this.latestRevisionId(post.id));
 
         // Claim the post atomically — the scheduler runs in both the API and worker
         // processes, so a plain save() would publish (and webhook) twice.
@@ -1050,7 +1103,20 @@ export class PostsService {
     }
   }
 
-  private async resolvePublishedRevisionId(post: Post, revisionId?: string): Promise<string | null> {
+  /** The newest revision's id, without loading any article content. */
+  private async latestRevisionId(postId: string): Promise<string | null> {
+    const latest = await this.postRevisionsRepository.findOne({
+      where: { postId },
+      order: { version: 'DESC' },
+      select: ['id'],
+    });
+    return latest?.id ?? null;
+  }
+
+  private async resolvePublishedRevisionId(
+    post: Post,
+    revisionId?: string,
+  ): Promise<string | null> {
     if (!post.revisions?.length) {
       post.revisions = await this.postRevisionsRepository.find({
         where: { postId: post.id },

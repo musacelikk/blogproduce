@@ -78,9 +78,7 @@ function makeFakeDb() {
           if (notNullPostId.has(table) && 'post_id' in values && values.post_id === null) {
             throw new Error(`null value in column "post_id" of relation "${table}"`);
           }
-          state.tables[table] = rows.map((r) =>
-            r.post_id === postId ? { ...r, ...values } : r,
-          );
+          state.tables[table] = rows.map((r) => (r.post_id === postId ? { ...r, ...values } : r));
           return { affected: rows.filter((r) => r.post_id === postId).length };
         },
       };
@@ -94,9 +92,10 @@ function makeFakeDb() {
      * a drive-by rewrite back to the query builder fails loudly here.
      */
     async query(sql: string, params: unknown[] = []) {
-      const match = /^UPDATE\s+usage_events\s+SET\s+post_id\s*=\s*NULL\s+WHERE\s+post_id\s*=\s*\$1$/i.exec(
-        sql.trim(),
-      );
+      const match =
+        /^UPDATE\s+usage_events\s+SET\s+post_id\s*=\s*NULL\s+WHERE\s+post_id\s*=\s*\$1$/i.exec(
+          sql.trim(),
+        );
       if (!match) {
         throw new Error(`fake db does not understand: ${sql}`);
       }

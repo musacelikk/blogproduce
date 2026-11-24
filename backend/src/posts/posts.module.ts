@@ -17,8 +17,17 @@ import { CommonModule } from '../common/common.module';
 import { BillingModule } from '../billing/billing.module';
 
 @Module({
-  imports: [BillingModule, 
-    TypeOrmModule.forFeature([Post, Workspace, Tag, PostRevision, GenerationJob, Organization, Project]),
+  imports: [
+    BillingModule,
+    TypeOrmModule.forFeature([
+      Post,
+      Workspace,
+      Tag,
+      PostRevision,
+      GenerationJob,
+      Organization,
+      Project,
+    ]),
     ScheduleModule.forRoot(),
     QueueModule,
     WebhooksModule,

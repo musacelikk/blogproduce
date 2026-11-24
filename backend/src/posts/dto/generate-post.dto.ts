@@ -1,4 +1,12 @@
-import { IsString, IsUUID, IsOptional, IsEnum, IsBoolean, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { PostLanguage } from '../../entities/post.entity';
 import { ContentFormat } from '../../entities/post-revision.entity';
 
@@ -58,4 +66,3 @@ export class GeneratePostDto {
   @IsOptional()
   targetId?: string;
 }
-
