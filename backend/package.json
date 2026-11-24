@@ -12,6 +12,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node --max-old-space-size=${NODE_HEAP_MB:-320} dist/main.js",
+    "start:api": "npm run start:prod",
+    "start:worker": "npm run worker:prod",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

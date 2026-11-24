@@ -29,7 +29,15 @@ npm run lint
 npx tsc --noEmit                   # typecheck only
 ```
 
-**Production runs two processes** from the same build: `npm run start:api` (HTTP) and `npm run start:worker` (SQS consumer). Both are defined in the root `package.json`, which builds only the backend — the frontend deploys separately.
+**Production runs two processes** from the same build: `npm run start:api` (HTTP) and
+`npm run start:worker` (SQS consumer). Both names exist in **the root `package.json` and in
+`backend/package.json`**, because the deploy platform's root directory is `backend/` — a start
+command written against the repo root would otherwise fail with `Missing script: "start:api"`, which
+is a crash loop, not a warning. Keep the two manifests exposing the same names.
+
+Note `backend`'s own `start` is `nest start`: the watch-mode compiler, not the built output, and it
+carries no heap cap. It is for local development; a platform that falls back to `npm start` is
+running the wrong thing.
 
 **Schema changes apply at boot, not by hand.** `synchronize` is off in production, so
 `SchemaMigratorService` (`src/database/`) runs the statement lists in `src/database/migrations/`
