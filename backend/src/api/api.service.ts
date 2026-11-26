@@ -33,6 +33,7 @@ import { toSlug, toUniqueSlug } from '../common/utils/slug.util';
 import { getPublishedRevision } from '../common/utils/revision.util';
 import { decodeCursor, encodeCursor } from '../common/utils/cursor.util';
 import * as crypto from 'crypto';
+import { logByStatus } from '../common/utils/log-level.util';
 
 /** Guards the workspace lookup: a non-uuid slug makes Postgres throw, not return empty. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -275,7 +276,7 @@ export class ApiService {
           .delete({ organizationId: organization.id, projectId: project.id, key: idempotencyKey })
           .catch(() => undefined);
       }
-      this.logger.error('Error generating post via API', error);
+      logByStatus(this.logger, 'Error generating post via API', error);
       throw error;
     }
   }
@@ -330,7 +331,7 @@ export class ApiService {
 
       return response;
     } catch (error) {
-      this.logger.error('Error getting job via API', error);
+      logByStatus(this.logger, 'Error getting job via API', error);
       throw error;
     }
   }
@@ -459,7 +460,7 @@ export class ApiService {
         message: 'Post updated successfully',
       };
     } catch (error) {
-      this.logger.error('Error updating post via API', error);
+      logByStatus(this.logger, 'Error updating post via API', error);
       throw error;
     }
   }
@@ -526,7 +527,7 @@ export class ApiService {
         hasMore,
       };
     } catch (error) {
-      this.logger.error('Error listing posts with cursor via API', error);
+      logByStatus(this.logger, 'Error listing posts with cursor via API', error);
       throw error;
     }
   }
@@ -589,7 +590,7 @@ export class ApiService {
         hasMore,
       };
     } catch (error) {
-      this.logger.error('Error getting public posts by project slug via API', error);
+      logByStatus(this.logger, 'Error getting public posts by project slug via API', error);
       throw error;
     }
   }
@@ -715,7 +716,7 @@ export class ApiService {
         seo: post.seo || null,
       };
     } catch (error) {
-      this.logger.error('Error getting public post by project slug via API', error);
+      logByStatus(this.logger, 'Error getting public post by project slug via API', error);
       throw error;
     }
   }
@@ -799,7 +800,7 @@ export class ApiService {
         message: 'Post published successfully',
       };
     } catch (error) {
-      this.logger.error('Error publishing post via API', error);
+      logByStatus(this.logger, 'Error publishing post via API', error);
       throw error;
     }
   }
@@ -841,7 +842,7 @@ export class ApiService {
         tags: post.tags || [],
       }));
     } catch (error) {
-      this.logger.error('Error listing posts via API', error);
+      logByStatus(this.logger, 'Error listing posts via API', error);
       throw error;
     }
   }
@@ -949,7 +950,7 @@ export class ApiService {
         seo: post.seo || null,
       };
     } catch (error) {
-      this.logger.error('Error getting post via API', error);
+      logByStatus(this.logger, 'Error getting post via API', error);
       throw error;
     }
   }
@@ -1009,7 +1010,7 @@ export class ApiService {
         hasMore,
       };
     } catch (error) {
-      this.logger.error('Error getting published posts via API', error);
+      logByStatus(this.logger, 'Error getting published posts via API', error);
       throw error;
     }
   }
@@ -1117,7 +1118,7 @@ export class ApiService {
         seo: post.seo || null,
       };
     } catch (error) {
-      this.logger.error('Error getting published post via API', error);
+      logByStatus(this.logger, 'Error getting published post via API', error);
       throw error;
     }
   }
@@ -1139,7 +1140,7 @@ export class ApiService {
       });
       await this.usageEventsRepository.save(event);
     } catch (error) {
-      this.logger.error('Error recording usage event', error);
+      logByStatus(this.logger, 'Error recording usage event', error);
     }
   }
 
@@ -1181,7 +1182,7 @@ export class ApiService {
     try {
       await this.webhookService.triggerWebhook(organizationId, projectId, event, data);
     } catch (error) {
-      this.logger.error('Error in triggerWebhook', error);
+      logByStatus(this.logger, 'Error in triggerWebhook', error);
     }
   }
 }

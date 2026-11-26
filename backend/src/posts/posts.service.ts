@@ -62,6 +62,60 @@ export class PostsService {
     private htmlSanitizer: HtmlSanitizerService,
   ) {}
 
+  /**
+   * Resolve the organization + project a workspace is bridged to, creating them
+   * on first use.
+   *
+   * The two tenancy models are joined by convention, not by a foreign key: the
+   * organization is named `${workspace.name} (${workspace.id})` and the
+   * project's **slug is the workspace id**. `createApiKey` and
+   * `BlogService.getUserOrganizationAndProject()` use the same convention, so a
+   * path that spells it differently does not fail — it silently creates a
+   * *second* organization and then reads an empty result set through the API.
+   *
+   * It lives here so every write path in this service bridges identically; the
+   * copy that used to be inlined in `generate()` was the reason `create()`
+   * could be written without one at all.
+   */
+  private async resolveOrgAndProject(
+    user: User,
+    workspace: { id: string; name: string; description?: string | null },
+  ): Promise<{ organization: Organization; project: Project }> {
+    // ✅ Use workspace-specific organization name to match API key creation logic
+    const organizationName = `${workspace.name} (${workspace.id})`;
+    let organization = await this.organizationRepository.findOne({
+      where: { ownerId: user.id, name: organizationName },
+    });
+
+    if (!organization) {
+      organization = this.organizationRepository.create({
+        name: organizationName,
+        description: workspace.description || `Organization for ${workspace.name}`,
+        ownerId: user.id,
+        active: true,
+      });
+      organization = await this.organizationRepository.save(organization);
+    }
+
+    // ✅ Use workspace.id as project slug to match with API key creation logic
+    let project = await this.projectRepository.findOne({
+      where: { organizationId: organization.id, slug: workspace.id },
+    });
+
+    if (!project) {
+      project = this.projectRepository.create({
+        organizationId: organization.id,
+        name: workspace.name,
+        slug: workspace.id, // Use workspace.id as slug to match with API keys
+        description: workspace.description || `Project for workspace: ${workspace.name}`,
+        active: true,
+      });
+      project = await this.projectRepository.save(project);
+    }
+
+    return { organization, project };
+  }
+
   async create(user: User, createPostDto: CreatePostDto) {
     const workspace = await this.workspacesRepository.findOne({
       where: { id: createPostDto.workspaceId },
@@ -97,10 +151,19 @@ export class PostsService {
       }
     }
 
+    // A post must carry *both* tenancy scopes. The dashboard filters on
+    // `workspace_id`, the partner API on `organization_id` + `project_id`, so a
+    // post written with only the first is invisible to the customer's own site
+    // — `/api/v1/published/:slug` answers 404 for an article that exists and is
+    // published. `post-scope.spec.ts` pins this.
+    const { organization, project } = await this.resolveOrgAndProject(user, workspace);
+
     const post = this.postsRepository.create({
       ...postData,
       status: createPostDto.status || PostStatus.DRAFT,
       workspaceId: createPostDto.workspaceId,
+      organizationId: organization.id,
+      projectId: project.id,
       authorId: createPostDto.authorId || user.id,
       coverImageCreditJson: coverImageCreditJson,
     });
@@ -493,39 +556,7 @@ export class PostsService {
     }
 
     // Get or create organization and project FIRST (before creating post)
-    // ✅ Use workspace-specific organization name to match API key creation logic
-    const organizationName = `${workspace.name} (${workspace.id})`;
-    let organization = await this.organizationRepository.findOne({
-      where: { ownerId: user.id, name: organizationName },
-    });
-
-    if (!organization) {
-      organization = this.organizationRepository.create({
-        name: organizationName,
-        description: workspace.description || `Organization for ${workspace.name}`,
-        ownerId: user.id,
-        active: true,
-      });
-      organization = await this.organizationRepository.save(organization);
-    }
-
-    // Get or create project for workspace
-    // ✅ Use workspace.id as project slug to match with API key creation logic
-    const projectSlug = generatePostDto.workspaceId; // workspace.id
-    let project = await this.projectRepository.findOne({
-      where: { organizationId: organization.id, slug: projectSlug },
-    });
-
-    if (!project) {
-      project = this.projectRepository.create({
-        organizationId: organization.id,
-        name: workspace.name,
-        slug: projectSlug, // Use workspace.id as slug to match with API keys
-        description: workspace.description || `Project for workspace: ${workspace.name}`,
-        active: true,
-      });
-      project = await this.projectRepository.save(project);
-    }
+    const { organization, project } = await this.resolveOrgAndProject(user, workspace);
 
     // ✅ Set organizationId and projectId when creating post
     postData.organizationId = organization.id;

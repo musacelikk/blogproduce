@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { statusOf } from '../utils/log-level.util';
 
 /**
  * PII Sanitization Interceptor
@@ -36,11 +37,15 @@ export class PiiSanitizationInterceptor implements NestInterceptor {
           this.logger.debug(`Response: ${JSON.stringify(sanitizedResponse).substring(0, 500)}`);
         },
         error: (error) => {
-          // Log error without sensitive data
-          this.logger.error(
-            `Error: ${error.message} - Status: ${error.status || 'unknown'}`,
-            error.stack,
-          );
+          // Log error without sensitive data. A 4xx is the caller's problem —
+          // a 404 for an unpublished slug is this endpoint working — so it gets
+          // one warning line and no stack; only a 5xx is ours to act on.
+          const status = statusOf(error);
+          if (status >= 400 && status < 500) {
+            this.logger.warn(`${method} ${url} - ${status} ${error.message}`);
+            return;
+          }
+          this.logger.error(`Error: ${error.message} - Status: ${status}`, error.stack);
         },
       }),
     );

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { statusOf } from '../utils/log-level.util';
 
 /**
  * Structured Logging Interceptor
@@ -57,10 +58,17 @@ export class StructuredLoggingInterceptor implements NestInterceptor {
         },
         error: (error) => {
           const duration = Date.now() - startTime;
-          const statusCode = error.status || 500;
+          const statusCode = statusOf(error);
+
+          // 4xx is the caller's problem and logs as a warning; reserving ERROR
+          // for 5xx is what keeps a real fault visible among the 404s.
+          const write =
+            statusCode >= 400 && statusCode < 500
+              ? this.logger.warn.bind(this.logger)
+              : this.logger.error.bind(this.logger);
 
           // Log error response
-          this.logger.error(
+          write(
             JSON.stringify({
               type: 'error',
               requestId,

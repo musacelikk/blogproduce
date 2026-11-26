@@ -336,6 +336,14 @@ were invisible to the user who paid for them. `api.service.ts` now resolves the 
 migration 003 backfills the rows that predate the fix. Any new write path that creates a post has
 to populate both, or it reintroduces exactly this class of bug.
 
+It was reintroduced in the other direction: `PostsService.create()` — the dashboard's own "new
+post" path — wrote `workspace_id` only, so a post created there was invisible on
+`/api/v1/published/:slug` and the customer's site got a 404 for an article that existed and was
+published. Both of this service's write paths now go through `resolveOrgAndProject()`, which is the
+only copy of the naming convention they share; migration 007 backfills those rows. The inlined
+second copy of that bridge is precisely what let `create()` be written without one.
+`post-scope.spec.ts` pins it.
+
 ### Content storage and formats
 
 Post content lives in `PostRevision` rows (versioned, `editor: AI|HUMAN`), never on the post itself. The canonical stored format is **JSON** — `{ content: "<markdown>", metadata: { toc, faq, seo } }`. `common/utils/content-format.util.ts` converts to `md`/`html` on read; API endpoints expose this via `?format=`. **`HtmlSanitizerService` is parser-based (`sanitize-html`), and must stay that way.** It used to be
@@ -372,6 +380,32 @@ Three distinct mechanisms, each with its own guard:
 - `JwtAuthGuard` — dashboard/admin. Any **admin-scope** operation additionally needs `RolesGuard` + `@Roles(UserRole.ADMIN)`; a bare `JwtAuthGuard` only proves *someone* is logged in. This applies beyond `AdminController` — FAQ writes, contact-inbox reads and notification broadcast are all admin-only. Individual routes opt back out with `@Public()` (both `JwtAuthGuard` and `RolesGuard` honour it), which is how `AdminController` keeps `plans/public`, `homepage/posts/public` and the two tracking endpoints anonymous under a controller-level guard.
 - `ApiKeyGuard` — partner API (`/api/v1/*`). Accepts `Authorization: Bearer bg_secret_…` or `X-API-Key`. Attaches `request.organization`/`request.project`, read via the `@CurrentOrganization()` / `@CurrentProject()` decorators.
 - `ApiKeyOrJwtGuard` — the legacy `/v1/api/blog` and `/api/blog` read endpoints, which serve both dashboard and API-key callers.
+
+**Rate limiting is a counter under contention, so it moves in one statement.**
+`RateLimitGuard` uses `INSERT … ON CONFLICT (api_key_id, window_start) DO UPDATE …
+RETURNING`, not SELECT-then-INSERT: the old read-then-write meant two requests in the same minute
+both missed and both inserted, and the loser left `canActivate` with a duplicate-key error — a 500
+for a request that was inside its limit. Read-then-write also loses increments, which is an
+allowance spent for free. The `ON CONFLICT` clause needs a unique index on exactly those columns;
+TypeORM's `@Index(unique: true)` only creates one where `synchronize` has run, so migration 007
+asserts it (and merges the duplicate rows the old path left behind). The daily generate allowance is
+a **SUM over the day's minute rows**, which is why pruning deletes whole past *days*, not windows
+older than two minutes.
+
+**Activity logging writes request data into fixed-width columns.** `ActivityLogInterceptor` is
+global, so every URL, body title and header reaches `activity_logs` — where `action` and
+`targetName` are `varchar(255)` and `targetId` is `uuid`. Unbounded values aborted the INSERT
+("value too long for type character varying(255)") and, because the write is deliberately
+non-fatal, the only trace was an ERROR line and a lost audit record. Values are clamped and
+`targetId` is uuid-checked at the producer; `activity-log.interceptor.spec.ts` pins the widths
+against the entity.
+
+**A 4xx is not an error line.** `common/utils/log-level.util.ts` (`logByStatus`, `statusOf`) is the
+one place that decides: 4xx logs as a single warning, 5xx keeps the stack. A 404 from
+`/api/v1/published/:slug` is that endpoint working — a caller asking for a slug this project does
+not publish — and it used to produce three ERROR entries with stack traces, from the service's
+catch block, `PiiSanitizationInterceptor` and `StructuredLoggingInterceptor` each deciding
+independently. New catch blocks and interceptors route through that helper.
 
 The `PublicApiController` (`/api/v1/public/projects/…`) has **no guard** by design — it serves published content for client-side rendering. Never add fields there that aren't safe for anonymous consumption.
 
