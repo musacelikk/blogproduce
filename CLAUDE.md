@@ -392,6 +392,16 @@ asserts it (and merges the duplicate rows the old path left behind). The daily g
 a **SUM over the day's minute rows**, which is why pruning deletes whole past *days*, not windows
 older than two minutes.
 
+**A failed generation is retryable, and the reason is visible.** The worker records why it gave
+up in `posts.last_error` and stops; nothing read it back, so the card said "Başarısız" with no
+reason and no action — the only recourse was generating the article again and paying twice.
+`PostsService.retry()` replays the stored `GenerationJob.requestData` rather than reconstructing a
+request, so the second attempt is the same article. It passes `authorizeGeneration()` first (a
+retry cannot buy a tier the plan does not sell) and claims the post with a conditional UPDATE off
+`FAILED`, because two enqueued jobs is two articles billed. A queue failure puts the post back to
+`FAILED` — stranding it in `QUEUED` with no message behind it would hide the retry button and
+recreate the dead end. `post-retry.spec.ts` pins all of it.
+
 **Activity logging writes request data into fixed-width columns.** `ActivityLogInterceptor` is
 global, so every URL, body title and header reaches `activity_logs` — where `action` and
 `targetName` are `varchar(255)` and `targetId` is `uuid`. Unbounded values aborted the INSERT

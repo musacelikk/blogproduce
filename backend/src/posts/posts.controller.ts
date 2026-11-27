@@ -109,6 +109,16 @@ export class PostsController {
   }
 
   /**
+   * Run a failed generation again, from the request that produced it.
+   * POST /posts/:id/retry
+   */
+  @Post(':id/retry')
+  @UseGuards(JwtAuthGuard)
+  async retry(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.postsService.retry(user, id);
+  }
+
+  /**
    * Unpublish a post
    * POST /posts/:id/unpublish
    */

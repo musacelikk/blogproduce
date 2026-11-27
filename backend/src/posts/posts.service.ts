@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Logger,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, LessThanOrEqual } from 'typeorm';
@@ -612,6 +613,125 @@ export class PostsService {
       jobId: savedJob.id,
       postId: savedPost.id,
       status: savedPost.status,
+    };
+  }
+
+  /**
+   * Run a failed generation again, from the request that produced it.
+   *
+   * The worker records why it gave up in `posts.last_error` and stops. Nothing
+   * read that back: the card said "Başarısız", the reason was invisible, and
+   * the only way forward was generating a fresh article and paying twice. The
+   * stored `GenerationJob.requestData` is the original request, so a retry
+   * replays it rather than reconstructing one — the second attempt is the same
+   * article, with the same topic, tone and audience.
+   *
+   * It is not a shortcut around anything: `authorizeGeneration()` runs first,
+   * so a retry cannot buy a tier the plan does not sell, and the claim is a
+   * conditional UPDATE off FAILED — two clicks enqueue one job, because two
+   * jobs is two articles billed.
+   */
+  async retry(user: User, postId: string) {
+    const post = await this.postsRepository.findOne({ where: { id: postId } });
+
+    if (!post) {
+      throw new NotFoundException('Blog bulunamadı');
+    }
+
+    const workspace = post.workspaceId
+      ? await this.workspacesRepository.findOne({ where: { id: post.workspaceId } })
+      : null;
+
+    if (!workspace || workspace.ownerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (post.status !== PostStatus.FAILED) {
+      throw new BadRequestException('Sadece başarısız bloglar tekrar denenebilir.');
+    }
+
+    const previousJob = await this.generationJobRepository.findOne({
+      where: { postId: post.id },
+      order: { createdAt: 'DESC' },
+    });
+
+    const request = previousJob?.requestData;
+    if (!request?.topic) {
+      throw new BadRequestException(
+        'Bu blogun üretim isteği bulunamadı. Yeni bir blog oluşturmanız gerekiyor.',
+      );
+    }
+
+    // Billing before the claim: a refusal must leave the post exactly as it was,
+    // still visibly failed and still retryable once the plan allows it.
+    const tier = await this.billingService.authorizeGeneration(user.id, request.model);
+
+    // The claim doubles as the idempotency lock — same shape as claimPost() in
+    // the worker and publishScheduledPosts(). A second click finds nothing.
+    const claim = await this.postsRepository
+      .createQueryBuilder()
+      .update(Post)
+      .set({ status: PostStatus.QUEUED, lastError: null })
+      .where('id = :id AND status = :failed', { id: post.id, failed: PostStatus.FAILED })
+      .execute();
+
+    if (!claim.affected) {
+      throw new ConflictException('Bu blog şu anda yeniden deneniyor.');
+    }
+
+    // A post written before migration 007 may still be missing its API scopes;
+    // anything newer already carries them, so the bridge is only consulted when
+    // it has to be.
+    let { organizationId, projectId } = post;
+    if (!organizationId || !projectId) {
+      const bridged = await this.resolveOrgAndProject(user, workspace);
+      organizationId = bridged.organization.id;
+      projectId = bridged.project.id;
+      await this.postsRepository.update(post.id, { organizationId, projectId });
+    }
+
+    const job = this.generationJobRepository.create({
+      organizationId,
+      projectId,
+      postId: post.id,
+      status: JobStatus.PENDING,
+      requestData: { ...request, model: tier },
+    });
+    const savedJob = await this.generationJobRepository.save(job);
+
+    try {
+      await this.sqsService.sendGeneratePostMessage({
+        jobId: savedJob.id,
+        postId: post.id,
+        workspaceId: workspace.id,
+        language: (request.language as string) || PostLanguage.TR,
+        topic: request.topic,
+        tone: request.tone || 'professional',
+        length: request.length || 'medium',
+        seoMode: request.seoMode || false,
+        model: tier,
+        additionalContext: request.additionalContext,
+        targetAudience: request.targetAudience,
+        format: 'json',
+      });
+    } catch (error) {
+      // Without this the post is stranded in QUEUED with no message behind it,
+      // and the retry button is gone — the dead end this exists to remove.
+      const message = error instanceof Error ? error.message : 'Kuyruk erişilemedi';
+      await this.postsRepository.update(post.id, {
+        status: PostStatus.FAILED,
+        lastError: `Tekrar deneme kuyruğa alınamadı: ${message}`,
+      });
+      await this.generationJobRepository.save({ ...savedJob, status: JobStatus.FAILED });
+      throw error;
+    }
+
+    this.logger.log(`Retrying generation for post ${post.id} (job ${savedJob.id})`);
+
+    return {
+      jobId: savedJob.id,
+      postId: post.id,
+      status: PostStatus.QUEUED,
     };
   }
 

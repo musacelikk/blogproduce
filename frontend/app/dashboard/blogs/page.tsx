@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { FileText, Search, Filter, MoreVertical, Eye, Edit, Trash2, Calendar, AlertCircle, Grid3x3, List, Globe, FileX, Sparkles } from 'lucide-react';
+import { FileText, Search, Filter, MoreVertical, Eye, Edit, Trash2, Calendar, AlertCircle, Grid3x3, List, Globe, FileX, Sparkles, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPosts, deletePost, getWorkspaces, publishPost, unpublishPost, type Post, type Workspace } from '@/lib/api';
+import { getPosts, deletePost, getWorkspaces, publishPost, unpublishPost, retryPost, type Post, type Workspace } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Blog {
@@ -31,6 +31,7 @@ interface Blog {
   model?: string;
   content?: string; // For preview
   coverImageUrl?: string;
+  lastError?: string;
 }
 
 function BlogsPageContent() {
@@ -40,6 +41,7 @@ function BlogsPageContent() {
   const [selectedTag, setSelectedTag] = useState<string | 'Tümü'>('Tümü');
   const [selectedBlog, setSelectedBlog] = useState<string | null>(null);
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [retrying, setRetrying] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
@@ -142,6 +144,7 @@ function BlogsPageContent() {
           coverImageUrl: post.coverImageUrl || undefined,
           scheduledAt: post.scheduledAt || undefined,
           publishedAt: post.publishedAt || undefined,
+          lastError: post.lastError || undefined,
         };
       });
       
@@ -164,6 +167,24 @@ function BlogsPageContent() {
       await loadPosts();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Blog silinirken bir hata oluştu');
+    }
+  };
+
+  /**
+   * A failed generation is replayed from the request that produced it, so the
+   * customer gets the article they asked for rather than paying for a second
+   * one. The id is held in state to disable the button — the backend refuses a
+   * double submit with a 409, but the user should not have to see that.
+   */
+  const handleRetry = async (blogId: string) => {
+    setRetrying(blogId);
+    try {
+      await retryPost(blogId);
+      await loadPosts();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Blog tekrar denenirken bir hata oluştu');
+    } finally {
+      setRetrying(null);
     }
   };
 
@@ -205,6 +226,45 @@ function BlogsPageContent() {
     draft:      { label: 'Taslak',          variant: 'outline' },
     published:  { label: 'Yayınlandı',      variant: 'primary' },
     scheduled:  { label: 'Zamanlandı',      variant: 'default' },
+  };
+
+  /**
+   * The worker writes why it gave up into `lastError`, and until now nothing
+   * read it back: the card said "Başarısız" and stopped there, so the customer
+   * could not tell a quota problem from a provider outage, and had no way to
+   * act on either.
+   */
+  const renderFailure = (blog: Blog) => {
+    if (blog.status !== 'failed') return null;
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+          <p className="text-xs leading-relaxed text-destructive">
+            {blog.lastError || 'Üretim tamamlanamadı. Tekrar deneyebilirsiniz.'}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRetryButton = (blog: Blog, className?: string) => {
+    if (blog.status !== 'failed') return null;
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className={className}
+        disabled={retrying === blog.id}
+        title="Tekrar dene"
+        onClick={() => handleRetry(blog.id)}
+      >
+        <RotateCw className={cn('h-3.5 w-3.5', retrying === blog.id && 'animate-spin')} />
+        <span className="hidden sm:inline">
+          {retrying === blog.id ? 'Deneniyor...' : 'Tekrar Dene'}
+        </span>
+      </Button>
+    );
   };
 
   const getStatusBadge = (status: string, scheduledAt?: string) => {
@@ -632,16 +692,20 @@ function BlogsPageContent() {
                           {blog.model}
                         </Badge>
                       )}
+                      {renderFailure(blog)}
                     </div>
 
                     <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
                       {getStatusBadge(blog.status, blog.scheduledAt)}
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/dashboard/blogs/${blog.id}`}>
-                          <Eye />
-                          <span className="hidden sm:inline">Görüntüle</span>
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        {renderRetryButton(blog)}
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/dashboard/blogs/${blog.id}`}>
+                            <Eye />
+                            <span className="hidden sm:inline">Görüntüle</span>
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -701,8 +765,11 @@ function BlogsPageContent() {
                       )}
                       {getStatusBadge(blog.status, blog.scheduledAt)}
                     </div>
+
+                    {blog.status === 'failed' && <div className="mt-3">{renderFailure(blog)}</div>}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
+                    {renderRetryButton(blog, 'h-9')}
                     <Button asChild variant="outline" size="sm" className="h-9 w-9 p-0" title="Görüntüle">
                       <Link href={`/dashboard/blogs/${blog.id}`} aria-label="Görüntüle">
                         <Eye />

@@ -766,6 +766,16 @@ export async function publishPost(id: string, revisionId?: string): Promise<Post
   return response.data || response;
 }
 
+/**
+ * Run a failed generation again, from the request that produced it.
+ * The backend replays the stored GenerationJob, so the retry is the same
+ * article — not a fresh one the customer would pay for twice.
+ */
+export async function retryPost(id: string): Promise<{ jobId: string; postId: string; status: string }> {
+  const response = await apiRequest(`/posts/${id}/retry`, { method: 'POST' });
+  return response.data || response;
+}
+
 export async function unpublishPost(id: string): Promise<Post> {
   const response = await apiRequest(`/posts/${id}/unpublish`, {
     method: 'POST',
